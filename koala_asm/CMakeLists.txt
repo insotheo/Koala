@@ -12,6 +12,18 @@ set(PRJ_NAME koala_asm)
 
 file(GLOB KOALA_SOURCES
 src/main.cpp
+src/parser/lexer.cpp
 )
 
-add_executable("${PRJ_NAME}" ${KOALA_SOURCES})
+file(GLOB KOALA_HEADERS
+src/config.h
+src/err_code.h
+src/parser/lexer.h
+src/parser/token.h
+)
+
+add_executable("${PRJ_NAME}" ${KOALA_SOURCES} ${KOALA_HEADERS})
+
+target_include_directories("${PRJ_NAME}" 
+PRIVATE src/ 
+)
