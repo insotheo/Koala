@@ -11,6 +11,7 @@
 #include "err_code.h"
 #include "parser/lexer.h"
 #include "parser/token.h"
+#include "koala_vm/config.h"
 
 void print_help(){
     std::cout << "koala_asm [options]\n"
@@ -24,7 +25,9 @@ void print_help(){
 
 void print_version(){
     std::cout << "koala_asm\n"
-              << "version: " << KOALA_ASM_VERSION_MAJOR << "." << KOALA_ASM_VERSION_MINOR << "." << KOALA_ASM_VERSION_PATCH << KOALA_ASM_VERSION_IDENTIFIER;
+              << "ASM version: " << KOALA_ASM_VERSION_MAJOR << "." << KOALA_ASM_VERSION_MINOR << "." << KOALA_ASM_VERSION_PATCH << KOALA_ASM_VERSION_IDENTIFIER << "\n"
+              << "VM version: " << KOALA_VM_VERSION_MAJOR << "." << KOALA_VM_VERSION_MINOR << "." << KOALA_VM_VERSION_PATCH << KOALA_VM_VERSION_IDENTIFIER
+              ;
 }
 
 int main(int argc, char** argv){
