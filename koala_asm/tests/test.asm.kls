@@ -1,0 +1,3 @@
+_main:
+    RET 0 ;returns zero
+END _main
