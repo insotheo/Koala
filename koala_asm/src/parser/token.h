@@ -11,6 +11,10 @@ enum TokenType{
 
 struct Token
 {
+    Token(const TokenType& t, const std::string& val)
+    : type(t), value(val)
+    {}
+
     TokenType type;
     const std::string value;
 };

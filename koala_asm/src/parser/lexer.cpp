@@ -7,17 +7,57 @@
 #define CURRENT_CHAR m_input[m_index]
 std::vector<Token> Lexer::parse(){
     std::vector<Token> tokens;
-    Token token;
 
     while (m_index < m_input.size())
     {
-        if(std::isalpha(CURRENT_CHAR)){
+        if(std::isspace(CURRENT_CHAR)){
             next();
             continue;
         }
 
+        if(std::isdigit(CURRENT_CHAR)){
+            std::string number;
+            while (m_index < m_input.size() && std::isdigit(CURRENT_CHAR))
+            {
+                number += CURRENT_CHAR;
+                next();
+            }
+            tokens.push_back(Token(TokenType::Number, number));
+            continue;
+        }
+
+        if(std::isalpha(CURRENT_CHAR) || CURRENT_CHAR == '_'){
+            std::string identifier;
+            while (m_index < m_input.size() && (std::isalpha(CURRENT_CHAR) || CURRENT_CHAR == '_'))
+            {
+                identifier += CURRENT_CHAR;
+                next();
+            }
+
+            if(identifier == "RET") { tokens.push_back(Token(TokenType::Keyword, "RET")); continue; }
+
+            tokens.push_back(Token(TokenType::Identifier, identifier));
+            continue;
+        }
+
+        switch(CURRENT_CHAR){
+            case ':': tokens.push_back(Token(TokenType::Colon, "")); next(); continue;
+
+            case ';':{
+                //comment
+                while(m_index < m_input.size() && CURRENT_CHAR != '\n'){
+                    next();
+                    continue;
+                }
+                next();
+                continue;
+            }
+        }
+
         //DBG
-        panic("Unexpected token!");
+        std::ostringstream oss;
+        oss << "Unrecognized token('" << CURRENT_CHAR << "')!";
+        panic(oss.str());
         next();
     }
 
@@ -54,7 +94,7 @@ void Lexer::panic(const std::string& msg){
     std::string err_line = m_input.substr(line_start, line_end - line_start);
 
     std::ostringstream oss;
-    oss << "Error on (" << m_line << ";" << (m_index - line_start + 1) << "): " << msg << " : " << err_line;
+    oss << "Error on (" << m_line << ";" << (m_index - line_start + 1) << "): " << msg << ": " << err_line;
     m_errors.push_back(oss.str());
     m_is_success = false;
 }
