@@ -1,5 +1,6 @@
 //*.asm.kls
 //kls stands for Koala Source
+//kbc stands for Koala Byte Code
 
 #include <iostream>
 #include <string>
@@ -11,6 +12,8 @@
 #include "err_code.h"
 #include "parser/lexer.h"
 #include "parser/token.h"
+#include "parser/instruction.h"
+#include "parser/parser.h"
 #include "koala_vm/config.h"
 
 void print_help(){
@@ -89,6 +92,10 @@ int main(int argc, char** argv){
         return KOALA_ASM_ERR_CODE_LEXER_FAILED;
     }
     lexer.clear_errors_list();
+    
+    Parser parser(tokens);
+    std::vector<CodeBlock> codeblocks = parser.parse();
+    std::cout << codeblocks.size() << "\n";
 
     return KOALA_ASM_ERR_CODE_OKAY;
 }

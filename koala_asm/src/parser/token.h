@@ -4,7 +4,7 @@
 #include <string>
 
 enum TokenType{
-    Keyword, Identifier, Number,
+    Keyword, Identifier, Number, EndOfFile,
 
     Colon,
 };

@@ -34,7 +34,8 @@ std::vector<Token> Lexer::parse(){
                 next();
             }
 
-            if(identifier == "RET") { tokens.push_back(Token(TokenType::Keyword, "RET")); continue; }
+            if (identifier == "RET") { tokens.push_back(Token(TokenType::Keyword, "RET")); continue; }
+            if (identifier == "END") { tokens.push_back(Token(TokenType::Keyword, "END")); continue; }
 
             tokens.push_back(Token(TokenType::Identifier, identifier));
             continue;
@@ -47,7 +48,6 @@ std::vector<Token> Lexer::parse(){
                 //comment
                 while(m_index < m_input.size() && CURRENT_CHAR != '\n'){
                     next();
-                    continue;
                 }
                 next();
                 continue;
@@ -60,7 +60,8 @@ std::vector<Token> Lexer::parse(){
         panic(oss.str());
         next();
     }
-
+    tokens.push_back(Token(TokenType::EndOfFile, ""));
+    
     return tokens;
 }
 
@@ -94,7 +95,7 @@ void Lexer::panic(const std::string& msg){
     std::string err_line = m_input.substr(line_start, line_end - line_start);
 
     std::ostringstream oss;
-    oss << "Error on (" << m_line << ";" << (m_index - line_start + 1) << "): " << msg << ": " << err_line;
+    oss << "Error on (" << static_cast<int>(m_line) << ";" << static_cast<int>(m_index - line_start + 1) << "): " << msg << ": " << err_line;
     m_errors.push_back(oss.str());
     m_is_success = false;
 }

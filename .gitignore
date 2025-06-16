@@ -3,3 +3,4 @@
 .idea/
 build/
 [Bb]in/
+cmake-build-debug/

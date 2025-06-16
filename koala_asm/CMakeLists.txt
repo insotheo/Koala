@@ -9,6 +9,7 @@ set(PRJ_NAME koala_asm)
 file(GLOB KOALA_SOURCES
 src/main.cpp
 src/parser/lexer.cpp
+src/parser/parser.cpp
 )
 
 file(GLOB KOALA_HEADERS
@@ -16,6 +17,8 @@ src/config.h
 src/err_code.h
 src/parser/lexer.h
 src/parser/token.h
+src/parser/instruction.h
+src/parser/parser.h
 )
 
 add_executable("${PRJ_NAME}" ${KOALA_SOURCES} ${KOALA_HEADERS})
