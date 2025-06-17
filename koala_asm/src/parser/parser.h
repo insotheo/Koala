@@ -13,6 +13,7 @@ public:
     {}
 
     std::vector<CodeBlock> parse();
+    inline bool is_success() const {return m_is_success;};
 private:
     std::vector<Token>& m_tokens;
     size_t m_index;

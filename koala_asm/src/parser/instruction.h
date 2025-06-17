@@ -1,12 +1,10 @@
 #ifndef KOALA_ASM_INSTRUCTION_H
 #define KOALA_ASM_INSTRUCTION_H
 
-
-#include <variant>
 #include <vector>
 #include <string>
+#include "parser/byte_data.h"
 
-using OP_ARG_TYPE = std::variant<int>;
 
 struct Instruction{
     size_t op_code;

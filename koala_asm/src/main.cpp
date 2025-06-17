@@ -14,15 +14,18 @@
 #include "parser/token.h"
 #include "parser/instruction.h"
 #include "parser/parser.h"
+#include "parser/translator.h"
+#include "parser/io.h"
 #include "koala_vm/config.h"
 
-void print_help(){
-    std::cout << "koala_asm [options]\n"
-              << "Options:\n"
-              << "  -p <path>      Path to the *.asm.kls file(REQUIRED)\n"
-              << "  -s <symbol>    Start symbol (e.g., _main)\n"
+void print_help() {
+    std::cout << "koala_asm <command> [options]\n"
               << "  --help         Show help message\n"
               << "  --version      Show version\n"
+              << "koala_asm build/make [options]:\n"
+              << "  -p <path>      Path to the *.asm.kls file(REQUIRED)\n"
+              << "  -o <symbol>    Output path(REQUIRED)\n"
+              << "  -s <symbol>    Start symbol (e.g., _main)\n"
               ;
 }
 
@@ -35,8 +38,9 @@ void print_version(){
 
 int main(int argc, char** argv){
     std::unordered_map<std::string, std::string> args;
+    std::string command = argv[1];
 
-    for(int i = 1; i < argc; ++i){
+    for(int i = 2; i < argc; ++i){
         std::string arg = argv[i];
 
         if(arg == "--help"){
@@ -49,7 +53,7 @@ int main(int argc, char** argv){
             return KOALA_ASM_ERR_CODE_OKAY;
         }
 
-        if((arg == "-p" || arg == "-s") && (i + 1 < argc)){
+        if((arg == "-p" || arg == "-s" || arg == "-o") && (i + 1 < argc)){
             args[arg] = argv[++i];
         }
         else if(arg[0] == '-'){
@@ -59,43 +63,52 @@ int main(int argc, char** argv){
         }
     }
 
-    //config
-    std::string file_path;
-    std::string entry_point = "_main";
+    if (command == "build" || command == "make") {
+        //config
+        std::string file_path;
+        std::string output_path;
+        std::string entry_point = "_main";
 
-    if(args.find("-p") != args.end()){
-        file_path = args["-p"];
-    }
-    else{
-        std::cerr << "Missing required -p argument\n\n";
-        print_help();
-        return KOALA_ASM_ERR_CODE_FILE_PATH_NOT_FOUND;
-    }
+        if(args.find("-p") == args.end() || args.find("-o") == args.end()){
+            std::cerr << "Missing required -p, -o arguments\n\n";
+            print_help();
+            return KOALA_ASM_ERR_CODE_FILE_PATH_NOT_FOUND;
+        }
+        else{
+            file_path = args["-p"];
+            output_path = args["-o"];
+        }
 
-    //loading file content
-    std::string asm_content;
-    std::fstream fs(file_path, std::ios::in | std::ios::binary);
-    if(!fs.is_open()){
-        std::cerr << "Failed to open file stream!\n";
-        return KOALA_ASM_ERR_CODE_FILE_STREAM_OPENING_FAILED;
-    }
-    fs.seekg(0, std::ios_base::end);
-    asm_content.resize(fs.tellg());
-    fs.seekg(0, std::ios_base::beg);
-    fs.read(&asm_content[0], asm_content.size());
-    fs.close();
+        //loading file content
+        std::string asm_content;
+        std::fstream fs(file_path, std::ios::in | std::ios::binary);
+        if(!fs.is_open()){
+            std::cerr << "Failed to open file stream!\n";
+            return KOALA_ASM_ERR_CODE_FILE_STREAM_OPENING_FAILED;
+        }
+        fs.seekg(0, std::ios_base::end);
+        asm_content.resize(fs.tellg());
+        fs.seekg(0, std::ios_base::beg);
+        fs.read(&asm_content[0], asm_content.size());
+        fs.close();
 
-    Lexer lexer(asm_content);
-    std::vector<Token> tokens = lexer.parse();
-    if(!lexer.is_success()){
-        lexer.print_errors();
-        return KOALA_ASM_ERR_CODE_LEXER_FAILED;
+        Lexer lexer(asm_content);
+        std::vector<Token> tokens = lexer.parse();
+        if(!lexer.is_success()){
+            lexer.print_errors();
+            return KOALA_ASM_ERR_CODE_LEXER_FAILED;
+        }
+        lexer.clear_errors_list();
+
+        Parser parser(tokens);
+        std::vector<CodeBlock> codeblocks = parser.parse();
+        if(!parser.is_success()){
+            return KOALA_ASM_ERR_CODE_LEXER_FAILED;
+        }
+
+        ByteData bytes = translate(codeblocks);
+        save_to_file(bytes, output_path);
     }
-    lexer.clear_errors_list();
-    
-    Parser parser(tokens);
-    std::vector<CodeBlock> codeblocks = parser.parse();
-    std::cout << codeblocks.size() << "\n";
 
     return KOALA_ASM_ERR_CODE_OKAY;
 }
