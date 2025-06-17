@@ -3,7 +3,7 @@
 
 #include <vector>
 #include <string>
-#include "parser/byte_data.h"
+#include "koala_vm/byte_data.h"
 
 
 struct Instruction{

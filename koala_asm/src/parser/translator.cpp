@@ -14,7 +14,9 @@ ByteData translate(const std::vector<CodeBlock>& blocks){
 
     //calculating offset
     for(const auto& block : blocks){
+        Block byte_block;
         label_to_offset[block.label] = code_offset;
+        byte_block.begin = code_offset;
 
         for(const auto& instr : block.block_instructions){
             code_offset += 1;
@@ -25,7 +27,9 @@ ByteData translate(const std::vector<CodeBlock>& blocks){
                 }
                 ///TODO: other types
             }
-        } 
+        }
+        byte_block.end = code_offset;
+        byte_data.blocks[block.label] = byte_block;
     }
 
     //gen bytecode

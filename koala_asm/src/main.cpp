@@ -7,6 +7,7 @@
 #include <vector>
 #include <unordered_map>
 #include <fstream>
+#include <optional>
 
 #include "config.h"
 #include "err_code.h"
@@ -17,15 +18,20 @@
 #include "parser/translator.h"
 #include "parser/io.h"
 #include "koala_vm/config.h"
+#include "koala_vm/vm.h"
 
 void print_help() {
     std::cout << "koala_asm <command> [options]\n"
               << "  --help         Show help message\n"
-              << "  --version      Show version\n"
+              << "  --version      Show version\n\n"
               << "koala_asm build/make [options]:\n"
               << "  -p <path>      Path to the *.asm.kls file(REQUIRED)\n"
-              << "  -o <symbol>    Output path(REQUIRED)\n"
+              << "  -o <symbol>    Output path(REQUIRED)\n\n"
+              << "koala_asm run [options]:\n"
+              << "  -p <path>      Path to the *.kbc file(REQUIRED)\n"
               << "  -s <symbol>    Start symbol (e.g., _main)\n"
+              << "  -r             Print returned value on the screen\n"
+              << "  -k             Wait for an [Enter] key to be pressed before closing the program\n"
               ;
 }
 
@@ -53,8 +59,11 @@ int main(int argc, char** argv){
             return KOALA_ASM_ERR_CODE_OKAY;
         }
 
-        if((arg == "-p" || arg == "-s" || arg == "-o") && (i + 1 < argc)){
+        if((arg == "-p" || arg == "-o" || arg == "-s") && (i + 1 < argc)){
             args[arg] = argv[++i];
+        }
+        else if(arg == "-r" || arg == "-k"){
+            args[arg] = "";
         }
         else if(arg[0] == '-'){
             std::cerr << "Unknown or incomplete option: " << arg << "\n\n";
@@ -67,7 +76,6 @@ int main(int argc, char** argv){
         //config
         std::string file_path;
         std::string output_path;
-        std::string entry_point = "_main";
 
         if(args.find("-p") == args.end() || args.find("-o") == args.end()){
             std::cerr << "Missing required -p, -o arguments\n\n";
@@ -108,6 +116,55 @@ int main(int argc, char** argv){
 
         ByteData bytes = translate(codeblocks);
         save_to_file(bytes, output_path);
+    }
+    else if(command == "run"){
+        //config
+        std::string file_path;
+        std::string entry_point = "_main";
+        bool print_return_value = false;
+        bool await_key = false;
+
+        if(args.find("-p") == args.end()){
+            std::cerr << "Missing required -p arguments\n\n";
+            print_help();
+            return KOALA_ASM_ERR_CODE_FILE_PATH_NOT_FOUND;
+        }
+        else{
+            file_path = args["-p"];
+        }
+
+        if(args.find("-s") != args.end()){
+            entry_point = args["-s"];       
+        }
+
+        if(args.find("-r") != args.end()){
+            print_return_value = true;      
+        }
+        if(args.find("-k") != args.end()){
+            await_key = true;
+        }
+
+        ByteData data = load_from_file(file_path);
+        
+        KoalaVM vm(data);
+        std::optional<OP_ARG_TYPE> result = vm.run(entry_point);
+
+        if(print_return_value){
+            if(result.has_value()){
+                std::visit([&](const auto& val){
+                    std::cout << "\nProgram finished with result: " << val << "\n";
+                }, result.value());
+            }
+            else{
+                std::cout << "\nProgram finished with zero-result.\n";
+            }
+        }
+        if(await_key){
+            std::getchar();
+        }
+    }
+    else{
+        print_help();
     }
 
     return KOALA_ASM_ERR_CODE_OKAY;

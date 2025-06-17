@@ -46,14 +46,18 @@ FullCodeBlock Parser::parse_block(){
                 if (CURRENT_TOKEN.value == block.label){
                     break; //END of the current block
                 }
+                throw std::runtime_error("Parser error: line is \"END " + CURRENT_TOKEN.value + "\", but it have to be \"END " + block.label + "\"!");
             }
-            else if(CURRENT_TOKEN.value == "RET"){ //RET <> ; OR ; RET
+            else if(CURRENT_TOKEN.value == "RET"){ //RET
                 instr.op_code = OpCode::OP_RET;
+                block.block_instructions.push_back(instr);
+                continue;
+            }
+            else if(CURRENT_TOKEN.value == "PUSH"){ //PUSH
+                instr.op_code = OpCode::OP_PUSH;
+                next();
 
-                size_t peek_idx = m_index + 1;
-
-                if(TOKEN(peek_idx).type == TokenType::Number){
-                    next();
+                if(CURRENT_TOKEN.type == TokenType::Number){
                     instr.operands.push_back(std::stoi(CURRENT_TOKEN.value));
                 }
                 block.block_instructions.push_back(instr);

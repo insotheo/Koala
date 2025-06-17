@@ -1,3 +1,4 @@
-_main:
-    RET 0 ; returns zero
-END _main
+_start:
+    PUSH 0
+    RET
+END _start

@@ -16,6 +16,18 @@ void save_to_file(const ByteData& data, const std::string& path){
     output.write(magic, 5);
     output.write(reinterpret_cast<const char*>(&ver), sizeof(uint8_t));
 
+    //blocks
+    size_t blocks_counter = data.blocks.size();
+    output.write(reinterpret_cast<const char*>(&blocks_counter), sizeof(size_t));
+    for (const auto& [label, range] : data.blocks){
+        size_t label_len = label.size();
+        output.write(reinterpret_cast<const char*>(&label_len), sizeof(size_t));
+        output.write(label.data(), label_len);
+
+        output.write(reinterpret_cast<const char*>(&range.begin), sizeof(size_t));
+        output.write(reinterpret_cast<const char*>(&range.end), sizeof(size_t));
+    }
+
     //consts
     size_t const_counter = data.constants.size();
     output.write(reinterpret_cast<const char*>(&const_counter), sizeof(size_t));
@@ -64,6 +76,25 @@ ByteData load_from_file(const std::string& path) {
     }
 
     ByteData byte_data;
+    size_t blocks_counter = 0;
+    input.read(reinterpret_cast<char*>(&blocks_counter), sizeof(size_t));
+
+    for(size_t i = 0; i < blocks_counter; ++i){
+        size_t label_len;
+        input.read(reinterpret_cast<char*>(&label_len), sizeof(size_t));
+
+        std::string label(label_len, '\0');
+        input.read(&label[0], label_len);
+
+        size_t begin;
+        input.read(reinterpret_cast<char*>(&begin), sizeof(size_t));
+
+        size_t end;
+        input.read(reinterpret_cast<char*>(&end), sizeof(size_t));
+
+        byte_data.blocks[label] = {begin, end};
+    }
+
     size_t const_counter = 0;
     input.read(reinterpret_cast<char*>(&const_counter), sizeof(size_t));
 
