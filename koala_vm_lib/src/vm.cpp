@@ -2,6 +2,7 @@
 
 #include "koala_vm/op_codes.h"
 #include <iostream>
+#include <type_traits>
 
 std::optional<OP_ARG_TYPE> KoalaVM::run(const std::string& entry_label){
     std::stack<OP_ARG_TYPE> stack;
@@ -29,6 +30,7 @@ std::optional<OP_ARG_TYPE> KoalaVM::execute(size_t begin, size_t end, std::stack
                 if(CURRENT_INSTR == OpCode::M_CONST){
                     ip += 1;
                     size_t const_idx = m_data.code[ip];
+                    ip += 1;
                     const OP_ARG_TYPE* it = get_const_by_index(const_idx);
                     if(!it) throw std::runtime_error("Invalid constant index");
 
@@ -39,30 +41,36 @@ std::optional<OP_ARG_TYPE> KoalaVM::execute(size_t begin, size_t end, std::stack
                         throw std::runtime_error("Unsupported constant type on stack");
                     }
                 }
+                break;
             }
 
             case OpCode::OP_RET:{
                 ip += 1;
-                size_t ret_count = m_data.code[ip];
-
-                if (ret_count == 0)
+                if (stack.empty()) {
                     return std::nullopt;
-                
-                else{
-                    if (stack.empty()) {
-                        return std::nullopt;
-                    }
-                    OP_ARG_TYPE val = stack.top();
-                    stack.pop();
-                    return val;
                 }
+                OP_ARG_TYPE val = stack.top();
+                stack.pop();
+                return val;
+                break;
             }
-        
+
+            case OpCode::OP_INC:
+            case OpCode::OP_DEC:
+            case OpCode::OP_ADD:
+            case OpCode::OP_SUB:
+            case OpCode::OP_MUL:
+            case OpCode::OP_DIV:
+                arithmetic(CURRENT_INSTR, stack);
+                ip += 1;
+                break;
+
+
         default:
             break;
         }
     }
-    return OP_ARG_TYPE();
+    return std::nullopt;
 }
 
 const OP_ARG_TYPE* KoalaVM::get_const_by_index(size_t idx){
@@ -72,4 +80,46 @@ const OP_ARG_TYPE* KoalaVM::get_const_by_index(size_t idx){
         return nullptr;
     }
     return &it->second;
+}
+
+void KoalaVM::arithmetic(size_t instr, std::stack<OP_ARG_TYPE>& stack){
+    if(instr == OpCode::OP_INC || instr == OpCode::OP_DEC){
+        OP_ARG_TYPE a = stack.top(); stack.pop();
+        std::visit([&](const auto& val){
+            using T = std::decay_t<decltype(val)>;
+
+            if constexpr (std::is_arithmetic_v<T> && !std::is_same_v<T, bool>){
+                if (instr == OpCode::OP_INC){
+                    stack.push(val + 1);
+                }
+                else if(instr == OpCode::OP_DEC){
+                    stack.push(val - 1);
+                }
+            }
+        }, a);
+    }
+    else if(instr == OpCode::OP_ADD || instr == OpCode::OP_SUB || instr == OpCode::OP_MUL || instr == OpCode::OP_DIV){
+        OP_ARG_TYPE b = stack.top(); stack.pop();
+        OP_ARG_TYPE a = stack.top(); stack.pop();
+
+        std::visit([&](const auto& valA, const auto& valB){
+            using T_a = std::decay_t<decltype(valA)>;
+            using T_b = std::decay_t<decltype(valB)>;
+
+            if constexpr ((std::is_arithmetic_v<T_a> && !std::is_same_v<T_a, bool>) && (std::is_arithmetic_v<T_b> && !std::is_same_v<T_b, bool>)){
+                if(instr == OpCode::OP_ADD){
+                    stack.push(valA + valB);
+                }
+                else if(instr == OpCode::OP_SUB){
+                    stack.push(valA - valB);
+                }
+                else if(instr == OpCode::OP_MUL){
+                    stack.push(valA * valB);
+                }
+                else if(instr == OpCode::OP_DIV){
+                    stack.push(valA / valB);
+                }
+            }
+        }, a, b);
+    }
 }

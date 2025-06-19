@@ -34,6 +34,13 @@ std::vector<Token> Lexer::parse(){
                 next();
             }
 
+            if (identifier == "INC")    { tokens.push_back(Token(TokenType::Keyword, "INC")); continue; }
+            if (identifier == "DEC")    { tokens.push_back(Token(TokenType::Keyword, "DEC")); continue; }
+            if (identifier == "ADD")    { tokens.push_back(Token(TokenType::Keyword, "ADD")); continue; }
+            if (identifier == "SUB")    { tokens.push_back(Token(TokenType::Keyword, "SUB")); continue; }
+            if (identifier == "MUL")    { tokens.push_back(Token(TokenType::Keyword, "MUL")); continue; }
+            if (identifier == "DIV")    { tokens.push_back(Token(TokenType::Keyword, "DIV")); continue; }
+
             if (identifier == "RET")    { tokens.push_back(Token(TokenType::Keyword, "RET")); continue; }
             if (identifier == "END")    { tokens.push_back(Token(TokenType::Keyword, "END")); continue; }
             if (identifier == "PUSH")   { tokens.push_back(Token(TokenType::Keyword, "PUSH")); continue; }

@@ -16,6 +16,8 @@ private:
 
     const OP_ARG_TYPE* get_const_by_index(size_t idx);
     std::optional<OP_ARG_TYPE> execute(size_t begin, size_t end, std::stack<OP_ARG_TYPE>& stack);
+
+    void arithmetic(size_t instr, std::stack<OP_ARG_TYPE>& stack);
 };
 
 #endif

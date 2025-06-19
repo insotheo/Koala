@@ -63,6 +63,39 @@ FullCodeBlock Parser::parse_block(){
                 block.block_instructions.push_back(instr);
                 continue;
             }
+
+            //arithmetic
+            else if(CURRENT_TOKEN.value == "INC"){
+                instr.op_code = OpCode::OP_INC;
+                block.block_instructions.push_back(instr);
+                continue;
+            }
+            else if(CURRENT_TOKEN.value == "DEC"){
+                instr.op_code = OpCode::OP_DEC;
+                block.block_instructions.push_back(instr);
+                continue;
+            }
+            else if(CURRENT_TOKEN.value == "ADD"){
+                instr.op_code = OpCode::OP_ADD;
+                block.block_instructions.push_back(instr);
+                continue;
+            }
+            else if(CURRENT_TOKEN.value == "SUB"){
+                instr.op_code = OpCode::OP_SUB;
+                block.block_instructions.push_back(instr);
+                continue;
+            }
+            else if(CURRENT_TOKEN.value == "MUL"){
+                instr.op_code = OpCode::OP_MUL;
+                block.block_instructions.push_back(instr);
+                continue;
+            }
+            else if(CURRENT_TOKEN.value == "DIV"){
+                instr.op_code = OpCode::OP_DIV;
+                block.block_instructions.push_back(instr);
+                continue;
+            }
+            
         }
         else if(CURRENT_TOKEN.type == TokenType::Identifier){
             FullCodeBlock inside_block = parse_block();
