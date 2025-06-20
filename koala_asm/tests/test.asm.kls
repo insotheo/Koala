@@ -1,8 +1,6 @@
 _start:
-    PUSH 100
-    PUSH 899
-    ADD
     PUSH 1
-    ADD
+    PUSH 0
+    AND
     RET
 END _start

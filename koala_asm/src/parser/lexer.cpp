@@ -41,6 +41,11 @@ std::vector<Token> Lexer::parse(){
             if (identifier == "MUL")    { tokens.push_back(Token(TokenType::Keyword, "MUL")); continue; }
             if (identifier == "DIV")    { tokens.push_back(Token(TokenType::Keyword, "DIV")); continue; }
 
+            if (identifier == "AND")    { tokens.push_back(Token(TokenType::Keyword, "AND")); continue; }
+            if (identifier == "OR")     { tokens.push_back(Token(TokenType::Keyword, "OR")); continue; }
+            if (identifier == "XOR")    { tokens.push_back(Token(TokenType::Keyword, "XOR")); continue; }
+            if (identifier == "NOT")    { tokens.push_back(Token(TokenType::Keyword, "NOT")); continue; }
+
             if (identifier == "RET")    { tokens.push_back(Token(TokenType::Keyword, "RET")); continue; }
             if (identifier == "END")    { tokens.push_back(Token(TokenType::Keyword, "END")); continue; }
             if (identifier == "PUSH")   { tokens.push_back(Token(TokenType::Keyword, "PUSH")); continue; }

@@ -95,6 +95,29 @@ FullCodeBlock Parser::parse_block(){
                 block.block_instructions.push_back(instr);
                 continue;
             }
+
+            //logical
+            else if(CURRENT_TOKEN.value == "AND"){
+                instr.op_code = OpCode::OP_AND;
+                block.block_instructions.push_back(instr);
+                continue;
+            }
+            else if(CURRENT_TOKEN.value == "OR"){
+                instr.op_code = OpCode::OP_OR;
+                block.block_instructions.push_back(instr);
+                continue;
+            }
+            else if(CURRENT_TOKEN.value == "XOR"){
+                instr.op_code = OpCode::OP_XOR;
+                block.block_instructions.push_back(instr);
+                continue;
+            }
+            else if(CURRENT_TOKEN.value == "NOT"){
+                instr.op_code = OpCode::OP_NOT;
+                block.block_instructions.push_back(instr);
+                continue;
+            }
+            
             
         }
         else if(CURRENT_TOKEN.type == TokenType::Identifier){

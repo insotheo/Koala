@@ -65,6 +65,13 @@ std::optional<OP_ARG_TYPE> KoalaVM::execute(size_t begin, size_t end, std::stack
                 ip += 1;
                 break;
 
+            case OpCode::OP_AND:
+            case OpCode::OP_OR:
+            case OpCode::OP_XOR:
+            case OpCode::OP_NOT:
+                logical(CURRENT_INSTR, stack);
+                ip += 1;
+                break;
 
         default:
             break;
@@ -118,6 +125,38 @@ void KoalaVM::arithmetic(size_t instr, std::stack<OP_ARG_TYPE>& stack){
                 }
                 else if(instr == OpCode::OP_DIV){
                     stack.push(valA / valB);
+                }
+            }
+        }, a, b);
+    }
+}
+
+void KoalaVM::logical(size_t instr, std::stack<OP_ARG_TYPE>& stack){
+    if(instr == OpCode::OP_NOT){
+        OP_ARG_TYPE a = stack.top(); stack.pop();
+        std::visit([&](const auto& val){
+            using T = std::decay_t<decltype(val)>;
+            if constexpr (std::is_arithmetic_v<T>){
+                stack.push(!val);
+            }
+        }, a);
+    }
+    else if(instr == OpCode::OP_AND || instr == OpCode::OP_OR || instr == OpCode::OP_XOR){
+        OP_ARG_TYPE b = stack.top(); stack.pop();
+        OP_ARG_TYPE a = stack.top(); stack.pop();
+        std::visit([&](const auto& valA, const auto& valB){
+            using T_a = std::decay_t<decltype(valA)>;
+            using T_b = std::decay_t<decltype(valB)>;
+
+            if constexpr (std::is_arithmetic_v<T_a> && std::is_arithmetic_v<T_b>){
+                if(instr == OpCode::OP_AND){
+                    stack.push(valA && valB);
+                }
+                else if(instr == OpCode::OP_OR){
+                    stack.push(valA || valB);
+                }
+                else if(instr == OpCode::OP_XOR){
+                    stack.push(valA != valB);
                 }
             }
         }, a, b);

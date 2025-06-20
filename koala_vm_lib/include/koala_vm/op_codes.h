@@ -17,6 +17,12 @@ enum OpCode: size_t{
     OP_SUB = 0x08,
     OP_MUL = 0x09,
     OP_DIV = 0x0A,
+
+    //logical
+    OP_AND = 0x0B,
+    OP_OR  = 0x0C,
+    OP_XOR = 0x0D,
+    OP_NOT = 0x0E,
 };
 
 OpCode get_max_op_code();
