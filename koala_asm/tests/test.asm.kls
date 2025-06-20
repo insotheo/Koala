@@ -1,10 +1,9 @@
 _start:
     PUSH 2
-    PUSH 1
-    POP
-    PUSH 2
-    MARK loop ; creates a pointer to the specific instruction
-        ADD
-    JMP loop
+    PUSH 0
+    JMP _test
+    MUL
+    MARK _test
+    SUB
     RET
 END _start

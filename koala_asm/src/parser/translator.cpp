@@ -40,6 +40,10 @@ ByteData translate(const std::vector<CodeBlock>& blocks){
     //gen bytecode
     for(const auto& block : blocks){
         for(const auto& instr : block.block_instructions){
+            if (instr.op_code == OpCode::PC_MARK) {
+                continue;
+            }
+
             byte_data.code.push_back(instr.op_code);
 
             if(instr.op_code == OpCode::OP_JMP){
