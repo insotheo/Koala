@@ -55,6 +55,39 @@ std::optional<OP_ARG_TYPE> KoalaVM::execute(size_t begin, size_t end, std::stack
                 break;
             }
 
+            case OpCode::OP_POP:
+                ip += 1;
+                stack.pop();
+                break;
+
+            case OpCode::OP_POP_N:{
+                ip += 1;
+                if(CURRENT_INSTR != OpCode::M_CONST){
+                    throw std::runtime_error("Uexpected bytecode argument!");
+                }
+                ip += 1;
+                size_t const_idx = m_data.code[ip];
+                ip += 1;
+                const OP_ARG_TYPE* it = get_const_by_index(const_idx);
+                if(!it) throw std::runtime_error("Invalid constant index");
+
+                int num;
+                if(!std::holds_alternative<int>(*it)){
+                    throw std::runtime_error("Uexpected bytecode argument!");
+                }
+                num = std::get<int>(*it);
+                
+                if (num > static_cast<int>(stack.size())) {
+                    throw std::runtime_error("POP_N argument exceeds stack size!");
+                }
+
+                for(int i = 0; i < num; ++i){
+                    stack.pop();
+                }
+
+                break;
+            }
+
             case OpCode::OP_INC:
             case OpCode::OP_DEC:
             case OpCode::OP_ADD:

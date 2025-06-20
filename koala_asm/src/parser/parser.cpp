@@ -53,13 +53,29 @@ FullCodeBlock Parser::parse_block(){
                 block.block_instructions.push_back(instr);
                 continue;
             }
-            else if(CURRENT_TOKEN.value == "PUSH"){ //PUSH
+            else if(CURRENT_TOKEN.value == "PUSH"){ //PUSH <value>
                 instr.op_code = OpCode::OP_PUSH;
                 next();
 
                 if(CURRENT_TOKEN.type == TokenType::Number){
                     instr.operands.push_back(std::stoi(CURRENT_TOKEN.value));
                 }
+                block.block_instructions.push_back(instr);
+                continue;
+            }
+            else if(CURRENT_TOKEN.value == "POP"){ //POP
+                instr.op_code = OpCode::OP_POP;
+                block.block_instructions.push_back(instr);
+                continue;
+            }
+            else if(CURRENT_TOKEN.value == "POP_N"){ //POP_N <value>
+                instr.op_code = OpCode::OP_POP_N;
+                next();
+
+                if(CURRENT_TOKEN.type != TokenType::Number){
+                    throw std::runtime_error("After POP_N expected a number!");
+                }
+                instr.operands.push_back(std::stoi(CURRENT_TOKEN.value));
                 block.block_instructions.push_back(instr);
                 continue;
             }

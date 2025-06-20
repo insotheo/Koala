@@ -1,6 +1,7 @@
 _start:
+    PUSH 2
     PUSH 1
-    PUSH 0
-    AND
+    POP
+    POP_N 1 ; the same as POP
     RET
 END _start
