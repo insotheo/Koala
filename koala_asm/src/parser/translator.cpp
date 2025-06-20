@@ -20,17 +20,22 @@ ByteData translate(const std::vector<CodeBlock>& blocks){
         byte_block.begin = code_offset;
 
         for(const auto& instr : block.block_instructions){
+            code_offset += 1;
+
             if(instr.op_code == OpCode::PC_MARK){
                 std::string label = std::get<std::string>(instr.operands[0]);
                 label_to_offset[block.label + "::" + label] = code_offset;
+                code_offset -= 1;
                 continue;
             }
-            
-            //for other op codes
-            code_offset += 1;
 
-            for(const auto& op : instr.operands){
-                code_offset += 2;
+            if(instr.op_code == OpCode::OP_JMP || instr.op_code == OpCode::OP_JEZ || instr.op_code == OpCode::OP_JNZ){
+                code_offset += 1;
+            }
+            else{
+                for(const auto& op : instr.operands){
+                    code_offset += 2;
+                }
             }
         }
         byte_block.end = code_offset;
@@ -46,7 +51,7 @@ ByteData translate(const std::vector<CodeBlock>& blocks){
 
             byte_data.code.push_back(instr.op_code);
 
-            if(instr.op_code == OpCode::OP_JMP){
+            if(instr.op_code == OpCode::OP_JMP || instr.op_code == OpCode::OP_JEZ || instr.op_code == OpCode::OP_JNZ){
                 std::string label = std::get<std::string>(instr.operands[0]);
                 auto it = label_to_offset.find(block.label + "::" + label);
                 if(it == label_to_offset.end()){

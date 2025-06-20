@@ -100,6 +100,26 @@ FullCodeBlock Parser::parse_block(){
                 block.block_instructions.push_back(instr);
                 continue;
             }
+            else if(CURRENT_TOKEN.value == "JEZ"){ //JEZ <id>
+                instr.op_code = OpCode::OP_JEZ;
+                next();
+                if(CURRENT_TOKEN.type != TokenType::Identifier){
+                    throw std::runtime_error("After JEZ expects an identifier(label name)!");
+                }
+                instr.operands.push_back(CURRENT_TOKEN.value);
+                block.block_instructions.push_back(instr);
+                continue;
+            }
+            else if(CURRENT_TOKEN.value == "JNZ"){ //JNZ <id>
+                instr.op_code = OpCode::OP_JNZ;
+                next();
+                if(CURRENT_TOKEN.type != TokenType::Identifier){
+                    throw std::runtime_error("After JNZ expects an identifier(label name)!");
+                }
+                instr.operands.push_back(CURRENT_TOKEN.value);
+                block.block_instructions.push_back(instr);
+                continue;
+            }
 
             //arithmetic
             else if(CURRENT_TOKEN.value == "INC"){

@@ -1,9 +1,12 @@
 _start:
-    PUSH 2
+    PUSH 1
+    PUSH 1
+    AND
+    JEZ out
+    POP
     PUSH 0
-    JMP _test
-    MUL
-    MARK _test
-    SUB
+    
+    MARK out
+    NOT
     RET
 END _start
