@@ -1,12 +1,17 @@
 _start:
-    PUSH 1
-    PUSH 1
-    AND
-    JEZ out
+PUSH 0
+
+MARK _loop:
+    DUP
+    PUSH 1000000
+    XOR
+    JEZ _out
     POP
-    PUSH 0
-    
-    MARK out
-    NOT
+    PUSH 1
+    ADD
+    JMP _loop
+
+MARK _out
+    POP
     RET
 END _start

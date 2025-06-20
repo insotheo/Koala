@@ -53,6 +53,7 @@ std::vector<Token> Lexer::parse(){
             if (identifier == "JNZ")    { tokens.push_back(Token(TokenType::Keyword, "JNZ")); continue; }
             if (identifier == "PUSH")   { tokens.push_back(Token(TokenType::Keyword, "PUSH")); continue; }
             if (identifier == "POP")    { tokens.push_back(Token(TokenType::Keyword, "POP")); continue; }
+            if (identifier == "DUP")    { tokens.push_back(Token(TokenType::Keyword, "DUP")); continue; }
             if (identifier == "POP_N")  { tokens.push_back(Token(TokenType::Keyword, "POP_N")); continue; }
             if (identifier == "MARK")   { tokens.push_back(Token(TokenType::Keyword, "MARK")); continue; }
 

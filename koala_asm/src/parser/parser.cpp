@@ -68,6 +68,11 @@ FullCodeBlock Parser::parse_block(){
                 block.block_instructions.push_back(instr);
                 continue;
             }
+            else if(CURRENT_TOKEN.value == "DUP"){ //DUP
+                instr.op_code = OpCode::OP_DUP;
+                block.block_instructions.push_back(instr);
+                continue;
+            }
             else if(CURRENT_TOKEN.value == "POP_N"){ //POP_N <value>
                 instr.op_code = OpCode::OP_POP_N;
                 next();
