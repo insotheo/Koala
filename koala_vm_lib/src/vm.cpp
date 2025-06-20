@@ -88,6 +88,11 @@ std::optional<OP_ARG_TYPE> KoalaVM::execute(size_t begin, size_t end, std::stack
                 break;
             }
 
+            case OpCode::OP_JMP:
+                ip += 1;
+                ip = m_data.code[ip];
+                break;
+
             case OpCode::OP_INC:
             case OpCode::OP_DEC:
             case OpCode::OP_ADD:

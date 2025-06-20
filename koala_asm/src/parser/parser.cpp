@@ -73,9 +73,30 @@ FullCodeBlock Parser::parse_block(){
                 next();
 
                 if(CURRENT_TOKEN.type != TokenType::Number){
-                    throw std::runtime_error("After POP_N expected a number!");
+                    throw std::runtime_error("After POP_N expects a number!");
                 }
                 instr.operands.push_back(std::stoi(CURRENT_TOKEN.value));
+                block.block_instructions.push_back(instr);
+                continue;
+            }
+            else if(CURRENT_TOKEN.value == "MARK"){ //MARK <label>
+                instr.op_code = OpCode::PC_MARK;
+                next();
+
+                if(CURRENT_TOKEN.type != TokenType::Identifier){
+                    throw std::runtime_error("After MARK expects an identifier(label name)!");
+                }
+                instr.operands.push_back(CURRENT_TOKEN.value);
+                block.block_instructions.push_back(instr);
+                continue;
+            }
+            else if(CURRENT_TOKEN.value == "JMP"){ //JMP <id>
+                instr.op_code = OpCode::OP_JMP;
+                next();
+                if(CURRENT_TOKEN.type != TokenType::Identifier){
+                    throw std::runtime_error("After JMP expects an identifier(label name)!");
+                }
+                instr.operands.push_back(CURRENT_TOKEN.value);
                 block.block_instructions.push_back(instr);
                 continue;
             }

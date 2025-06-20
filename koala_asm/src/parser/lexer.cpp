@@ -28,7 +28,7 @@ std::vector<Token> Lexer::parse(){
 
         if(std::isalpha(CURRENT_CHAR) || CURRENT_CHAR == '_'){
             std::string identifier;
-            while (m_index < m_input.size() && (std::isalpha(CURRENT_CHAR) || CURRENT_CHAR == '_'))
+            while (m_index < m_input.size() && (std::isalpha(CURRENT_CHAR) || CURRENT_CHAR == '_' || std::isdigit(CURRENT_CHAR)))
             {
                 identifier += CURRENT_CHAR;
                 next();
@@ -48,9 +48,11 @@ std::vector<Token> Lexer::parse(){
 
             if (identifier == "RET")    { tokens.push_back(Token(TokenType::Keyword, "RET")); continue; }
             if (identifier == "END")    { tokens.push_back(Token(TokenType::Keyword, "END")); continue; }
+            if (identifier == "JMP")    { tokens.push_back(Token(TokenType::Keyword, "JMP")); continue; }
             if (identifier == "PUSH")   { tokens.push_back(Token(TokenType::Keyword, "PUSH")); continue; }
             if (identifier == "POP")    { tokens.push_back(Token(TokenType::Keyword, "POP")); continue; }
             if (identifier == "POP_N")  { tokens.push_back(Token(TokenType::Keyword, "POP_N")); continue; }
+            if (identifier == "MARK")   { tokens.push_back(Token(TokenType::Keyword, "MARK")); continue; }
 
             tokens.push_back(Token(TokenType::Identifier, identifier));
             continue;

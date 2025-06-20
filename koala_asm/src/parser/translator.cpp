@@ -1,5 +1,6 @@
 #include "parser/translator.h"
 
+#include <iostream>
 #include <cstdint>
 #include "koala_vm/op_codes.h"
 
@@ -19,13 +20,17 @@ ByteData translate(const std::vector<CodeBlock>& blocks){
         byte_block.begin = code_offset;
 
         for(const auto& instr : block.block_instructions){
+            if(instr.op_code == OpCode::PC_MARK){
+                std::string label = std::get<std::string>(instr.operands[0]);
+                label_to_offset[block.label + "::" + label] = code_offset;
+                continue;
+            }
+            
+            //for other op codes
             code_offset += 1;
 
             for(const auto& op : instr.operands){
-                if(std::holds_alternative<int>(op)){ //M_CONST <const>
-                    code_offset += 2;
-                }
-                ///TODO: other types
+                code_offset += 2;
             }
         }
         byte_block.end = code_offset;
@@ -36,6 +41,17 @@ ByteData translate(const std::vector<CodeBlock>& blocks){
     for(const auto& block : blocks){
         for(const auto& instr : block.block_instructions){
             byte_data.code.push_back(instr.op_code);
+
+            if(instr.op_code == OpCode::OP_JMP){
+                std::string label = std::get<std::string>(instr.operands[0]);
+                auto it = label_to_offset.find(block.label + "::" + label);
+                if(it == label_to_offset.end()){
+                    throw std::runtime_error("Label " + label + " doesn't exist in current context(" + (block.label + "::" + label) + ")!");
+                }
+                int offset = it->second;
+                byte_data.code.push_back(offset);
+                continue;
+            }
 
             for(const auto& op : instr.operands){
                 if(std::holds_alternative<int>(op)){
@@ -57,7 +73,6 @@ ByteData translate(const std::vector<CodeBlock>& blocks){
                         byte_data.code.push_back(it->second);
                     }
                 }
-                ///TODO: label operands
             }
         }
     }
