@@ -17,8 +17,12 @@ std::vector<Token> Lexer::parse(){
 
         if(std::isdigit(CURRENT_CHAR)){
             std::string number;
-            while (m_index < m_input.size() && std::isdigit(CURRENT_CHAR))
+            while (m_index < m_input.size() && (std::isdigit(CURRENT_CHAR) || CURRENT_CHAR == '_'))
             {
+                if(CURRENT_CHAR == '_'){
+                    next();
+                    continue;
+                }
                 number += CURRENT_CHAR;
                 next();
             }
@@ -34,28 +38,28 @@ std::vector<Token> Lexer::parse(){
                 next();
             }
 
-            if (identifier == "INC")    { tokens.push_back(Token(TokenType::Keyword, "INC")); continue; }
-            if (identifier == "DEC")    { tokens.push_back(Token(TokenType::Keyword, "DEC")); continue; }
-            if (identifier == "ADD")    { tokens.push_back(Token(TokenType::Keyword, "ADD")); continue; }
-            if (identifier == "SUB")    { tokens.push_back(Token(TokenType::Keyword, "SUB")); continue; }
-            if (identifier == "MUL")    { tokens.push_back(Token(TokenType::Keyword, "MUL")); continue; }
-            if (identifier == "DIV")    { tokens.push_back(Token(TokenType::Keyword, "DIV")); continue; }
+            if (identifier == "INC" || identifier == "inc")    { tokens.push_back(Token(TokenType::Keyword, "INC")); continue; }
+            if (identifier == "DEC" || identifier == "dec")    { tokens.push_back(Token(TokenType::Keyword, "DEC")); continue; }
+            if (identifier == "ADD" || identifier == "add")    { tokens.push_back(Token(TokenType::Keyword, "ADD")); continue; }
+            if (identifier == "SUB" || identifier == "sub")    { tokens.push_back(Token(TokenType::Keyword, "SUB")); continue; }
+            if (identifier == "MUL" || identifier == "mul")    { tokens.push_back(Token(TokenType::Keyword, "MUL")); continue; }
+            if (identifier == "DIV" || identifier == "div")    { tokens.push_back(Token(TokenType::Keyword, "DIV")); continue; }
 
-            if (identifier == "AND")    { tokens.push_back(Token(TokenType::Keyword, "AND")); continue; }
-            if (identifier == "OR")     { tokens.push_back(Token(TokenType::Keyword, "OR")); continue; }
-            if (identifier == "XOR")    { tokens.push_back(Token(TokenType::Keyword, "XOR")); continue; }
-            if (identifier == "NOT")    { tokens.push_back(Token(TokenType::Keyword, "NOT")); continue; }
+            if (identifier == "AND" || identifier == "and")    { tokens.push_back(Token(TokenType::Keyword, "AND")); continue; }
+            if (identifier == "OR" || identifier == "or")      { tokens.push_back(Token(TokenType::Keyword, "OR")); continue; }
+            if (identifier == "XOR" || identifier == "xor")    { tokens.push_back(Token(TokenType::Keyword, "XOR")); continue; }
+            if (identifier == "NOT" || identifier == "not")    { tokens.push_back(Token(TokenType::Keyword, "NOT")); continue; }
 
-            if (identifier == "RET")    { tokens.push_back(Token(TokenType::Keyword, "RET")); continue; }
-            if (identifier == "END")    { tokens.push_back(Token(TokenType::Keyword, "END")); continue; }
-            if (identifier == "JMP")    { tokens.push_back(Token(TokenType::Keyword, "JMP")); continue; }
-            if (identifier == "JEZ")    { tokens.push_back(Token(TokenType::Keyword, "JEZ")); continue; }
-            if (identifier == "JNZ")    { tokens.push_back(Token(TokenType::Keyword, "JNZ")); continue; }
-            if (identifier == "PUSH")   { tokens.push_back(Token(TokenType::Keyword, "PUSH")); continue; }
-            if (identifier == "POP")    { tokens.push_back(Token(TokenType::Keyword, "POP")); continue; }
-            if (identifier == "DUP")    { tokens.push_back(Token(TokenType::Keyword, "DUP")); continue; }
-            if (identifier == "POP_N")  { tokens.push_back(Token(TokenType::Keyword, "POP_N")); continue; }
-            if (identifier == "MARK")   { tokens.push_back(Token(TokenType::Keyword, "MARK")); continue; }
+            if (identifier == "RET" || identifier == "ret")    { tokens.push_back(Token(TokenType::Keyword, "RET")); continue; }
+            if (identifier == "END" || identifier == "end")    { tokens.push_back(Token(TokenType::Keyword, "END")); continue; }
+            if (identifier == "JMP" || identifier == "jmp")    { tokens.push_back(Token(TokenType::Keyword, "JMP")); continue; }
+            if (identifier == "JEZ" || identifier == "jez")    { tokens.push_back(Token(TokenType::Keyword, "JEZ")); continue; }
+            if (identifier == "JNZ" || identifier == "jnz")    { tokens.push_back(Token(TokenType::Keyword, "JNZ")); continue; }
+            if (identifier == "PUSH" || identifier == "push")  { tokens.push_back(Token(TokenType::Keyword, "PUSH")); continue; }
+            if (identifier == "POP" || identifier == "pop")    { tokens.push_back(Token(TokenType::Keyword, "POP")); continue; }
+            if (identifier == "DUP" || identifier == "dup")    { tokens.push_back(Token(TokenType::Keyword, "DUP")); continue; }
+            if (identifier == "POP_N" || identifier == "pop_n"){ tokens.push_back(Token(TokenType::Keyword, "POP_N")); continue; }
+            if (identifier == "MARK" || identifier == "mark")  { tokens.push_back(Token(TokenType::Keyword, "MARK")); continue; }
 
             tokens.push_back(Token(TokenType::Identifier, identifier));
             continue;

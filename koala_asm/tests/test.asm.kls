@@ -1,16 +1,16 @@
 _start:
-PUSH 0
+push 0
 
-MARK _loop
-    DUP
-    PUSH 1000000000
-    XOR
-    JEZ _out
-    POP
-    INC
-    JMP _loop
+mark _loop
+    dup
+    push 100_000
+    xor
+    jez _out
+    pop
+    inc
+    jmp _loop
 
-MARK _out
-    POP
-    RET
-END _start
+mark _out
+    pop
+    ret
+end _start
