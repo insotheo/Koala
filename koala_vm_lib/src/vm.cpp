@@ -25,21 +25,18 @@ std::optional<OP_ARG_TYPE> KoalaVM::execute(size_t begin, size_t end, std::stack
     while(ip < m_data.code.size() && ip < end){
         switch (CURRENT_INSTR)
         {
-            case OpCode::OP_PUSH:{
+            case OpCode::OP_PUSH:{ //PUSH <const_idx>
                 ip += 1;
-                if(CURRENT_INSTR == OpCode::M_CONST){
-                    ip += 1;
-                    size_t const_idx = m_data.code[ip];
-                    ip += 1;
-                    const OP_ARG_TYPE* it = get_const_by_index(const_idx);
-                    if(!it) throw std::runtime_error("Invalid constant index");
+                size_t const_idx = m_data.code[ip];
+                ip += 1;
+                const OP_ARG_TYPE* it = get_const_by_index(const_idx);
+                if(!it) throw std::runtime_error("Invalid constant index");
 
-                    if(std::holds_alternative<int>(*it)){
-                        stack.push(std::get<int>(*it));
+                if(std::holds_alternative<int>(*it)){
+                    stack.push(std::get<int>(*it));
                     }
-                    else {
-                        throw std::runtime_error("Unsupported constant type on stack");
-                    }
+                else {
+                    throw std::runtime_error("Unsupported constant type on stack");
                 }
                 break;
             }
@@ -60,11 +57,7 @@ std::optional<OP_ARG_TYPE> KoalaVM::execute(size_t begin, size_t end, std::stack
                 stack.pop();
                 break;
 
-            case OpCode::OP_POP_N:{
-                ip += 1;
-                if(CURRENT_INSTR != OpCode::M_CONST){
-                    throw std::runtime_error("Uexpected bytecode argument!");
-                }
+            case OpCode::OP_POP_N:{ //POP_N <const_idx>
                 ip += 1;
                 size_t const_idx = m_data.code[ip];
                 ip += 1;

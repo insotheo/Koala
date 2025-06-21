@@ -29,13 +29,8 @@ ByteData translate(const std::vector<CodeBlock>& blocks){
                 continue;
             }
 
-            if(instr.op_code == OpCode::OP_JMP || instr.op_code == OpCode::OP_JEZ || instr.op_code == OpCode::OP_JNZ){
+            for(const auto& op : instr.operands){
                 code_offset += 1;
-            }
-            else{
-                for(const auto& op : instr.operands){
-                    code_offset += 2;
-                }
             }
         }
         byte_block.end = code_offset;
@@ -74,11 +69,9 @@ ByteData translate(const std::vector<CodeBlock>& blocks){
                         std::string title = "CONST_" + std::to_string(idx);
                         byte_data.constants[title] = op;
 
-                        byte_data.code.push_back(OpCode::M_CONST);
                         byte_data.code.push_back(idx);
                     }
                     else{
-                        byte_data.code.push_back(OpCode::M_CONST);
                         byte_data.code.push_back(it->second);
                     }
                 }

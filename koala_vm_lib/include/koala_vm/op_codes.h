@@ -14,25 +14,23 @@ enum OpCode: size_t{
     OP_JEZ      = 0x07,
     OP_JNZ      = 0x08,
     OP_DUP      = 0x09,
-    M_CONST     = 0x0A, //indicates that next byte is a constant
-    M_ID        = 0x0B, //indicates that next byte is an identifier
     
     //arithmetic
-    OP_INC = 0x0C,
-    OP_DEC = 0x0D,
-    OP_ADD = 0x0E,
-    OP_SUB = 0x0F,
-    OP_MUL = 0x10,
-    OP_DIV = 0x11,
+    OP_INC = 0x0A,
+    OP_DEC = 0x0B,
+    OP_ADD = 0x0C,
+    OP_SUB = 0x0D,
+    OP_MUL = 0x0E,
+    OP_DIV = 0x0F,
 
     //logical
-    OP_AND = 0x12,
-    OP_OR  = 0x13,
-    OP_XOR = 0x14,
-    OP_NOT = 0x15,
+    OP_AND = 0x10,
+    OP_OR  = 0x11,
+    OP_XOR = 0x12,
+    OP_NOT = 0x13,
 
     //for parser
-    PC_MARK = 0x16,
+    PC_MARK = 0x14,
 };
 
 #endif
