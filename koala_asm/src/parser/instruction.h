@@ -8,7 +8,7 @@
 
 struct Instruction{
     size_t op_code;
-    std::vector<OP_ARG_TYPE> operands;
+    std::vector<Value> operands;
 };
 
 struct CodeBlock{

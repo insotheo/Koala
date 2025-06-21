@@ -13,10 +13,11 @@ struct Block
 };
 
 
-using OP_ARG_TYPE = std::variant<int, std::string>;
-struct ByteData{
-    std::vector<size_t> code;
-    std::unordered_map<std::string, OP_ARG_TYPE> constants;
+using Value = std::variant<int, std::string>;
+using Bytecode = std::vector<size_t>;
+struct ProgramData{
+    Bytecode code;
+    std::vector<Value> constants;
     std::unordered_map<std::string, Block> blocks;
 };
 

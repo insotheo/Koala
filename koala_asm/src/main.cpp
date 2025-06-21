@@ -114,7 +114,7 @@ int main(int argc, char** argv){
             return KOALA_ASM_ERR_CODE_LEXER_FAILED;
         }
 
-        ByteData bytes = translate(codeblocks);
+        ProgramData bytes = translate(codeblocks);
         save_to_file(bytes, output_path);
     }
     else if(command == "run"){
@@ -144,10 +144,10 @@ int main(int argc, char** argv){
             await_key = true;
         }
 
-        ByteData data = load_from_file(file_path);
+        ProgramData data = load_from_file(file_path);
         
         KoalaVM vm(data);
-        std::optional<OP_ARG_TYPE> result = vm.run(entry_point);
+        std::optional<Value> result = vm.run(entry_point);
 
         if(print_return_value){
             if(result.has_value()){

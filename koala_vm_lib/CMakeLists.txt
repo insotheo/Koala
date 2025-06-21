@@ -7,8 +7,8 @@ project(Koala_VM)
 set(PRJ_NAME koala_vm_lib)
 
 file(GLOB KOALA_SOURCES
-src/op_codes.cpp
 src/vm.cpp
+src/vm_op.cpp
 )
 
 add_library("${PRJ_NAME}" STATIC ${KOALA_SOURCES})

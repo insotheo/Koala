@@ -1,14 +1,13 @@
 _start:
 PUSH 0
 
-MARK _loop:
+MARK _loop
     DUP
-    PUSH 1000000
+    PUSH 1000000000
     XOR
     JEZ _out
     POP
-    PUSH 1
-    ADD
+    INC
     JMP _loop
 
 MARK _out

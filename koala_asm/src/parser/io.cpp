@@ -5,7 +5,7 @@
 #include "koala_vm/type_codes.h"
 #include "config.h"
 
-void save_to_file(const ByteData& data, const std::string& path){
+void save_to_file(const ProgramData& data, const std::string& path){
     std::ofstream output(path, std::ios::binary);
     if (!output.is_open()) {
         throw std::runtime_error("Could not open file " + path);
@@ -32,11 +32,7 @@ void save_to_file(const ByteData& data, const std::string& path){
     size_t const_counter = data.constants.size();
     output.write(reinterpret_cast<const char*>(&const_counter), sizeof(size_t));
 
-    for (const auto& [title, val] : data.constants) {
-        size_t title_len = title.size();
-        output.write(reinterpret_cast<const char*>(&title_len), sizeof(size_t));
-        output.write(title.data(), title_len);
-
+    for (const auto& val : data.constants) {
         if (std::holds_alternative<int>(val)) {
             uint8_t type_id = TypeCode::INT;
             output.write(reinterpret_cast<const char*>(&type_id), sizeof(uint8_t));
@@ -57,7 +53,7 @@ void save_to_file(const ByteData& data, const std::string& path){
     output.close();
 }
 
-ByteData load_from_file(const std::string& path) {
+ProgramData load_from_file(const std::string& path) {
     std::ifstream input(path, std::ios::binary);
     if (!input.is_open()) {
         throw std::runtime_error("Failed to open file: " + path);
@@ -75,7 +71,7 @@ ByteData load_from_file(const std::string& path) {
         throw std::runtime_error("Unsupported file version");
     }
 
-    ByteData byte_data;
+    ProgramData byte_data;
     size_t blocks_counter = 0;
     input.read(reinterpret_cast<char*>(&blocks_counter), sizeof(size_t));
 
@@ -99,19 +95,13 @@ ByteData load_from_file(const std::string& path) {
     input.read(reinterpret_cast<char*>(&const_counter), sizeof(size_t));
 
     for (size_t i = 0; i < const_counter; ++i) {
-        size_t title_len;
-        input.read(reinterpret_cast<char*>(&title_len), sizeof(size_t));
-
-        std::string title(title_len, '\0');
-        input.read(&title[0], title_len);
-
         uint8_t type_id;
         input.read(reinterpret_cast<char*>(&type_id), sizeof(uint8_t));
 
         if (type_id == TypeCode::INT) {
             int val;
             input.read(reinterpret_cast<char*>(&val), sizeof(int));
-            byte_data.constants[title] = val;
+            byte_data.constants.push_back(val);
         }
         else {
             throw std::runtime_error("Unknown constant type ID");

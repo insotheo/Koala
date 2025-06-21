@@ -4,11 +4,11 @@
 #include <cstdint>
 #include "koala_vm/op_codes.h"
 
-ByteData translate(const std::vector<CodeBlock>& blocks){
-    ByteData byte_data;
+ProgramData translate(const std::vector<CodeBlock>& blocks){
+    ProgramData byte_data;
 
     std::unordered_map<std::string, size_t> label_to_offset;
-    std::unordered_map<OP_ARG_TYPE, size_t> const_index_map;
+    std::unordered_map<Value, size_t> const_index_map;
 
     size_t const_counter = 0;
     size_t code_offset = 0;
@@ -63,12 +63,9 @@ ByteData translate(const std::vector<CodeBlock>& blocks){
                     auto it = const_index_map.find(op);
                     if(it == const_index_map.end()){
                         const_counter += 1;
-                        size_t idx = const_counter;
-
+                        size_t idx = const_counter - 1;
                         const_index_map[op] = idx;
-                        std::string title = "CONST_" + std::to_string(idx);
-                        byte_data.constants[title] = op;
-
+                        byte_data.constants.push_back(op);
                         byte_data.code.push_back(idx);
                     }
                     else{
