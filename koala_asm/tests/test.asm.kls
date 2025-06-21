@@ -3,7 +3,7 @@ push 0
 
 mark _loop
     dup
-    push 100_000
+    push 1_000_000
     xor
     jez _out
     pop

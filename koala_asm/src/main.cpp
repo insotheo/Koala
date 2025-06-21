@@ -27,9 +27,9 @@ void print_help() {
               << "koala_asm build/make [options]:\n"
               << "  -p <path>      Path to the *.asm.kls file(REQUIRED)\n"
               << "  -o <symbol>    Output path(REQUIRED)\n\n"
+              << "  -s <symbol>    Start symbol (e.g., _start)\n"
               << "koala_asm run [options]:\n"
               << "  -p <path>      Path to the *.kbc file(REQUIRED)\n"
-              << "  -s <symbol>    Start symbol (e.g., _main)\n"
               << "  -r             Print returned value on the screen\n"
               << "  -k             Wait for an [Enter] key to be pressed before closing the program\n"
               ;
@@ -76,6 +76,7 @@ int main(int argc, char** argv){
         //config
         std::string file_path;
         std::string output_path;
+        std::string entry_point = "_start";
 
         if(args.find("-p") == args.end() || args.find("-o") == args.end()){
             std::cerr << "Missing required -p, -o arguments\n\n";
@@ -85,6 +86,10 @@ int main(int argc, char** argv){
         else{
             file_path = args["-p"];
             output_path = args["-o"];
+        }
+
+        if(args.find("-s") != args.end()){
+            entry_point = args["-s"];       
         }
 
         //loading file content
@@ -114,13 +119,12 @@ int main(int argc, char** argv){
             return KOALA_ASM_ERR_CODE_LEXER_FAILED;
         }
 
-        ProgramData bytes = translate(codeblocks);
+        ProgramData bytes = translate(codeblocks, entry_point);
         save_to_file(bytes, output_path);
     }
     else if(command == "run"){
         //config
         std::string file_path;
-        std::string entry_point = "_main";
         bool print_return_value = false;
         bool await_key = false;
 
@@ -133,10 +137,6 @@ int main(int argc, char** argv){
             file_path = args["-p"];
         }
 
-        if(args.find("-s") != args.end()){
-            entry_point = args["-s"];       
-        }
-
         if(args.find("-r") != args.end()){
             print_return_value = true;      
         }
@@ -147,7 +147,7 @@ int main(int argc, char** argv){
         ProgramData data = load_from_file(file_path);
         
         KoalaVM vm(data);
-        std::optional<Value> result = vm.run(entry_point);
+        std::optional<Value> result = vm.run();
 
         if(print_return_value){
             if(result.has_value()){

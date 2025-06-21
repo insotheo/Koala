@@ -2,13 +2,9 @@
 
 #include "koala_vm/op_codes.h"
 
-std::optional<Value> KoalaVM::run(const std::string& entry_label){
-    auto it = m_data.blocks.find(entry_label);
-    if(it == m_data.blocks.end()){
-        throw std::runtime_error("Unknown entry label: " + entry_label);
-    }
-
-    return execute(it->second.begin, it->second.end);
+std::optional<Value> KoalaVM::run(){
+    const Block& entry_point = m_data.blocks[0];
+    return execute(entry_point.begin, entry_point.end);
 }
 
 std::optional<Value> KoalaVM::execute(size_t begin, size_t end){
@@ -24,7 +20,7 @@ std::optional<Value> KoalaVM::execute(size_t begin, size_t end){
             throw std::runtime_error("Unknown or unimplemented opcode");
         }
 
-        (this->*handler)(ip, ret_val, running);
+        (this->*handler)(ip, running, ret_val);
     }
 
     return ret_val;

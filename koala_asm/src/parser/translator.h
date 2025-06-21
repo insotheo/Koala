@@ -4,6 +4,6 @@
 #include "koala_vm/byte_data.h"
 #include "parser/instruction.h"
 
-ProgramData translate(const std::vector<CodeBlock>& blocks);
+ProgramData translate(const std::vector<CodeBlock>& blocks, const std::string& entry_name);
 
 #endif

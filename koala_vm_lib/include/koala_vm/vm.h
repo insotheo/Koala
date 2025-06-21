@@ -8,9 +8,11 @@
 #include "koala_vm/vm_config.h"
 #include "koala_vm/op_codes.h"
 
+#define HANDLER_FUNC_ARGS size_t& ip, bool& running, std::optional<Value>& ret_val
+
 class KoalaVM{
 public:
-    using HandlerFunc = void (KoalaVM::*)(size_t& ip, std::optional<Value>& ret_val, bool& running);
+    using HandlerFunc = void (KoalaVM::*)(HANDLER_FUNC_ARGS);
 
     explicit KoalaVM(const ProgramData& data) 
     : m_data(data), sp(stack), code(data.code)
@@ -37,7 +39,7 @@ public:
         dispatch_table[OpCode::OP_NOT] = &KoalaVM::op_not;
     }
     
-    std::optional<Value> run(const std::string& entry_label);
+    std::optional<Value> run();
 
 private:
     HandlerFunc dispatch_table[OP_CODE_COUNT];
@@ -53,26 +55,26 @@ private:
 
 private:
     //op's
-    void op_push(size_t& ip, std::optional<Value>& ret_val, bool& running);
-    void op_dup(size_t& ip, std::optional<Value>& ret_val, bool& running);
-    void op_pop(size_t& ip, std::optional<Value>& ret_val, bool& running);
-    void op_ret(size_t& ip, std::optional<Value>& ret_val, bool& running);
-    void op_pop_n(size_t& ip, std::optional<Value>& ret_val, bool& running);
-    void op_jmp(size_t& ip, std::optional<Value>& ret_val, bool& running);
-    void op_jez(size_t& ip, std::optional<Value>& ret_val, bool& running);
-    void op_jnz(size_t& ip, std::optional<Value>& ret_val, bool& running);
+    void op_push(HANDLER_FUNC_ARGS);
+    void op_dup(HANDLER_FUNC_ARGS);
+    void op_pop(HANDLER_FUNC_ARGS);
+    void op_ret(HANDLER_FUNC_ARGS);
+    void op_pop_n(HANDLER_FUNC_ARGS);
+    void op_jmp(HANDLER_FUNC_ARGS);
+    void op_jez(HANDLER_FUNC_ARGS);
+    void op_jnz(HANDLER_FUNC_ARGS);
 
-    void op_inc(size_t& ip, std::optional<Value>& ret_val, bool& running);
-    void op_dec(size_t& ip, std::optional<Value>& ret_val, bool& running);
-    void op_add(size_t& ip, std::optional<Value>& ret_val, bool& running);
-    void op_sub(size_t& ip, std::optional<Value>& ret_val, bool& running);
-    void op_mul(size_t& ip, std::optional<Value>& ret_val, bool& running);
-    void op_div(size_t& ip, std::optional<Value>& ret_val, bool& running);
+    void op_inc(HANDLER_FUNC_ARGS);
+    void op_dec(HANDLER_FUNC_ARGS);
+    void op_add(HANDLER_FUNC_ARGS);
+    void op_sub(HANDLER_FUNC_ARGS);
+    void op_mul(HANDLER_FUNC_ARGS);
+    void op_div(HANDLER_FUNC_ARGS);
 
-    void op_and(size_t& ip, std::optional<Value>& ret_val, bool& running);
-    void op_or(size_t& ip, std::optional<Value>& ret_val, bool& running);
-    void op_xor(size_t& ip, std::optional<Value>& ret_val, bool& running);
-    void op_not(size_t& ip, std::optional<Value>& ret_val, bool& running);
+    void op_and(HANDLER_FUNC_ARGS);
+    void op_or(HANDLER_FUNC_ARGS);
+    void op_xor(HANDLER_FUNC_ARGS);
+    void op_not(HANDLER_FUNC_ARGS);
 };
 
 #endif

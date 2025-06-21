@@ -4,7 +4,6 @@
 #include <vector>
 #include <variant>
 #include <string>
-#include <unordered_map>
 
 struct Block
 {
@@ -12,13 +11,13 @@ struct Block
     size_t end;
 };
 
-
 using Value = std::variant<int, std::string>;
 using Bytecode = std::vector<size_t>;
 struct ProgramData{
     Bytecode code;
+
     std::vector<Value> constants;
-    std::unordered_map<std::string, Block> blocks;
+    std::vector<Block> blocks;
 };
 
 #endif

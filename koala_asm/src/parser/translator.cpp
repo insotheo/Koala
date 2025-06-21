@@ -2,9 +2,10 @@
 
 #include <iostream>
 #include <cstdint>
+#include <unordered_map>
 #include "koala_vm/op_codes.h"
 
-ProgramData translate(const std::vector<CodeBlock>& blocks){
+ProgramData translate(const std::vector<CodeBlock>& blocks, const std::string& entry_name){
     ProgramData byte_data;
 
     std::unordered_map<std::string, size_t> label_to_offset;
@@ -12,6 +13,7 @@ ProgramData translate(const std::vector<CodeBlock>& blocks){
 
     size_t const_counter = 0;
     size_t code_offset = 0;
+    bool found_entry_point = false;
 
     //calculating offset
     for(const auto& block : blocks){
@@ -34,7 +36,17 @@ ProgramData translate(const std::vector<CodeBlock>& blocks){
             }
         }
         byte_block.end = code_offset;
-        byte_data.blocks[block.label] = byte_block;
+        if(block.label == entry_name){
+            byte_data.blocks.insert(byte_data.blocks.begin(), byte_block);
+            found_entry_point = true;
+        }
+        else{
+            byte_data.blocks.push_back(byte_block);
+        }
+    }
+
+    if(!found_entry_point){
+        throw std::runtime_error("No entry point found!");
     }
 
     //gen bytecode
