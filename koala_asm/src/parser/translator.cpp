@@ -9,6 +9,7 @@ ProgramData translate(const std::vector<CodeBlock>& blocks, const std::string& e
     ProgramData byte_data;
 
     std::unordered_map<std::string, size_t> label_to_offset;
+    std::unordered_map<std::string, size_t> label_to_index;
     std::unordered_map<Value, size_t> const_index_map;
 
     size_t const_counter = 0;
@@ -38,10 +39,18 @@ ProgramData translate(const std::vector<CodeBlock>& blocks, const std::string& e
         byte_block.end = code_offset;
         if(block.label == entry_name){
             byte_data.blocks.insert(byte_data.blocks.begin(), byte_block);
+            for(auto& [label, index] : label_to_index){
+                if(index == 0){
+                    index = byte_data.blocks.size() - 1;
+                    break;
+                }
+            }
+            label_to_index[entry_name] = 0;
             found_entry_point = true;
         }
         else{
             byte_data.blocks.push_back(byte_block);
+            label_to_index[block.label] = byte_data.blocks.size() - 1;
         }
     }
 
@@ -66,6 +75,16 @@ ProgramData translate(const std::vector<CodeBlock>& blocks, const std::string& e
                 }
                 int offset = it->second;
                 byte_data.code.push_back(offset);
+                continue;
+            }
+            if(instr.op_code == OpCode::OP_CALL){
+                std::string label = std::get<std::string>(instr.operands[0]);
+                auto it = label_to_index.find(label);
+                if(it == label_to_index.end()){
+                    throw std::runtime_error("Label " + label + " doesn't exist in current context!");
+                }
+                int idx = it->second;
+                byte_data.code.push_back(idx);
                 continue;
             }
 

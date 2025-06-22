@@ -122,3 +122,12 @@ void KoalaVM::op_not(HANDLER_FUNC_ARGS){
     int a = std::get<int>(*--sp);
     *sp++ = (!a);
 }
+
+void KoalaVM::op_call(HANDLER_FUNC_ARGS){
+    uint8_t idx = code[ip++];
+    const Block& call_block = m_data.blocks[idx];
+    auto call_ret_val = execute(call_block.begin, call_block.end);
+    if(call_ret_val.has_value()){
+        *sp++ = call_ret_val.value();
+    }
+}

@@ -73,6 +73,18 @@ FullCodeBlock Parser::parse_block(){
                 block.block_instructions.push_back(instr);
                 continue;
             }
+            else if(CURRENT_TOKEN.value == "CALL"){ //call
+                instr.op_code = OpCode::OP_CALL;
+                next();
+
+                if(CURRENT_TOKEN.type != TokenType::Identifier){
+                    throw std::runtime_error("After CALL expects an identifier(block name)!");
+                }
+                
+                instr.operands.push_back(CURRENT_TOKEN.value);
+                block.block_instructions.push_back(instr);
+                continue;
+            }
             else if(CURRENT_TOKEN.value == "POP_N"){ //POP_N <value>
                 instr.op_code = OpCode::OP_POP_N;
                 next();

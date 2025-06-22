@@ -25,6 +25,7 @@ public:
         dispatch_table[OpCode::OP_JEZ] = &KoalaVM::op_jez;
         dispatch_table[OpCode::OP_JNZ] = &KoalaVM::op_jnz;
         dispatch_table[OpCode::OP_DUP] = &KoalaVM::op_dup;
+        dispatch_table[OpCode::OP_CALL] = &KoalaVM::op_call;
 
         dispatch_table[OpCode::OP_INC] = &KoalaVM::op_inc;
         dispatch_table[OpCode::OP_DEC] = &KoalaVM::op_dec;
@@ -63,6 +64,7 @@ private:
     void op_jmp(HANDLER_FUNC_ARGS);
     void op_jez(HANDLER_FUNC_ARGS);
     void op_jnz(HANDLER_FUNC_ARGS);
+    void op_call(HANDLER_FUNC_ARGS);
 
     void op_inc(HANDLER_FUNC_ARGS);
     void op_dec(HANDLER_FUNC_ARGS);

@@ -1,16 +1,33 @@
-_start:
-push 0
+; calculate factorial of n
 
-mark _loop
+_fact:
     dup
-    push 1_000_000
+    push 1
     xor
-    jez _out
+    jez _base_case
     pop
-    inc
-    jmp _loop
+    
+    dup
+    push 0
+    xor
+    jez _base_case 
+    pop
 
-mark _out
-    pop
+    dup
+    push 1
+    sub
+    call _fact
+    mul
+    ret
+
+mark _base_case
+    pop_n 2
+    push 1
+    ret
+end _fact
+
+_start:
+    push 5 ; n
+    call _fact ; calculate factorial of top value
     ret
 end _start

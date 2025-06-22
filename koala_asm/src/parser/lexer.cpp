@@ -52,6 +52,7 @@ std::vector<Token> Lexer::parse(){
 
             if (identifier == "RET" || identifier == "ret")    { tokens.push_back(Token(TokenType::Keyword, "RET")); continue; }
             if (identifier == "END" || identifier == "end")    { tokens.push_back(Token(TokenType::Keyword, "END")); continue; }
+            if (identifier == "CALL" || identifier == "call")  { tokens.push_back(Token(TokenType::Keyword, "CALL")); continue; }
             if (identifier == "JMP" || identifier == "jmp")    { tokens.push_back(Token(TokenType::Keyword, "JMP")); continue; }
             if (identifier == "JEZ" || identifier == "jez")    { tokens.push_back(Token(TokenType::Keyword, "JEZ")); continue; }
             if (identifier == "JNZ" || identifier == "jnz")    { tokens.push_back(Token(TokenType::Keyword, "JNZ")); continue; }

@@ -1,7 +1,7 @@
 #ifndef KOALA_VM_OP_CODES_H
 #define KOALA_VM_OP_CODES_H
 
-#define OP_CODE_COUNT 19
+#define OP_CODE_COUNT 20
 enum OpCode: size_t{
     OP_RET      = 0x00,
     OP_END      = 0x01,
@@ -12,23 +12,24 @@ enum OpCode: size_t{
     OP_JEZ      = 0x06,
     OP_JNZ      = 0x07,
     OP_DUP      = 0x08,
+    OP_CALL     = 0x09,
     
     //arithmetic
-    OP_INC = 0x09,
-    OP_DEC = 0x0A,
-    OP_ADD = 0x0B,
-    OP_SUB = 0x0C,
-    OP_MUL = 0x0D,
-    OP_DIV = 0x0E,
+    OP_INC = 0x0A,
+    OP_DEC = 0x0B,
+    OP_ADD = 0x0C,
+    OP_SUB = 0x0D,
+    OP_MUL = 0x0E,
+    OP_DIV = 0x0F,
 
     //logical
-    OP_AND = 0x0F,
-    OP_OR  = 0x10,
-    OP_XOR = 0x11,
-    OP_NOT = 0x12,
+    OP_AND = 0x10,
+    OP_OR  = 0x11,
+    OP_XOR = 0x12,
+    OP_NOT = 0x13,
 
     //for parser
-    PC_MARK = 0x13,
+    PC_MARK = 0x14,
 };
 
 #endif
