@@ -12,7 +12,7 @@ Version: {}.{}.{}
 ---------------------------------
 koala <command> <args>
 
-> koala build <args>
+> koala <build|make> <args>
     -p <path> - REQUIRED, path to file for building
 )", 
     KOALA_LANG_MAJOR_VERSION, KOALA_LANG_MINOR_VERSION, KOALA_LANG_PATCH_VERSION); 
@@ -46,9 +46,26 @@ int main(int argc, char** argv){
         }
     }
 
-    //DBG
-    for(const auto& arg : args){
-        std::cout << arg.first << " : " << arg.second << "\n";
+    if(base_action == "build" || base_action == "make"){
+        if(!args.contains("-p")){
+            std::cerr << "Path is required!\n";
+            return -1;
+        }
+        std::string path = args.at("-p");
+        
+        std::fstream fs(path);
+        if(!fs.is_open()){
+            std::cerr << std::format("Cannot open file \"{}\"\n", path);
+            return -1;
+        }
+
+        std::string source;
+        fs.seekg(0, std::ios::end);
+        source.reserve(fs.tellg());
+        fs.seekg(0, std::ios::beg);
+
+        source.assign(std::istreambuf_iterator<char>(fs), std::istreambuf_iterator<char>());
+        fs.close();
     }
 
     return 0;
