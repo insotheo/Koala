@@ -4,6 +4,7 @@
 #include <unordered_map>
 #include <string>
 #include <KoalaLang/KoalaLangVersionInfo.h>
+#include <KoalaLang/Lexer.h>
 
 void printHelpMsg(){
     std::cout << std::format(R"(
@@ -58,14 +59,21 @@ int main(int argc, char** argv){
             std::cerr << std::format("Cannot open file \"{}\"\n", path);
             return -1;
         }
-
         std::string source;
+        
         fs.seekg(0, std::ios::end);
         source.reserve(fs.tellg());
         fs.seekg(0, std::ios::beg);
-
+        
         source.assign(std::istreambuf_iterator<char>(fs), std::istreambuf_iterator<char>());
         fs.close();
+
+        KoalaLang::Lexer lexer(source);
+        lexer.Tokenize();
+        auto& t = lexer.GetTokens();
+        std::cout << lexer.IsSuccess() << "\n";
+        std::cout << t.size() << "\n";
+        std::cout << t[0].line << " " << t[0].column << "\n";
     }
 
     return 0;
