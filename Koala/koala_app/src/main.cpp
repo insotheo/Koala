@@ -70,10 +70,13 @@ int main(int argc, char** argv){
 
         KoalaLang::Lexer lexer(source);
         lexer.Tokenize();
+        
+        //DBG
         auto& t = lexer.GetTokens();
-        std::cout << lexer.IsSuccess() << "\n";
-        std::cout << t.size() << "\n";
-        std::cout << t[0].line << " " << t[0].column << "\n";
+        for(const auto& token : t){
+            std::cout << token.type << " " << token.value << " Ln: " << token.line << " Col: " << token.column << "\n";
+        }
+        std::cout << "-----\n" << t.size() << "\n";
     }
 
     return 0;
