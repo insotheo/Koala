@@ -1,5 +1,7 @@
 #include "KoalaLang/Lexer.h"
 
+#include <cctype>
+
 namespace KoalaLang{
 
     #define TOKEN(type, value) Token(TokenType::type, value, m_col, m_line)
@@ -41,7 +43,8 @@ namespace KoalaLang{
                     Next();
                 }
                 
-                if(identifier == "ret") { m_tokens.push_back(TOKEN(Keyword, "ret")); continue; }
+                if(identifier == "ret")         { m_tokens.push_back(TOKEN(Keyword, "ret")); continue; }
+                else if(identifier == "fn")     { m_tokens.push_back(TOKEN(Keyword, "fn")); continue; }
 
                 m_tokens.push_back(TOKEN(Identifier, identifier));
                 continue;
@@ -55,6 +58,7 @@ namespace KoalaLang{
                 case '{': {m_tokens.push_back(TOKEN(LBrace, "")); Next(); continue;}
                 case '}': {m_tokens.push_back(TOKEN(RBrace, "")); Next(); continue;}
 
+                case ':': {m_tokens.push_back(TOKEN(Colon, "")); Next(); continue;}
                 case ';': {m_tokens.push_back(TOKEN(Semicolon, "")); Next(); continue;}
             }
 

@@ -11,4 +11,7 @@
     #error Koala supports only Windows yet
 #endif
 
+#include <memory>
+#define SHARED_PTR_T(type) std::shared_ptr<type>
+
 #endif

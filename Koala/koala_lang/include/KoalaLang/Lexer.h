@@ -5,7 +5,6 @@
 #include "Token.h"
 #include <vector>
 #include <string>
-#include <cctype>
 
 namespace KoalaLang{
     class KOALA_LANG_API Lexer{
@@ -17,6 +16,7 @@ namespace KoalaLang{
         void Tokenize();
 
         inline std::vector<Token>& GetTokens() { return m_tokens; }
+        inline const std::string& GetSource() { return m_input; }
     private:
         const std::string& m_input;
         size_t m_idx, m_col, m_line;

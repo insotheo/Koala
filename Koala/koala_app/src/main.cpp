@@ -5,6 +5,7 @@
 #include <string>
 #include <KoalaLang/KoalaLangVersionInfo.h>
 #include <KoalaLang/Lexer.h>
+#include <KoalaLang/Parser.h>
 
 void printHelpMsg(){
     std::cout << std::format(R"(
@@ -70,13 +71,12 @@ int main(int argc, char** argv){
 
         KoalaLang::Lexer lexer(source);
         lexer.Tokenize();
-        
+
+        KoalaLang::Parser parser(lexer);
+        parser.Parse();
+
         //DBG
-        auto& t = lexer.GetTokens();
-        for(const auto& token : t){
-            std::cout << token.type << " " << token.value << " Ln: " << token.line << " Col: " << token.column << "\n";
-        }
-        std::cout << "-----\n" << t.size() << "\n";
+        std::cout << "Nodes: " << parser.GetAST().GetNodes().size() << "\n";
     }
 
     return 0;

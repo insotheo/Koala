@@ -10,7 +10,7 @@ namespace KoalaLang{
         
         Identifier, Number, Keyword,
 
-        LParen, RParen, LBrace, RBrace, Semicolon
+        LParen, RParen, LBrace, RBrace, Semicolon, Colon
     };
 
     struct KOALA_LANG_API Token
