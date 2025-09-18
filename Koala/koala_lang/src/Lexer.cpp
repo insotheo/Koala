@@ -60,6 +60,15 @@ namespace KoalaLang{
 
                 case ':': {m_tokens.push_back(TOKEN(Colon, "")); Next(); continue;}
                 case ';': {m_tokens.push_back(TOKEN(Semicolon, "")); Next(); continue;}
+
+                case '/':{
+                    if(m_idx + 1 < m_input.length() && m_input[m_idx + 1] == '/'){//comment
+                        while(m_idx < m_input.length() && INPUT_CURRENT_CHAR != '\n'){
+                            Next();
+                        }
+                    }
+                    continue;
+                }
             }
 
             m_tokens.push_back(TOKEN(Unknown, std::to_string(INPUT_CURRENT_CHAR)));

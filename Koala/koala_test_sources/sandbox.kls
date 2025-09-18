@@ -1,3 +1,4 @@
-fn main(): int{
-    ret 0;
+fn main(): int{//declaration of main function
+    ret 0;//returns zero
 }
+//this is just a comment
