@@ -6,6 +6,7 @@
 #include <KoalaLang/KoalaLangVersionInfo.h>
 #include <KoalaLang/Lexer.h>
 #include <KoalaLang/Parser.h>
+#include <KoalaLang/Translator.h>
 
 void printHelpMsg(){
     std::cout << std::format(R"(
@@ -75,8 +76,10 @@ int main(int argc, char** argv){
         KoalaLang::Parser parser(lexer);
         parser.Parse();
 
-        //DBG
-        std::cout << "Nodes: " << parser.GetAST().GetNodes().size() << "\n";
+        KoalaLang::Translator translator(parser);
+        translator.Translate();
+
+        std::cout << "Done!\n";
     }
 
     return 0;

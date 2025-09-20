@@ -3,7 +3,8 @@ project(koala_lang)
 set(KOALA_NAME koalaLang)
 
 file(GLOB KOALA_SOURCES
-src/*.cpp
+src/lang/*.cpp
+src/byte/*.cpp
 )
 
 set(KOALA_LANG_PRIVATE_DEFS)

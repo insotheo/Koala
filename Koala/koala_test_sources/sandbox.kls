@@ -1,4 +1,22 @@
-fn main(): int{//declaration of main function
-    ret 0;//returns zero
+fn main(): int{
+    ret 0;
+    ret 1;
 }
-//this is just a comment
+
+//let x: int = 2 + 2;
+//~
+//let x: int;
+//x = 2 + 2;
+//y = 2 * x;
+//
+//crt x 0
+//
+//push 2
+//push 2
+//add
+//store x
+//
+//push 2
+//load x
+//mul
+//store y

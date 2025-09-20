@@ -8,7 +8,7 @@ namespace KoalaLang{
     enum TokenType{
         EndOfFile, Unknown,
         
-        Identifier, Number, Keyword,
+        Identifier, Number, Float, Keyword,
 
         LParen, RParen, LBrace, RBrace, Semicolon, Colon
     };

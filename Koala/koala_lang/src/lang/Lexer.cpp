@@ -29,7 +29,10 @@ namespace KoalaLang{
                     Next();
                 }
                 
-                if(!hasPointMoreThanOneTime) m_tokens.push_back(TOKEN(Number, number));
+                if(!hasPointMoreThanOneTime){
+                    if(hasPoint) m_tokens.push_back(TOKEN(Float, number));
+                    else m_tokens.push_back(TOKEN(Number, number));
+                }
                 else m_tokens.push_back(TOKEN(Unknown, number));
 
                 continue;

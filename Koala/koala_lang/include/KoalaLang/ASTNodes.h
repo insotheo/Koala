@@ -10,18 +10,26 @@ namespace KoalaLang{
     public:
         ASTNode() {}
         virtual ~ASTNode() {}
-
-        virtual void Use() {}
     };
 
-    class KOALA_LANG_API ASTConstant : public ASTNode{
+    class KOALA_LANG_API ASTNumberLiteral : public ASTNode{
     public:
-        ASTConstant(const std::string& c) : m_const(c)
+        ASTNumberLiteral(long int val) : m_const(val)
         {}
 
-        inline std::string& GetConst() { return m_const; }
+        inline size_t& GetConst() { return m_const; }
     private:
-        std::string m_const;
+        size_t m_const;
+    };
+
+    class KOALA_LANG_API ASTFloatLiteral : public ASTNode{
+    public:
+        ASTFloatLiteral(double val) : m_const(val)
+        {}
+
+        inline double& GetConst() { return m_const; }
+    private:
+        double m_const;
     };
 
     class KOALA_LANG_API ASTCodeBlock : public ASTNode{
@@ -41,6 +49,8 @@ namespace KoalaLang{
         : m_function_name(fnName), m_return_type(retType), m_body(body)
         {}
 
+        inline const std::string& GetFunctionName() { return m_function_name; }
+        inline SHARED_PTR_T(ASTCodeBlock) GetBody() { return m_body; }
     private:
         std::string m_function_name;
         std::string m_return_type;
@@ -52,6 +62,7 @@ namespace KoalaLang{
         ASTRet(SHARED_PTR_T(ASTNode) node) : m_ret_node(node)
         {}
 
+        inline SHARED_PTR_T(ASTNode) GetReturnNode() { return m_ret_node; }
     private:
         SHARED_PTR_T(ASTNode) m_ret_node;
     };

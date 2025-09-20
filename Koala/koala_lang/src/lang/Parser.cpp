@@ -1,4 +1,5 @@
 #include "KoalaLang/Parser.h"
+#include "KoalaLang/ASTNodes.h"
 
 #include <format>
 #include <iostream>
@@ -60,9 +61,9 @@ namespace KoalaLang{
                 if(PARSER_CURRENT_TOKEN.value == "ret"){
                     Next();
                     //TODO: parsing expressions
-                    SHARED_PTR_T(ASTConstant) constant = std::make_shared<ASTConstant>(PARSER_CURRENT_TOKEN.value);
+                    SHARED_PTR_T(ASTNumberLiteral) constant = std::make_shared<ASTNumberLiteral>(std::stod(PARSER_CURRENT_TOKEN.value));
                     FatalNext(TokenType::Semicolon);
-                    block->GetNodes().push_back(constant);
+                    block->GetNodes().push_back(std::make_shared<ASTRet>(constant));
                 }
             }
 
