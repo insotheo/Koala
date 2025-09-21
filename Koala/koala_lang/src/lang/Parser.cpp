@@ -10,9 +10,9 @@ namespace KoalaLang{
     #define PARSER_CURRENT_TOKEN m_tokens[m_idx]
 
     void Parser::Parse(){
-        if(m_tokens.size() == 0) return;
+        if(m_tokens.empty()) return;
 
-        //Unknown tokens panicer
+        //Unknown tokens panic
         bool success = true;
         while(m_idx < m_tokens.size()){
             if(PARSER_CURRENT_TOKEN.type == TokenType::Unknown){
@@ -51,6 +51,61 @@ namespace KoalaLang{
         m_code.GetNodes().push_back(std::make_shared<ASTFunction>(functionName, typeName, body));
     }
 
+    SHARED_PTR_T(ASTNode) Parser::ParseExpression() {
+        SHARED_PTR_T(ASTNode) result = ParseTerm();
+        while (m_idx < m_tokens.size()) {
+            if (PARSER_CURRENT_TOKEN.type == TokenType::Plus || PARSER_CURRENT_TOKEN.type == TokenType::Minus) {
+                BinOperation op = PARSER_CURRENT_TOKEN.type == TokenType::Plus ? BinOperation::Addition : BinOperation::Subtraction;
+                Next();
+                SHARED_PTR_T(ASTNode) right = ParseTerm();
+                result = std::make_shared<ASTBinaryOperation>(result, op, right);
+            }
+            else break;
+        }
+        return result;
+    }
+
+    SHARED_PTR_T(ASTNode) Parser::ParseTerm() {
+        SHARED_PTR_T(ASTNode) result = ParseFactor();
+        while (m_idx < m_tokens.size()) {
+            if (PARSER_CURRENT_TOKEN.type == TokenType::Asterisk || PARSER_CURRENT_TOKEN.type == TokenType::Slash) {
+                BinOperation op = PARSER_CURRENT_TOKEN.type == TokenType::Asterisk ? BinOperation::Multiplication : BinOperation::Division;
+                Next();
+                SHARED_PTR_T(ASTNode) right = ParseFactor();
+                result = std::make_shared<ASTBinaryOperation>(result, op, right);
+            }
+            else break;
+        }
+        return result;
+    }
+
+    SHARED_PTR_T(ASTNode) Parser::ParseFactor() {
+        if (PARSER_CURRENT_TOKEN.type == TokenType::Number) {
+            long int value = std::stol(PARSER_CURRENT_TOKEN.value);
+            Next();
+            return std::make_shared<ASTNumberLiteral>(value);
+        }
+        if (PARSER_CURRENT_TOKEN.type == TokenType::Float) {
+            double value = std::stod(PARSER_CURRENT_TOKEN.value);
+            Next();
+            return std::make_shared<ASTFloatLiteral>(value);
+        }
+        if (PARSER_CURRENT_TOKEN.type == TokenType::LParen) {
+            Next();//skip (
+            SHARED_PTR_T(ASTNode) result = ParseExpression();
+            FatalThenNext(TokenType::RParen);
+            return result;
+        }
+        if (PARSER_CURRENT_TOKEN.type == TokenType::Minus) {
+            Next();
+            SHARED_PTR_T(ASTNode) val = ParseFactor();
+            return std::make_shared<ASTBinaryOperation>(std::make_shared<ASTNumberLiteral>(-1), BinOperation::Multiplication, val);
+        }
+
+        Panic("Unexpected token in expression");
+        return nullptr;
+    }
+
     SHARED_PTR_T(ASTCodeBlock) Parser::ParseCodeBlock(){
         Next();
         SHARED_PTR_T(ASTCodeBlock) block = std::make_shared<ASTCodeBlock>(std::vector<SHARED_PTR_T(ASTNode)>());
@@ -60,10 +115,9 @@ namespace KoalaLang{
             if(PARSER_CURRENT_TOKEN.type == TokenType::Keyword){
                 if(PARSER_CURRENT_TOKEN.value == "ret"){
                     Next();
-                    //TODO: parsing expressions
-                    SHARED_PTR_T(ASTNumberLiteral) constant = std::make_shared<ASTNumberLiteral>(std::stoul(PARSER_CURRENT_TOKEN.value));
-                    FatalNext(TokenType::Semicolon);
-                    block->GetNodes().push_back(std::make_shared<ASTRet>(constant));
+                    SHARED_PTR_T(ASTNode) expr = ParseExpression();
+                    FatalThenNext(TokenType::Semicolon);
+                    block->GetNodes().push_back(std::make_shared<ASTRet>(expr));
                 }
             }
 
@@ -102,10 +156,19 @@ namespace KoalaLang{
         m_idx += 1;
     }
 
-    void Parser::FatalNext(TokenType type){
+    void Parser::FatalNext(const TokenType type){
         Next();
         if(m_idx < m_tokens.size()){
             if(PARSER_CURRENT_TOKEN.type == type) return;
+        }
+        Panic("Unexpected token");
+        std::exit(-1);
+    }
+
+    void Parser::FatalThenNext(const TokenType type) {
+        if (PARSER_CURRENT_TOKEN.type == type) {
+            Next();
+            return;
         }
         Panic("Unexpected token");
         std::exit(-1);

@@ -1,25 +1,15 @@
 fn main(): int{
-    ret 0;
+    ret -2 * (2 + 2);
 }
 
-fn world(): void{
-    ret 4294967295;
-}
-
-//let x: int = 2 + 2;
-//~
-//let x: int;
-//x = 2 + 2;
-//y = 2 * x;
+// In Koala Bytecode:
 //
-//crt x 0
-//
-//push 2
-//push 2
-//add
-//store x
-//
-//push 2
-//load x
-//mul
-//store y
+//  f_main:
+//  push -1 ; [-1]
+//  push 2 ; [-1, 2]
+//  mul ; [-2]
+//  push 2 ; [-2, 2]
+//  push 2 ; [-2, 2, 2]
+//  add ; [-2, 4]
+//  mul ; [-8]
+//  ret ; -> -8

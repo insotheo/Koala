@@ -9,7 +9,7 @@
 namespace KoalaLang{
     class KOALA_LANG_API Parser{
     public:
-        Parser(Lexer& lexer) : m_tokens(lexer.GetTokens()), m_source(lexer.GetSource()), m_code(std::vector<SHARED_PTR_T(ASTNode)>()), m_idx(0)
+        explicit Parser(Lexer& lexer) : m_tokens(lexer.GetTokens()), m_source(lexer.GetSource()), m_code(std::vector<SHARED_PTR_T(ASTNode)>()), m_idx(0)
         {}
 
         void Parse();
@@ -22,11 +22,15 @@ namespace KoalaLang{
         size_t m_idx;
 
         void Next();
-        void FatalNext(TokenType type);
+        void FatalNext(const TokenType type);
+        void FatalThenNext(const TokenType type);
         void Panic(const std::string& msg);
 
         SHARED_PTR_T(ASTCodeBlock) ParseCodeBlock();
         void ParseFunctionDecl();
+        SHARED_PTR_T(ASTNode) ParseExpression();
+        SHARED_PTR_T(ASTNode) ParseTerm();
+        SHARED_PTR_T(ASTNode) ParseFactor();
     };
 }
 

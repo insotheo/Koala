@@ -10,6 +10,8 @@ namespace KoalaLang{
         
         Identifier, Number, Float, Keyword,
 
+        Plus, Minus, Asterisk, Slash,
+
         LParen, RParen, LBrace, RBrace, Semicolon, Colon
     };
 

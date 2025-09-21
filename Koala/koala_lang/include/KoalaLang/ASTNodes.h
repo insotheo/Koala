@@ -8,23 +8,23 @@
 namespace KoalaLang{
     class KOALA_LANG_API ASTNode{
     public:
-        ASTNode() {}
-        virtual ~ASTNode() {}
+        ASTNode() = default;
+        virtual ~ASTNode() = default;
     };
 
-    class KOALA_LANG_API ASTNumberLiteral : public ASTNode{
+    class KOALA_LANG_API ASTNumberLiteral final : public ASTNode{
     public:
-        ASTNumberLiteral(unsigned long int val) : m_const(val)
+        explicit ASTNumberLiteral(const long int val) : m_const(val)
         {}
 
-        inline unsigned long int& GetConst() { return m_const; }
+        inline long int& GetConst() { return m_const; }
     private:
-        unsigned long int m_const;
+        long int m_const;
     };
 
-    class KOALA_LANG_API ASTFloatLiteral : public ASTNode{
+    class KOALA_LANG_API ASTFloatLiteral final : public ASTNode{
     public:
-        ASTFloatLiteral(double val) : m_const(val)
+        explicit ASTFloatLiteral(const double val) : m_const(val)
         {}
 
         inline double& GetConst() { return m_const; }
@@ -32,9 +32,28 @@ namespace KoalaLang{
         double m_const;
     };
 
-    class KOALA_LANG_API ASTCodeBlock : public ASTNode{
+    enum BinOperation {
+        Addition = 0x2, Subtraction = 0x3, Multiplication = 0x4, Division = 0x5
+    };
+
+    class KOALA_LANG_API ASTBinaryOperation final : public ASTNode {
     public:
-        ASTCodeBlock(const std::vector<SHARED_PTR_T(ASTNode)>& nodes) : m_nodes(nodes)
+        ASTBinaryOperation(SHARED_PTR_T(ASTNode) left, const BinOperation op, SHARED_PTR_T(ASTNode) right)
+        : m_left(std::move(left)), m_operation(op), m_right(std::move(right))
+        {}
+
+        inline SHARED_PTR_T(ASTNode) GetLeft() { return m_left; }
+        inline SHARED_PTR_T(ASTNode) GetRight() { return m_right; }
+        inline BinOperation GetOperation() { return m_operation; }
+    private:
+        SHARED_PTR_T(ASTNode) m_left;
+        BinOperation m_operation;
+        SHARED_PTR_T(ASTNode) m_right;
+    };
+
+    class KOALA_LANG_API ASTCodeBlock final : public ASTNode{
+    public:
+        explicit ASTCodeBlock(const std::vector<SHARED_PTR_T(ASTNode)>& nodes) : m_nodes(nodes)
         {}
 
         inline std::vector<SHARED_PTR_T(ASTNode)>& GetNodes() { return m_nodes; }
@@ -43,10 +62,10 @@ namespace KoalaLang{
         std::vector<SHARED_PTR_T(ASTNode)> m_nodes;
     };
 
-    class KOALA_LANG_API ASTFunction : public ASTNode{
+    class KOALA_LANG_API ASTFunction final : public ASTNode{
     public:
-        ASTFunction(const std::string& fnName, const std::string& retType, SHARED_PTR_T(ASTCodeBlock) body) 
-        : m_function_name(fnName), m_return_type(retType), m_body(body)
+        ASTFunction(const std::string& fnName, const std::string& retType, SHARED_PTR_T(ASTCodeBlock) body)
+        : m_function_name(fnName), m_return_type(retType), m_body(std::move(body))
         {}
 
         inline const std::string& GetFunctionName() { return m_function_name; }
@@ -57,9 +76,9 @@ namespace KoalaLang{
         SHARED_PTR_T(ASTCodeBlock) m_body;
     };
 
-    class KOALA_LANG_API ASTRet : public ASTNode{
+    class KOALA_LANG_API ASTRet final : public ASTNode{
     public:
-        ASTRet(SHARED_PTR_T(ASTNode) node) : m_ret_node(node)
+        explicit ASTRet(SHARED_PTR_T(ASTNode) node) : m_ret_node(std::move(node))
         {}
 
         inline SHARED_PTR_T(ASTNode) GetReturnNode() { return m_ret_node; }
