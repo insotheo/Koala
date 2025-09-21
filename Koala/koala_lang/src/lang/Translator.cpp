@@ -8,12 +8,13 @@
 namespace KoalaLang{
 
     #define TRANSLATOR_CONSTANT_MAKING(ptr_name, const_type, byte_data_type, it)\
-                                                ByteData_t newData;\
-                                                newData.resize(1  + (sizeof(ptr_name->GetConst()) + sizeof(size_t) - 1) / sizeof(size_t));\
-                                                newData[0] = static_cast<size_t>(KoalaByte::ByteDataType::byte_data_type);\
-                                                std::memcpy(&newData[1], &(ptr_name->GetConst()), sizeof(ptr_name->GetConst()));\
-                                                m_constants.insert(newData);\
-                                                it = m_constants.find(newData)\
+                                                const auto& constValue = ptr_name->GetConst();\
+                                                ByteData_t buffer;\
+                                                buffer.resize(1  + sizeof(constValue));\
+                                                buffer[0] = static_cast<uchar>(KoalaByte::ByteDataType::byte_data_type);\
+                                                std::memcpy(&buffer[1], &constValue, sizeof(constValue));\
+                                                m_constants.insert(buffer);\
+                                                it = m_constants.find(buffer)\
 
 
     #define OPCODE(code) static_cast<size_t>(KoalaByte::OpCode::code)
@@ -46,7 +47,7 @@ namespace KoalaLang{
 
     void Translator::VisitExpression(SHARED_PTR_T(ASTNode) node){
         m_codes.push_back(OPCODE(PUSH));
-        int idx = VisitConstant(node);
+        const int idx = VisitConstant(node);
         if(idx == -1) throw std::runtime_error("Runtime error during translation: constant declaration failed!");
         m_codes.push_back(idx);
     }
@@ -54,7 +55,7 @@ namespace KoalaLang{
     int Translator::VisitConstant(SHARED_PTR_T(ASTNode) constant){
         auto iter = m_constants.end();
         
-        if(auto intConst = dynamic_cast<ASTNumberLiteral*>(constant.get())) { TRANSLATOR_CONSTANT_MAKING(intConst, size_t, INT, iter); }
+        if(auto intConst = dynamic_cast<ASTNumberLiteral*>(constant.get())) { TRANSLATOR_CONSTANT_MAKING(intConst, unsigned long int, INT, iter); }
 
         return iter == m_constants.end() ? -1 : std::distance(m_constants.begin(), iter);
     }

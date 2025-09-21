@@ -2,7 +2,7 @@
 #define KOALA_BYTE_OP_CODES_H
 
 namespace KoalaByte{
-    enum class OpCode: size_t{
+    enum class OpCode: unsigned char{
         RET = 0x0,
         PUSH = 0x1
     };

@@ -3,11 +3,16 @@
 
 #include <vector>
 
-typedef std::vector<size_t> ByteData_t;
+typedef unsigned char uchar;
+typedef std::vector<uchar> ByteData_t;
 
 namespace KoalaByte{
-    enum class ByteDataType: size_t{
-        INT = 0,
+    enum class ByteDataType: uchar{
+        //N >= 1
+        
+        //numerics: 2^N
+        INT = 2,
+        FLOAT = 4,
     };
 
     bool VerifyByteDataType(ByteData_t& data, const ByteDataType& type);

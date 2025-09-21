@@ -14,12 +14,12 @@ namespace KoalaLang{
 
     class KOALA_LANG_API ASTNumberLiteral : public ASTNode{
     public:
-        ASTNumberLiteral(long int val) : m_const(val)
+        ASTNumberLiteral(unsigned long int val) : m_const(val)
         {}
 
-        inline size_t& GetConst() { return m_const; }
+        inline unsigned long int& GetConst() { return m_const; }
     private:
-        size_t m_const;
+        unsigned long int m_const;
     };
 
     class KOALA_LANG_API ASTFloatLiteral : public ASTNode{
