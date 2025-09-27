@@ -11,6 +11,7 @@ namespace KoalaByte{
         //N >= 1
         
         //numerics: 2^N
+        VOID = 0,
         INT = 2,
         FLOAT = 4,
     };

@@ -78,6 +78,7 @@ namespace KoalaLang{
                     }
                     continue;
                 }
+                case '%': {m_tokens.push_back(TOKEN(Percent, "")); Next(); continue;}
             }
 
             m_tokens.push_back(TOKEN(Unknown, std::to_string(INPUT_CURRENT_CHAR)));

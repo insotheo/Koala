@@ -33,7 +33,7 @@ namespace KoalaLang{
     };
 
     enum BinOperation {
-        Addition = 0x2, Subtraction = 0x3, Multiplication = 0x4, Division = 0x5
+        Addition = 0x2, Subtraction = 0x3, Multiplication = 0x4, Division = 0x5, ReminderOnDivision = 0x6
     };
 
     class KOALA_LANG_API ASTBinaryOperation final : public ASTNode {

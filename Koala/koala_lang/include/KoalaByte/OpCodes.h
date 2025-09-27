@@ -10,6 +10,7 @@ namespace KoalaByte{
         SUB = 0x3,
         MUL = 0x4,
         DIV = 0x5,
+        ROD = 0x6, //Reminder On Division
     };
 }
 

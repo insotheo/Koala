@@ -68,8 +68,8 @@ namespace KoalaLang{
     SHARED_PTR_T(ASTNode) Parser::ParseTerm() {
         SHARED_PTR_T(ASTNode) result = ParseFactor();
         while (m_idx < m_tokens.size()) {
-            if (PARSER_CURRENT_TOKEN.type == TokenType::Asterisk || PARSER_CURRENT_TOKEN.type == TokenType::Slash) {
-                BinOperation op = PARSER_CURRENT_TOKEN.type == TokenType::Asterisk ? BinOperation::Multiplication : BinOperation::Division;
+            if (PARSER_CURRENT_TOKEN.type == TokenType::Asterisk || PARSER_CURRENT_TOKEN.type == TokenType::Slash || PARSER_CURRENT_TOKEN.type == TokenType::Percent) {
+                BinOperation op = PARSER_CURRENT_TOKEN.type == TokenType::Asterisk ? BinOperation::Multiplication : PARSER_CURRENT_TOKEN.type == TokenType::Slash ? BinOperation::Division : BinOperation::ReminderOnDivision;
                 Next();
                 SHARED_PTR_T(ASTNode) right = ParseFactor();
                 result = std::make_shared<ASTBinaryOperation>(result, op, right);
