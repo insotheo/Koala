@@ -4,6 +4,7 @@ set(KOALA_APP_NAME koala)
 
 file(GLOB KOALA_SOURCES
 src/main.cpp
+src/io/io.cpp
 )
 
 add_executable(${KOALA_APP_NAME} ${KOALA_SOURCES})

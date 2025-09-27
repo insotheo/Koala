@@ -7,6 +7,28 @@
 #include <KoalaLang/Lexer.h>
 #include <KoalaLang/Parser.h>
 #include <KoalaLang/Translator.h>
+#include "io/io.h"
+#include <chrono>
+
+void printTimeDuration(const std::chrono::high_resolution_clock::time_point& start_time, const std::chrono::high_resolution_clock::time_point& end_time){
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
+
+    auto hours = std::chrono::duration_cast<std::chrono::hours>(duration);
+    duration -= hours;
+    
+    auto minutes = std::chrono::duration_cast<std::chrono::minutes>(duration);
+    duration -= minutes;
+    
+    auto seconds = std::chrono::duration_cast<std::chrono::seconds>(duration);
+    duration -= seconds;
+
+    auto milliseconds  = duration.count();
+
+    std::cout << std::setfill('0') << std::setw(2) << hours.count() << ":"
+              << std::setfill('0') << std::setw(2) << minutes.count() << ":"
+              << std::setfill('0') << std::setw(2) << seconds.count() << "."
+              << std::setfill('0') << std::setw(3) << milliseconds;
+}
 
 void printHelpMsg(){
     std::cout << std::format(R"(
@@ -17,6 +39,7 @@ koala <command> <args>
 
 > koala <build|make> <args>
     -p <path> - REQUIRED, path to file for building
+    -o <path> - REQUIRED, path to output file
 )", 
     KOALA_LANG_MAJOR_VERSION, KOALA_LANG_MINOR_VERSION, KOALA_LANG_PATCH_VERSION); 
 }
@@ -56,6 +79,13 @@ int main(int argc, char** argv){
         }
         std::string path = args.at("-p");
         
+        if(!args.contains("-o")){
+            std::cerr << "Output path is required!\n";
+            return -1;
+        }
+        std::string output = args.at("-o");
+
+
         std::fstream fs(path);
         if(!fs.is_open()){
             std::cerr << std::format("Cannot open file \"{}\"\n", path);
@@ -69,17 +99,28 @@ int main(int argc, char** argv){
         
         source.assign(std::istreambuf_iterator<char>(fs), std::istreambuf_iterator<char>());
         fs.close();
-
+        
+        auto start_time = std::chrono::high_resolution_clock::now();
+        
         KoalaLang::Lexer lexer(source);
         lexer.Tokenize();
-
+        
         KoalaLang::Parser parser(lexer);
         parser.Parse();
-
+        
         KoalaLang::Translator translator(parser);
         translator.Translate();
+        
+        KoalaByte::Bytecode bytecode = translator.GetBytecode();
+        
+        WriteBytecodeToFile(bytecode, output);
 
-        std::cout << "Done!\n";
+        auto end_time = std::chrono::high_resolution_clock::now();
+        
+        std::cout << "Success!\n";
+        std::cout << "Build completed: ";
+        printTimeDuration(start_time, end_time);
+        std::cout << "\n";
     }
 
     return 0;

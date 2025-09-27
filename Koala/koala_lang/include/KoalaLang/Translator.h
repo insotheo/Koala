@@ -7,6 +7,7 @@
 #include "KoalaByte/ByteData.h"
 #include <vector>
 #include <unordered_map>
+#include "KoalaByte/Bytecode.h"
 
 namespace KoalaLang{
     class KOALA_LANG_API Translator{
@@ -15,6 +16,8 @@ namespace KoalaLang{
         {}
 
         void Translate();
+
+        inline KoalaByte::Bytecode GetBytecode() { return KoalaByte::Bytecode(m_codes, m_constants); }
     private:
         ASTCodeBlock& m_code;
 

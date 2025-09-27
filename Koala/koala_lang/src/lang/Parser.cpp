@@ -22,9 +22,11 @@ namespace KoalaLang{
             Next();
         }
 
+        if(!success) std::exit(-1);
+
         //creating ast tree
         m_idx = 0;
-        while(m_idx < m_tokens.size() && success){
+        while(m_idx < m_tokens.size()){
             if(PARSER_CURRENT_TOKEN.type == TokenType::Keyword){
                 if(PARSER_CURRENT_TOKEN.value == "fn") ParseFunctionDecl();
             }
