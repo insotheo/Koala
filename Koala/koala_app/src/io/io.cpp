@@ -20,6 +20,11 @@ void WriteBytecodeToFile(const KoalaByte::Bytecode& bytecode, const std::string&
     outFile.write(koala_name, sizeof(koala_name) - 1);
     outFile.write(reinterpret_cast<const char*>(&version), sizeof(version));
 
+    //regions
+    size_t regionsCount = bytecode.GetRegions().size();
+    outFile.write(reinterpret_cast<const char*>(&regionsCount), sizeof(regionsCount));
+    outFile.write(reinterpret_cast<const char*>(bytecode.GetRegions().data()), sizeof(bytecode.GetRegions().data()));
+
     //constants
     size_t constantsCount = bytecode.GetConstants().size();
     outFile.write(reinterpret_cast<const char*>(&constantsCount), sizeof(constantsCount));

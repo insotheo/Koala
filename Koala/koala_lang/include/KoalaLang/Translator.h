@@ -17,7 +17,15 @@ namespace KoalaLang{
 
         void Translate();
 
-        inline KoalaByte::Bytecode GetBytecode() { return KoalaByte::Bytecode(m_codes, m_constants); }
+        inline KoalaByte::Bytecode GetBytecode() {
+            std::vector<size_t> m_regionPointers;
+
+            for (const auto& regPtr : m_regions_ptrs) {
+                m_regionPointers.push_back(regPtr.second);
+            }
+
+            return KoalaByte::Bytecode(m_codes, m_constants, m_regionPointers);
+        }
     private:
         ASTCodeBlock& m_code;
 

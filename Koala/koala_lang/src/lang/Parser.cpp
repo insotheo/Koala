@@ -56,8 +56,7 @@ namespace KoalaLang{
         FatalNext(TokenType::LBrace);
 
         m_modulesStack.push_back(name);
-        SHARED_PTR_T(ASTCodeBlock) body = std::make_shared<ASTCodeBlock>(std::vector<SHARED_PTR_T(ASTNode)>());
-        ParseCodeBlock();
+        SHARED_PTR_T(ASTCodeBlock) body = ParseCodeBlock();
         m_modulesStack.pop_back();
 
         std::string qualifiedName = MakeQualifiedName(name);
@@ -126,8 +125,8 @@ namespace KoalaLang{
         while(m_idx < m_tokens.size() && PARSER_CURRENT_TOKEN.type != TokenType::RBrace){
 
             if(PARSER_CURRENT_TOKEN.type == TokenType::Keyword){
-                if(PARSER_CURRENT_TOKEN.value == "fn") block->GetNodes().push_back(ParseFunctionDecl());
-                else if(PARSER_CURRENT_TOKEN.value == "module") block->GetNodes().push_back(ParseModuleDecl());
+                if(PARSER_CURRENT_TOKEN.value == "fn") block->GetNodes().push_back(std::move(ParseFunctionDecl()));
+                else if(PARSER_CURRENT_TOKEN.value == "module") block->GetNodes().push_back(std::move(ParseModuleDecl()));
 
                 else if(PARSER_CURRENT_TOKEN.value == "ret"){
                     Next();

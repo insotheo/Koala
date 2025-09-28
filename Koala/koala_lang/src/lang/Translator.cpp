@@ -21,6 +21,11 @@ namespace KoalaLang{
 
     void Translator::VisitCodeBlock(ASTCodeBlock& block){
         for(SHARED_PTR_T(ASTNode)& node : block.GetNodes()){
+            if (const auto mod = dynamic_cast<ASTModule*>(node.get())) {
+                VisitCodeBlock(*mod->GetBody());
+                continue;
+            }
+
             //fn decl
             if(const auto fn = dynamic_cast<ASTFunction*>(node.get())){
                 m_regions_ptrs.insert({fn->GetFunctionName(), m_codes.size()});
