@@ -9,11 +9,11 @@ namespace KoalaLang{
     #define TRANSLATOR_CONSTANT_MAKING(buffer, ptr_name, const_type, byte_data_type, it)\
                                                 const auto& constValue = ptr_name->GetConst();\
                                                 buffer.resize(1  + sizeof(constValue));\
-                                                buffer[0] = static_cast<uchar>(KoalaByte::ByteDataType::byte_data_type);\
+                                                buffer[0] = static_cast<uint8_t>(KoalaByte::ByteDataType::byte_data_type);\
                                                 std::memcpy(&buffer[1], &constValue, sizeof(constValue));\
 
 
-    #define OPCODE(code) static_cast<size_t>(KoalaByte::OpCode::code)
+    #define OPCODE(code) static_cast<uint64_t>(KoalaByte::OpCode::code)
 
     void Translator::Translate(){
         VisitCodeBlock(m_code);

@@ -42,6 +42,10 @@ koala <command> <args>
     -p <path> - REQUIRED, path to file for building
     -o <path> - REQUIRED, path to output file
     -m <module name> - name of global module(default: filename)
+
+> koala run <args>
+    -p <path> - REQUIRED, path to file to execute
+    -d - print returned value
 )", 
     KOALA_LANG_MAJOR_VERSION, KOALA_LANG_MINOR_VERSION, KOALA_LANG_PATCH_VERSION); 
 }
@@ -130,6 +134,18 @@ int main(int argc, char** argv){
         printTimeDuration(start_time, end_time);
         std::cout << "\n";
     }
+    else if (base_action == "run") {
+        if(!args.contains("-p")){
+            std::cerr << "Path is required!\n";
+            return -1;
+        }
+        std::string path = args.at("-p");
+        bool printReturnedValue = args.contains("-d");
+
+        KoalaByte::Bytecode application = ReadBytecodeFromFile(path);
+        std::cout << "Done!\n";
+    }
+
 
     return 0;
 }

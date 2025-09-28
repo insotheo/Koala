@@ -1,13 +1,13 @@
 #ifndef KOALA_BYTE_BYTE_DATA_H
 #define KOALA_BYTE_BYTE_DATA_H
 
+#include <cstdint>
 #include <vector>
 
-typedef unsigned char uchar;
-typedef std::vector<uchar> ByteData_t;
+typedef std::vector<uint8_t> ByteData_t;
 
 namespace KoalaByte{
-    enum class ByteDataType: uchar{
+    enum class ByteDataType: uint8_t{
         //N >= 1
         
         //numerics: 2^N

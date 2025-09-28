@@ -29,7 +29,7 @@ namespace KoalaLang{
     private:
         ASTCodeBlock& m_code;
 
-        std::vector<size_t> m_codes;
+        std::vector<uint64_t> m_codes;
         std::vector<ByteData_t> m_constants;
         std::unordered_map<std::string, size_t> m_regions_ptrs;
 

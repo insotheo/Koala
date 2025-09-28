@@ -5,5 +5,6 @@
 #include <string>
 
 void WriteBytecodeToFile(const KoalaByte::Bytecode& bytecode, const std::string& output_path);
+KoalaByte::Bytecode ReadBytecodeFromFile(const std::string& input_path);
 
 #endif
