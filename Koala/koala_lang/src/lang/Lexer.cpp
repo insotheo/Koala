@@ -47,7 +47,8 @@ namespace KoalaLang{
                 }
                 
                 if(identifier == "ret")         { m_tokens.push_back(TOKEN(Keyword, "ret")); continue; }
-                else if(identifier == "fn")     { m_tokens.push_back(TOKEN(Keyword, "fn")); continue; }
+                if(identifier == "fn")          { m_tokens.push_back(TOKEN(Keyword, "fn")); continue; }
+                if(identifier == "module")      { m_tokens.push_back(TOKEN(Keyword, "module")); continue; }
 
                 m_tokens.push_back(TOKEN(Identifier, identifier));
                 continue;

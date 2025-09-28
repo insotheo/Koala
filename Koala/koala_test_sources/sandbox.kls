@@ -1,3 +1,5 @@
-fn main(): int{
-    ret 0;
+module TestModule{
+    fn main(): int{ //sandbox.TestModule.main()
+        ret 0;
+    }
 }

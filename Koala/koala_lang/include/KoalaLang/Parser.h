@@ -12,10 +12,11 @@ namespace KoalaLang{
         explicit Parser(Lexer& lexer) : m_tokens(lexer.GetTokens()), m_source(lexer.GetSource()), m_code(std::vector<SHARED_PTR_T(ASTNode)>()), m_idx(0)
         {}
 
-        void Parse();
+        void Parse(const std::string& globalModuleName);
 
         inline ASTCodeBlock& GetAST() { return m_code; }
     private:
+        std::vector<std::string> m_modulesStack;
         std::vector<Token>& m_tokens;
         const std::string& m_source;
         ASTCodeBlock m_code;
@@ -26,8 +27,11 @@ namespace KoalaLang{
         void FatalThenNext(const TokenType type);
         void Panic(const std::string& msg);
 
-        SHARED_PTR_T(ASTCodeBlock) ParseCodeBlock();
-        void ParseFunctionDecl();
+        std::string MakeQualifiedName(const std::string& name);
+
+        SHARED_PTR_T(ASTCodeBlock) ParseCodeBlock(bool shift = true);
+        SHARED_PTR_T(ASTFunction) ParseFunctionDecl();
+        SHARED_PTR_T(ASTModule) ParseModuleDecl();
         SHARED_PTR_T(ASTNode) ParseExpression();
         SHARED_PTR_T(ASTNode) ParseTerm();
         SHARED_PTR_T(ASTNode) ParseFactor();

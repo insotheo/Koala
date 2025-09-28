@@ -85,6 +85,19 @@ namespace KoalaLang{
     private:
         SHARED_PTR_T(ASTNode) m_ret_node;
     };
+
+    class KOALA_LANG_API ASTModule final: public ASTNode{
+    public:
+        ASTModule(SHARED_PTR_T(ASTCodeBlock) body, std::string  name)
+            : m_name(std::move(name)), m_body(std::move(body))
+        {}
+
+        inline const std::string& GetName() { return m_name; }
+        inline SHARED_PTR_T(ASTCodeBlock) GetBody() { return m_body; }
+    private:
+        std::string m_name;
+        SHARED_PTR_T(ASTCodeBlock) m_body;
+    };
 }
 
 #endif

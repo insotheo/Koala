@@ -9,7 +9,7 @@ namespace KoalaLang{
 
     #define PARSER_CURRENT_TOKEN m_tokens[m_idx]
 
-    void Parser::Parse(){
+    void Parser::Parse(const std::string& globalModuleName){
         if(m_tokens.empty()) return;
 
         //Unknown tokens panic
@@ -26,18 +26,15 @@ namespace KoalaLang{
 
         //creating ast tree
         m_idx = 0;
-        while(m_idx < m_tokens.size()){
-            if(PARSER_CURRENT_TOKEN.type == TokenType::Keyword){
-                if(PARSER_CURRENT_TOKEN.value == "fn") ParseFunctionDecl();
-            }
-            
-            Next();
-        }
+        m_modulesStack.push_back(globalModuleName);
+        SHARED_PTR_T(ASTCodeBlock) m_code_p = ParseCodeBlock(false);
+        m_code = *m_code_p;
+        m_code_p.reset();
     }
 
-    void Parser::ParseFunctionDecl(){
+    SHARED_PTR_T(ASTFunction) Parser::ParseFunctionDecl(){
         FatalNext(TokenType::Identifier);
-        std::string functionName = PARSER_CURRENT_TOKEN.value;
+        std::string functionName = MakeQualifiedName(PARSER_CURRENT_TOKEN.value);
 
         FatalNext(TokenType::LParen);
         //TODO: args parsing
@@ -49,8 +46,22 @@ namespace KoalaLang{
         
         FatalNext(TokenType::LBrace);
         SHARED_PTR_T(ASTCodeBlock) body = ParseCodeBlock();
-        
-        m_code.GetNodes().push_back(std::make_shared<ASTFunction>(functionName, typeName, body));
+
+        return std::make_shared<ASTFunction>(functionName, typeName, body);
+    }
+
+    SHARED_PTR_T(ASTModule) Parser::ParseModuleDecl() {
+        FatalNext(TokenType::Identifier);
+        std::string name = PARSER_CURRENT_TOKEN.value;
+        FatalNext(TokenType::LBrace);
+
+        m_modulesStack.push_back(name);
+        SHARED_PTR_T(ASTCodeBlock) body = std::make_shared<ASTCodeBlock>(std::vector<SHARED_PTR_T(ASTNode)>());
+        ParseCodeBlock();
+        m_modulesStack.pop_back();
+
+        std::string qualifiedName = MakeQualifiedName(name);
+        return std::make_shared<ASTModule>(body, qualifiedName);
     }
 
     SHARED_PTR_T(ASTNode) Parser::ParseExpression() {
@@ -108,14 +119,17 @@ namespace KoalaLang{
         return nullptr;
     }
 
-    SHARED_PTR_T(ASTCodeBlock) Parser::ParseCodeBlock(){
-        Next();
+    SHARED_PTR_T(ASTCodeBlock) Parser::ParseCodeBlock(bool shift){
+        if (shift) Next();
         SHARED_PTR_T(ASTCodeBlock) block = std::make_shared<ASTCodeBlock>(std::vector<SHARED_PTR_T(ASTNode)>());
 
         while(m_idx < m_tokens.size() && PARSER_CURRENT_TOKEN.type != TokenType::RBrace){
 
             if(PARSER_CURRENT_TOKEN.type == TokenType::Keyword){
-                if(PARSER_CURRENT_TOKEN.value == "ret"){
+                if(PARSER_CURRENT_TOKEN.value == "fn") block->GetNodes().push_back(ParseFunctionDecl());
+                else if(PARSER_CURRENT_TOKEN.value == "module") block->GetNodes().push_back(ParseModuleDecl());
+
+                else if(PARSER_CURRENT_TOKEN.value == "ret"){
                     Next();
                     SHARED_PTR_T(ASTNode) expr = ParseExpression();
                     FatalThenNext(TokenType::Semicolon);
@@ -152,6 +166,18 @@ namespace KoalaLang{
             }
         }
         std::cerr << std::format("Error at ln: {}, col: {}| {}: {}", PARSER_CURRENT_TOKEN.line, PARSER_CURRENT_TOKEN.column, msg, line) << "\n";
+    }
+
+    std::string Parser::MakeQualifiedName(const std::string &name) {
+        if (m_modulesStack.empty()) return name;
+        std::string q;
+        for (size_t i = 0; i < m_modulesStack.size(); i++) {
+            if (i) q += ".";
+            q += m_modulesStack[i];
+        }
+        q += ".";
+        q += name;
+        return q;
     }
 
     void Parser::Next(){

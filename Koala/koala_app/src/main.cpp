@@ -9,6 +9,7 @@
 #include <KoalaLang/Translator.h>
 #include "io/io.h"
 #include <chrono>
+#include <filesystem>
 
 void printTimeDuration(const std::chrono::high_resolution_clock::time_point& start_time, const std::chrono::high_resolution_clock::time_point& end_time){
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
@@ -40,6 +41,7 @@ koala <command> <args>
 > koala <build|make> <args>
     -p <path> - REQUIRED, path to file for building
     -o <path> - REQUIRED, path to output file
+    -m <module name> - name of global module(default: filename)
 )", 
     KOALA_LANG_MAJOR_VERSION, KOALA_LANG_MINOR_VERSION, KOALA_LANG_PATCH_VERSION); 
 }
@@ -85,6 +87,12 @@ int main(int argc, char** argv){
         }
         std::string output = args.at("-o");
 
+        std::string moduleName;
+        if (args.contains("-m")) moduleName = args.at("-m");
+        else {
+            std::filesystem::path p(path);
+            moduleName = p.stem().string();
+        }
 
         std::fstream fs(path);
         if(!fs.is_open()){
@@ -92,22 +100,22 @@ int main(int argc, char** argv){
             return -1;
         }
         std::string source;
-        
+
         fs.seekg(0, std::ios::end);
         source.reserve(fs.tellg());
         fs.seekg(0, std::ios::beg);
-        
+
         source.assign(std::istreambuf_iterator<char>(fs), std::istreambuf_iterator<char>());
         fs.close();
-        
+
         auto start_time = std::chrono::high_resolution_clock::now();
-        
+
         KoalaLang::Lexer lexer(source);
         lexer.Tokenize();
-        
+
         KoalaLang::Parser parser(lexer);
-        parser.Parse();
-        
+        parser.Parse(moduleName);
+
         KoalaLang::Translator translator(parser);
         translator.Translate();
         
