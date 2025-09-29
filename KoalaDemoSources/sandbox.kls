@@ -1,0 +1,3 @@
+fn Main(): int{
+	return 0; //function Main returns 0
+}

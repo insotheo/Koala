@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Koala", "Koala\Koala.csproj", "{EE8AEAC0-3B68-4BE2-8899-4D778CA9BEEE}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KoalaLang", "KoalaLang\KoalaLang.csproj", "{1DC1C595-8244-4837-B1D8-2475217FAAAA}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{EE8AEAC0-3B68-4BE2-8899-4D778CA9BEEE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EE8AEAC0-3B68-4BE2-8899-4D778CA9BEEE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EE8AEAC0-3B68-4BE2-8899-4D778CA9BEEE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EE8AEAC0-3B68-4BE2-8899-4D778CA9BEEE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1DC1C595-8244-4837-B1D8-2475217FAAAA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1DC1C595-8244-4837-B1D8-2475217FAAAA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1DC1C595-8244-4837-B1D8-2475217FAAAA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1DC1C595-8244-4837-B1D8-2475217FAAAA}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {59566022-AFC9-4B0F-90B6-FF032BE1E813}
+	EndGlobalSection
+EndGlobal
