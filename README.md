@@ -2,4 +2,4 @@
 Simple programming language
 
 ## If you want to build it by yourself...
-Koala originally was made with C++20
+Koala originally was made with C# dotnet8.0
