@@ -2,8 +2,8 @@
 using System.IO;
 using System.Collections.Generic;
 using System.Reflection;
-using KoalaLang;
 using KoalaLang.Lexer;
+using KoalaLang.ParserAndAST;
 
 namespace Koala
 {
@@ -82,6 +82,9 @@ namespace Koala
 
                 Lexer lexer = new(source);
                 lexer.Tokenize();
+
+                Parser parser = new(lexer);
+                parser.Parse();
 
                 Console.WriteLine("Done!");
             }

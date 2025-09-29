@@ -103,5 +103,11 @@ namespace KoalaLang.Lexer
                 }
             }
         }
+
+
+        //For Parser
+        internal string GetStringLine(int line) => _text.Split('\n')[line - 1];
+
+        internal List<Token> Tokens { get { return _tokens; } }
     }
 }
