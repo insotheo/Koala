@@ -44,12 +44,12 @@ namespace KoalaLang.ParserAndAST
                         if (_tokens[_idx].Value == "fn") block.Nodes.Add(ParseFunction());
                         else if (_tokens[_idx].Value == "return")
                         {
-                            //TODO: parsing of expressions
-                            FatalNext(TokenType.Number);
-                            string val = _tokens[_idx].Value;
-                            FatalNext(TokenType.Semicolon);
+                            Next();
 
-                            block.Nodes.Add(new ASTReturn(new ASTConstant<string>(val)));
+                            ASTNode expr = ParseExpression();
+                            FatalCheck(TokenType.Semicolon);
+
+                            block.Nodes.Add(new ASTReturn(expr));
                         }
                     }
                     else throw new Exception("Unknown token inside body");
@@ -88,20 +88,82 @@ namespace KoalaLang.ParserAndAST
             return function;
         }
 
+        ASTNode ParseExpression()
+        {
+            ASTNode left = ParseTerm();
+            while(_idx < _tokens.Count && (_tokens[_idx].Type == TokenType.Plus || _tokens[_idx].Type == TokenType.Minus))
+            {
+                BinOperationType op = _tokens[_idx].Type == TokenType.Plus ? BinOperationType.Add : BinOperationType.Subtract;
+                Next();
+                ASTNode right = ParseTerm();
+                left = new ASTBinOperation(left, op, right);
+            }
+            return left;
+        }
+        ASTNode ParseTerm()
+        {
+            ASTNode left = ParseFactor();
+            while (_idx < _tokens.Count && (_tokens[_idx].Type == TokenType.Asterisk || _tokens[_idx].Type == TokenType.Slash))
+            {
+                BinOperationType op = _tokens[_idx].Type == TokenType.Asterisk ? BinOperationType.Multiply : BinOperationType.Divide;
+                Next();
+                ASTNode right = ParseFactor();
+                left = new ASTBinOperation(left, op, right);
+            }
+            return left;
+        }
+        ASTNode ParseFactor()
+        {
+            if (_tokens[_idx].Type == TokenType.Number)
+            {
+                ASTNode number = new ASTConstant<int>(int.Parse(_tokens[_idx].Value));
+                Next();
+                return number;
+            }
+            else if (_tokens[_idx].Type == TokenType.FloatNumber)
+            {
+                ASTNode number = new ASTConstant<float>(float.Parse(_tokens[_idx].Value));
+                Next();
+                return number;
+            }
+
+            else if (_tokens[_idx].Type == TokenType.Minus)
+            {
+                Next();
+                ASTNode expr = ParseFactor();
+                return new ASTUnOperation(UnaryOperationType.Negate, expr);
+            }
+
+            else if (_tokens[_idx].Type == TokenType.LParen)
+            {
+                Next();
+                ASTNode expr = ParseExpression();
+                FatalCheck(TokenType.RParen);
+                Next();
+                return expr;
+            }
+
+            throw new Exception("Unexpected token in expression");
+        }
+
+
         void Next()
         {
             if (_idx + 1 < _tokens.Count) _idx += 1;
         }
-
-        void FatalNext(TokenType type)
+        void FatalCheck(TokenType type)
         {
-            Next();
             if (_tokens[_idx].Type != type)
             {
                 string line = _lexer.GetStringLine(_tokens[_idx].Line);
                 Console.Error.WriteLine($"Unexpected token({_tokens[_idx].Type}: \"{_tokens[_idx].Value}\") at ln: {_tokens[_idx].Line}, col: {_tokens[_idx].Column}; expected: {type}: {line}");
                 Environment.Exit(-1);
             }
+        }
+        void FatalNext(TokenType type)
+        {
+            Next();
+            FatalCheck(type);
         }
 
         internal ASTNode GetAST() => code;

@@ -65,21 +65,38 @@ namespace KoalaLang.Translators
 
         private void TranslateExpression(ILGenerator il, ASTNode expr)
         {
-            if(expr is ASTConstant<string> constExpr)
+            if (expr is ASTConstant<int> intConst) il.Emit(OpCodes.Ldc_I4, intConst.Value);
+            else if (expr is ASTConstant<float> floatConst) il.Emit(OpCodes.Ldc_R4, floatConst.Value);
+
+            else if(expr is ASTBinOperation binOp)
             {
-                if(int.TryParse(constExpr.Value, out int intVal))
+                TranslateExpression(il, binOp.Left);
+                TranslateExpression(il, binOp.Right);
+
+                switch(binOp.OperationType)
                 {
-                    il.Emit(OpCodes.Ldc_I4, intVal);
-                }
-                else if(float.TryParse(constExpr.Value, out float floatVal))
-                {
-                    il.Emit(OpCodes.Ldc_R4, floatVal);
-                }
-                else
-                {
-                    throw new Exception($"Unknown constant type: {constExpr.Value}");
+                    case BinOperationType.Add: il.Emit(OpCodes.Add); break;
+                    case BinOperationType.Subtract: il.Emit(OpCodes.Sub); break;
+                    case BinOperationType.Multiply: il.Emit(OpCodes.Mul); break;
+                    case BinOperationType.Divide: il.Emit(OpCodes.Div); break;
+
+                    default: throw new Exception($"Unknown binary operation: {binOp.OperationType}");
                 }
             }
+
+            else if(expr is ASTUnOperation unOp)
+            {
+                TranslateExpression(il, unOp.Operand);
+
+                switch(unOp.OperationType)
+                {
+                    case UnaryOperationType.Negate: il.Emit(OpCodes.Neg); break;
+
+                    default: throw new Exception($"Unknown unary operation: {unOp.OperationType}");
+                }
+            }
+
+            else throw new Exception($"Unknown expression type: {expr.GetType().Name}");
         }
 
         private Type GetTypeByName(string typeName) {

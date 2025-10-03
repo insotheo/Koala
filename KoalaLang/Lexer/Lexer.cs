@@ -71,16 +71,18 @@ namespace KoalaLang.Lexer
                     case '{': _tokens.Add(new(TokenType.LBrace, "", _ln, _col)); Next(); continue;
                     case '}': _tokens.Add(new(TokenType.RBrace, "", _ln, _col)); Next(); continue;
 
+                    case '+': _tokens.Add(new(TokenType.Plus, "", _ln, _col)); Next(); continue;
+                    case '-': _tokens.Add(new(TokenType.Minus, "", _ln, _col)); Next(); continue;
+                    case '*': _tokens.Add(new(TokenType.Asterisk, "", _ln, _col)); Next(); continue;
                     case '/':
+                        if (_pos + 1 < _text.Length && _text[_pos + 1] == '/') //coment
                         {
-                            if(_pos + 1 < _text.Length && _text[_pos] == '/') //coment
-                            {
-                                while (_pos < _text.Length && _text[_pos] != '\n') Next();
-                                continue;
-                            }
-                            Next();
+                            while (_pos < _text.Length && _text[_pos] != '\n') Next(false);
                             continue;
                         }
+                        else _tokens.Add(new(TokenType.Slash, "", _ln, _col));
+                        Next();
+                        continue;
                 }
 
                 _tokens.Add(new(TokenType.Unknown, _text[_pos].ToString(), _ln, _col));
@@ -89,7 +91,7 @@ namespace KoalaLang.Lexer
             _tokens.Add(new(TokenType.EOF, "", _ln, _col));
         }
 
-        private void Next()
+        private void Next(bool skipNextLine = true)
         {
             _pos += 1;
             _col += 1;
@@ -97,7 +99,7 @@ namespace KoalaLang.Lexer
             {
                 if (_text[_pos] == '\n')
                 {
-                    _pos += 1;
+                    if(skipNextLine) _pos += 1;
                     _ln += 1;
                     _col = 1;
                 }
