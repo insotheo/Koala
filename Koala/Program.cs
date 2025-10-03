@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using KoalaLang.Lexer;
 using KoalaLang.ParserAndAST;
+using KoalaLang.Translators;
 
 namespace Koala
 {
@@ -85,6 +86,9 @@ namespace Koala
 
                 Parser parser = new(lexer);
                 parser.Parse();
+
+                ILTranslator translator = new(parser, Path.GetFileNameWithoutExtension(path), "KoalaApp");
+                translator.Translate();
 
                 Console.WriteLine("Done!");
             }

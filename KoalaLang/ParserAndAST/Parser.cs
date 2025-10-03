@@ -103,5 +103,7 @@ namespace KoalaLang.ParserAndAST
                 Environment.Exit(-1);
             }
         }
+
+        internal ASTNode GetAST() => code;
     }
 }
