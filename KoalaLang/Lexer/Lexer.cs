@@ -84,6 +84,23 @@ namespace KoalaLang.Lexer
                             while (_pos < _text.Length && _text[_pos] != '\n') Next(false);
                             continue;
                         }
+
+                        else if(_pos + 1 < _text.Length && _text[_pos + 1] == '*') //multi-line coment
+                        {
+                            Next(false);
+                            while(_pos + 1 < _text.Length)
+                            {
+                                if (_text[_pos] == '*' && _text[_pos + 1] == '/')
+                                {
+                                    Next(false);
+                                    Next(false);
+                                    break;
+                                }
+                                Next(false);
+                            }
+                            continue;
+                        }
+
                         else _tokens.Add(new(TokenType.Slash, "", _ln, _col));
                         Next();
                         continue;
