@@ -22,15 +22,23 @@ namespace KoalaLang.Translators
 
             TypeBuilder typeBuilder = moduleBuilder.DefineType(_moduleName, TypeAttributes.Public | TypeAttributes.Class);
 
-            foreach(ASTNode node in (_parser.GetAST() as ASTCodeBlock).Nodes)
+            try
             {
-                if (node is ASTFunction func)
+                foreach (ASTNode node in (_parser.GetAST() as ASTCodeBlock).Nodes)
                 {
-                    MethodBuilder methodBuilder = TranslateFunction(typeBuilder, func);
-                    ILGenerator il = methodBuilder.GetILGenerator();
-                    TranslateBody(il, func.Body);
-                    il.Emit(OpCodes.Ret);
+                    if (node is ASTFunction func)
+                    {
+                        MethodBuilder methodBuilder = TranslateFunction(typeBuilder, func);
+                        ILGenerator il = methodBuilder.GetILGenerator();
+                        TranslateBody(il, func.Body);
+                        il.Emit(OpCodes.Ret);
+                    }
                 }
+            }
+            catch(Exception ex)
+            {
+                Console.Error.WriteLine($"Translator error(at {_moduleName}): {ex.Message}");
+                Environment.Exit(-1);
             }
 
             Type module = typeBuilder.CreateType();
@@ -57,6 +65,10 @@ namespace KoalaLang.Translators
                 }
                 else if(node is ASTAssignment assignment)
                 {
+                    if (!varStack.ContainsKey(assignment.DestinationName))
+                    {
+                        throw new Exception($"Cannot use undefined variable '{assignment.DestinationName}'!");
+                    }
                     TranslateExpression(il, assignment.Value, varStack);
                     il.Emit(OpCodes.Stloc, varStack[assignment.DestinationName]);
                 }

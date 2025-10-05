@@ -19,6 +19,7 @@ namespace Koala
 
                 > koala <build|make> <args>
                     -p <path> - REQUIRED, path to source file(usually *.kls)
+
                 """);
         }
 
