@@ -6,6 +6,7 @@
         Subtract,
         Multiply,
         Divide,
+        Remain,
     }
 
     public sealed class ASTBinOperation(ASTNode left, BinOperationType op, ASTNode right) : ASTNode

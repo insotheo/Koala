@@ -4,7 +4,7 @@
     {
         EOF, Identifier, Number, FloatNumber, Unknown, Keyword,
 
-        Plus, Minus, Asterisk, Slash, AssignmentSign,
+        Plus, Minus, Asterisk, Slash, AssignmentSign, Percent,
 
         Colon, Semicolon, LParen, RParen, LBrace, RBrace
     }

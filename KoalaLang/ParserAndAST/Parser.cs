@@ -146,9 +146,17 @@ namespace KoalaLang.ParserAndAST
         ASTNode ParseTerm()
         {
             ASTNode left = ParseFactor();
-            while (_idx < _tokens.Count && (_tokens[_idx].Type == TokenType.Asterisk || _tokens[_idx].Type == TokenType.Slash))
+            while (_idx < _tokens.Count && (_tokens[_idx].Type == TokenType.Asterisk || _tokens[_idx].Type == TokenType.Slash || _tokens[_idx].Type == TokenType.Percent))
             {
-                BinOperationType op = _tokens[_idx].Type == TokenType.Asterisk ? BinOperationType.Multiply : BinOperationType.Divide;
+                BinOperationType op = _tokens[_idx].Type switch
+                {
+                    TokenType.Asterisk => BinOperationType.Multiply,
+                    TokenType.Slash => BinOperationType.Divide,
+                    TokenType.Percent => BinOperationType.Remain,
+
+                    _ => throw new Exception("Unknow operation in expression!")
+                };
+
                 Next();
                 ASTNode right = ParseFactor();
                 left = new ASTBinOperation(left, op, right);

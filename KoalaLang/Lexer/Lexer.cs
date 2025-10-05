@@ -74,6 +74,7 @@ namespace KoalaLang.Lexer
                     case '}': _tokens.Add(new(TokenType.RBrace, "", _ln, _col)); Next(); continue;
 
                     case '=': _tokens.Add(new(TokenType.AssignmentSign, "", _ln, _col)); Next(); continue;
+                    case '%': _tokens.Add(new(TokenType.Percent, "", _ln, _col)); Next(); continue;
                     case '+': _tokens.Add(new(TokenType.Plus, "", _ln, _col)); Next(); continue;
                     case '-': _tokens.Add(new(TokenType.Minus, "", _ln, _col)); Next(); continue;
                     case '*': _tokens.Add(new(TokenType.Asterisk, "", _ln, _col)); Next(); continue;

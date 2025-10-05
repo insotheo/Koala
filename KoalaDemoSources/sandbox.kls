@@ -1,13 +1,3 @@
-//kx + b = 0
-//x = -b/k
-
-func Main(): float{
-	let x: float;
-
-	let k: float = 50.0;
-	let b: float = 10.0;
-
-	x = -b/k;
-
-	return x;
+func Main(): int{
+	return 20 % 3;
 }

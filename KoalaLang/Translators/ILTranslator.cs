@@ -113,6 +113,7 @@ namespace KoalaLang.Translators
                     case BinOperationType.Subtract: il.Emit(OpCodes.Sub); break;
                     case BinOperationType.Multiply: il.Emit(OpCodes.Mul); break;
                     case BinOperationType.Divide: il.Emit(OpCodes.Div); break;
+                    case BinOperationType.Remain: il.Emit(OpCodes.Rem); break;
 
                     default: throw new Exception($"Unknown binary operation: {binOp.OperationType}");
                 }
