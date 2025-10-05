@@ -1,6 +1,7 @@
 ﻿using KoalaLang.ParserAndAST;
 using KoalaLang.ParserAndAST.AST;
 using System;
+using System.Collections.Generic;
 using System.Reflection;
 using System.Reflection.Emit;
 
@@ -17,7 +18,7 @@ namespace KoalaLang.Translators
             AssemblyName assemblyName = new AssemblyName(_asmName);
             AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(assemblyName, AssemblyBuilderAccess.RunAndCollect);
 
-            ModuleBuilder moduleBuilder = assemblyBuilder.DefineDynamicModule($"{_asmName}Module");
+            ModuleBuilder moduleBuilder = assemblyBuilder.DefineDynamicModule("ApplicationDynamicModule");
 
             TypeBuilder typeBuilder = moduleBuilder.DefineType(_moduleName, TypeAttributes.Public | TypeAttributes.Class);
 
@@ -40,12 +41,24 @@ namespace KoalaLang.Translators
 
         private void TranslateBody(ILGenerator il, ASTCodeBlock body)
         {
+            Dictionary<string, LocalBuilder> varStack = new Dictionary<string, LocalBuilder>();
+
             foreach(ASTNode node in body.Nodes)
             {
                 if(node is ASTReturn ret)
                 {
-                    TranslateExpression(il, ret.ReturnValue);
+                    TranslateExpression(il, ret.ReturnValue, varStack);
                     il.Emit(OpCodes.Ret);
+                }
+                else if(node is ASTVariableDeclaration varDecl)
+                {
+                    LocalBuilder localVariable = il.DeclareLocal(GetTypeByName(varDecl.Type));
+                    varStack.Add(varDecl.Name, localVariable);
+                }
+                else if(node is ASTAssignment assignment)
+                {
+                    TranslateExpression(il, assignment.Value, varStack);
+                    il.Emit(OpCodes.Stloc, varStack[assignment.DestinationName]);
                 }
             }
         }
@@ -63,17 +76,26 @@ namespace KoalaLang.Translators
             return methodBuilder;
         }
 
-        private void TranslateExpression(ILGenerator il, ASTNode expr)
+        private void TranslateExpression(ILGenerator il, ASTNode expr, Dictionary<string, LocalBuilder> varStack)
         {
             if (expr is ASTConstant<int> intConst) il.Emit(OpCodes.Ldc_I4, intConst.Value);
             else if (expr is ASTConstant<float> floatConst) il.Emit(OpCodes.Ldc_R4, floatConst.Value);
 
-            else if(expr is ASTBinOperation binOp)
+            else if(expr is ASTVariableUse varUse)
             {
-                TranslateExpression(il, binOp.Left);
-                TranslateExpression(il, binOp.Right);
+                if (!varStack.ContainsKey(varUse.VariableName))
+                {
+                    throw new Exception($"Cannot use undefined variable '{varUse.VariableName}'!");
+                }
+                il.Emit(OpCodes.Ldloc, varStack[varUse.VariableName]);
+            }
 
-                switch(binOp.OperationType)
+            else if (expr is ASTBinOperation binOp)
+            {
+                TranslateExpression(il, binOp.Left, varStack);
+                TranslateExpression(il, binOp.Right, varStack);
+
+                switch (binOp.OperationType)
                 {
                     case BinOperationType.Add: il.Emit(OpCodes.Add); break;
                     case BinOperationType.Subtract: il.Emit(OpCodes.Sub); break;
@@ -84,11 +106,11 @@ namespace KoalaLang.Translators
                 }
             }
 
-            else if(expr is ASTUnOperation unOp)
+            else if (expr is ASTUnOperation unOp)
             {
-                TranslateExpression(il, unOp.Operand);
+                TranslateExpression(il, unOp.Operand, varStack);
 
-                switch(unOp.OperationType)
+                switch (unOp.OperationType)
                 {
                     case UnaryOperationType.Negate: il.Emit(OpCodes.Neg); break;
 

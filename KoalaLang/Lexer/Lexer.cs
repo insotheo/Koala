@@ -55,6 +55,7 @@ namespace KoalaLang.Lexer
                     if (
                         identifier == "fn"
                         || identifier == "return"
+                        || identifier == "let"
                         ) _tokens.Add(new(TokenType.Keyword, identifier, _ln, _col));
                     else _tokens.Add(new(TokenType.Identifier, identifier, _ln, _col));
                     continue;
@@ -64,6 +65,7 @@ namespace KoalaLang.Lexer
                 {
                     case ';': _tokens.Add(new(TokenType.Semicolon, "", _ln, _col)); Next(); continue;
                     case ':': _tokens.Add(new(TokenType.Colon, "", _ln, _col)); Next(); continue;
+
                     
                     case '(': _tokens.Add(new(TokenType.LParen, "", _ln, _col)); Next(); continue;
                     case ')': _tokens.Add(new(TokenType.RParen, "", _ln, _col)); Next(); continue;
@@ -71,6 +73,7 @@ namespace KoalaLang.Lexer
                     case '{': _tokens.Add(new(TokenType.LBrace, "", _ln, _col)); Next(); continue;
                     case '}': _tokens.Add(new(TokenType.RBrace, "", _ln, _col)); Next(); continue;
 
+                    case '=': _tokens.Add(new(TokenType.AssignmentSign, "", _ln, _col)); Next(); continue;
                     case '+': _tokens.Add(new(TokenType.Plus, "", _ln, _col)); Next(); continue;
                     case '-': _tokens.Add(new(TokenType.Minus, "", _ln, _col)); Next(); continue;
                     case '*': _tokens.Add(new(TokenType.Asterisk, "", _ln, _col)); Next(); continue;

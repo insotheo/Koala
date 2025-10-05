@@ -1,3 +1,13 @@
-fn Main(): int{
-	return 2 + 2 * 2; //ans: 6
+//kx + b = 0
+//x = -b/k
+
+fn Main(): float{
+	let x: float;
+
+	let k: float = 50.0;
+	let b: float = 10.0;
+
+	x = -b/k;
+
+	return x;
 }

@@ -42,6 +42,7 @@ namespace KoalaLang.ParserAndAST
                     if (_tokens[_idx].Type == TokenType.Keyword)
                     {
                         if (_tokens[_idx].Value == "fn") block.Nodes.Add(ParseFunction());
+
                         else if (_tokens[_idx].Value == "return")
                         {
                             Next();
@@ -51,7 +52,49 @@ namespace KoalaLang.ParserAndAST
 
                             block.Nodes.Add(new ASTReturn(expr));
                         }
+
+                        else if( _tokens[_idx].Value == "let") //let <identifier>: <identifier>
+                        {
+                            FatalNext(TokenType.Identifier);
+                            string varName = _tokens[_idx].Value;
+
+                            FatalNext(TokenType.Colon);
+                            FatalNext(TokenType.Identifier);
+                            string typeName = _tokens[_idx].Value;
+
+                            Next();
+
+                            ASTVariableDeclaration varDecl = new ASTVariableDeclaration(varName, typeName);
+
+                            if (_tokens[_idx].Type == TokenType.AssignmentSign)
+                            {
+                                Next();
+                                ASTNode expr = ParseExpression();
+                                FatalCheck(TokenType.Semicolon);
+
+                                block.Nodes.Add(varDecl);
+                                block.Nodes.Add(new ASTAssignment(varName, expr));
+                            }
+                            else if (_tokens[_idx].Type == TokenType.Semicolon) block.Nodes.Add(varDecl);
+
+                            else throw new Exception("Invalid variable declaration signature");
+                        }
                     }
+
+                    else if (_tokens[_idx].Type == TokenType.Identifier)
+                    {
+                        string identifier = _tokens[_idx].Value;
+                        Next();
+
+                        if (_tokens[_idx].Type == TokenType.AssignmentSign)
+                        {
+                            Next();
+                            ASTNode expr = ParseExpression();
+                            FatalCheck(TokenType.Semicolon);
+                            block.Nodes.Add(new ASTAssignment(identifier, expr));
+                        }
+                    }
+
                     else throw new Exception("Unknown token inside body");
 
                     Next();
@@ -125,6 +168,18 @@ namespace KoalaLang.ParserAndAST
                 ASTNode number = new ASTConstant<float>(float.Parse(_tokens[_idx].Value));
                 Next();
                 return number;
+            }
+
+            else if (_tokens[_idx].Type == TokenType.Identifier)
+            {
+                string identifier = _tokens[_idx].Value;
+                Next();
+
+                if (_tokens[_idx].Type == TokenType.LParen)
+                {
+                    //TODO: Function call
+                }
+                else return new ASTVariableUse(identifier);
             }
 
             else if (_tokens[_idx].Type == TokenType.Minus)
