@@ -53,7 +53,7 @@ namespace KoalaLang.Lexer
                     }
 
                     if (
-                        identifier == "fn"
+                        identifier == "func"
                         || identifier == "return"
                         || identifier == "let"
                         ) _tokens.Add(new(TokenType.Keyword, identifier, _ln, _col));

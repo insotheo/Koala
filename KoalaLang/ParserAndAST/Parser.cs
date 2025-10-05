@@ -41,7 +41,7 @@ namespace KoalaLang.ParserAndAST
                 {
                     if (_tokens[_idx].Type == TokenType.Keyword)
                     {
-                        if (_tokens[_idx].Value == "fn") block.Nodes.Add(ParseFunction());
+                        if (_tokens[_idx].Value == "func") block.Nodes.Add(ParseFunction());
 
                         else if (_tokens[_idx].Value == "return")
                         {
