@@ -1,6 +1,3 @@
-func Main(): bool{
-	let a: bool = true;
-	let b: bool = false;
-
-	return a;
+func Main(): int{
+	return (!((-~0<<10)>>10) | 3) & 5;
 }

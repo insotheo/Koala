@@ -174,7 +174,76 @@ namespace KoalaLang.ParserAndAST
             return function;
         }
 
-        ASTNode ParseExpression(int line)
+        ASTNode ParseExpression(int line) => ParseLogicalOr(line);
+
+        ASTNode ParseLogicalOr(int line)
+        {
+            ASTNode left = ParseLogicalAnd(line);
+            while (_idx < _tokens.Count && _tokens[_idx].Type == TokenType.LogicalOr)
+            {
+                Next();
+                ASTNode right = ParseLogicalAnd(line);
+                left = new ASTBinOperation(left, BinOperationType.LogicalOr, right, line);
+            }
+            return left;
+        }
+        ASTNode ParseLogicalAnd(int line)
+        {
+            ASTNode left = ParseBitwiseOr(line);
+            while (_idx < _tokens.Count && _tokens[_idx].Type == TokenType.LogicalAnd)
+            {
+                Next();
+                ASTNode right = ParseBitwiseOr(line);
+                left = new ASTBinOperation(left, BinOperationType.LogicalAnd, right, line);
+            }
+            return left;
+        }
+        ASTNode ParseBitwiseOr(int line)
+        {
+            ASTNode left = ParseXor(line);
+            while (_idx < _tokens.Count && _tokens[_idx].Type == TokenType.BitwiseOr)
+            {
+                Next();
+                ASTNode right = ParseXor(line);
+                left = new ASTBinOperation(left, BinOperationType.BitwiseOr, right, line);
+            }
+            return left;
+        }
+        ASTNode ParseXor(int line)
+        {
+            ASTNode left = ParseBitwiseAnd(line);
+            while (_idx < _tokens.Count && _tokens[_idx].Type == TokenType.Xor)
+            {
+                Next();
+                ASTNode right = ParseBitwiseAnd(line);
+                left = new ASTBinOperation(left, BinOperationType.Xor, right, line);
+            }
+            return left;
+        }
+        ASTNode ParseBitwiseAnd(int line)
+        {
+            ASTNode left = ParseShift(line);
+            while (_idx < _tokens.Count && _tokens[_idx].Type == TokenType.BitwiseAnd)
+            {
+                Next();
+                ASTNode right = ParseShift(line);
+                left = new ASTBinOperation(left, BinOperationType.BitwiseAnd, right, line);
+            }
+            return left;
+        }
+        ASTNode ParseShift(int line)
+        {
+            ASTNode left = ParseArithmetic(line);
+            while (_idx < _tokens.Count && (_tokens[_idx].Type == TokenType.LeftShift || _tokens[_idx].Type == TokenType.RightShift))
+            {
+                BinOperationType op = _tokens[_idx].Type == TokenType.LeftShift ? BinOperationType.LeftShift : BinOperationType.RightShift;
+                Next();
+                ASTNode right = ParseArithmetic(line);
+                left = new ASTBinOperation(left, op, right, line);
+            }
+            return left;
+        }
+        ASTNode ParseArithmetic(int line)
         {
             ASTNode left = ParseTerm(line);
             while(_idx < _tokens.Count && (_tokens[_idx].Type == TokenType.Plus || _tokens[_idx].Type == TokenType.Minus))
@@ -244,6 +313,18 @@ namespace KoalaLang.ParserAndAST
                 Next();
                 ASTNode expr = ParseFactor(line);
                 return new ASTUnOperation(UnaryOperationType.Negate, expr, line);
+            }
+            else if (_tokens[_idx].Type == TokenType.LogicalNot)
+            {
+                Next();
+                ASTNode expr = ParseFactor(line);
+                return new ASTUnOperation(UnaryOperationType.LogicalNot, expr, line);
+            }
+            else if (_tokens[_idx].Type == TokenType.BitwiseNot)
+            {
+                Next();
+                ASTNode expr = ParseFactor(line);
+                return new ASTUnOperation(UnaryOperationType.BitwiseNot, expr, line);
             }
 
             else if (_tokens[_idx].Type == TokenType.LParen)

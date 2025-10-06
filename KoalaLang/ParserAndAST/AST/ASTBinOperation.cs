@@ -7,6 +7,15 @@
         Multiply,
         Divide,
         Remain,
+
+        Xor,
+        LogicalAnd,
+        LogicalOr,
+
+        BitwiseAnd,
+        BitwiseOr,
+        LeftShift,
+        RightShift,
     }
 
     public sealed class ASTBinOperation(ASTNode left, BinOperationType op, ASTNode right, int line) : ASTNode(line)

@@ -138,6 +138,18 @@ namespace KoalaLang.Translators
                     case BinOperationType.Divide: il.Emit(OpCodes.Div); break;
                     case BinOperationType.Remain: il.Emit(OpCodes.Rem); break;
 
+
+                    case BinOperationType.BitwiseAnd:
+                    case BinOperationType.LogicalAnd: il.Emit(OpCodes.And); break;
+
+                    case BinOperationType.BitwiseOr:
+                    case BinOperationType.LogicalOr: il.Emit(OpCodes.Or); break;
+
+                    case BinOperationType.Xor: il.Emit(OpCodes.Xor); break;
+
+                    case BinOperationType.LeftShift: il.Emit(OpCodes.Shl); break;
+                    case BinOperationType.RightShift: il.Emit(OpCodes.Shr); break;
+
                     default: throw new Exception($"[Error at line {binOp.Line}]: Unknown binary operation '{binOp.OperationType}'");
                 }
             }
@@ -149,6 +161,8 @@ namespace KoalaLang.Translators
                 switch (unOp.OperationType)
                 {
                     case UnaryOperationType.Negate: il.Emit(OpCodes.Neg); break;
+                    case UnaryOperationType.LogicalNot: il.Emit(OpCodes.Ldc_I4_1); il.Emit(OpCodes.Xor); break;
+                    case UnaryOperationType.BitwiseNot: il.Emit(OpCodes.Not); break;
 
                     default: throw new Exception($"[Error at line {unOp.Line}]: Unknown unary operation '{unOp.OperationType}'");
                 }
@@ -233,7 +247,7 @@ namespace KoalaLang.Translators
                 "int" => typeof(int),
                 "float" => typeof(float),
 
-                "bool" => typeof(float),
+                "bool" => typeof(bool),
 
                 _ => throw new Exception($"[Error at line {line}]: Unknown type '{typeName}'"),
             };
