@@ -9,7 +9,7 @@
         Remain,
     }
 
-    public sealed class ASTBinOperation(ASTNode left, BinOperationType op, ASTNode right) : ASTNode
+    public sealed class ASTBinOperation(ASTNode left, BinOperationType op, ASTNode right, int line) : ASTNode(line)
     {
         internal ASTNode Left = left;
         internal BinOperationType OperationType = op;

@@ -33,7 +33,8 @@ namespace KoalaLang.Translators
                     if (node is ASTFunction func)
                     {
                         FunctionInfo funcInfo = _currentModule.Functions.FirstOrDefault(x => x.Name == func.FunctionName, null);
-                        if (funcInfo == null) throw new Exception($"Function '{funcInfo.Name}' was not declared!");
+                        if (funcInfo == null) 
+                            throw new Exception($"[Error at line {func.Line}]: Function '{func.FunctionName}' was not declared before use");
 
                         ILGenerator il = (funcInfo.Info as MethodBuilder).GetILGenerator();
                         TranslateBody(il, func.Body, func);
@@ -43,7 +44,7 @@ namespace KoalaLang.Translators
             }
             catch(Exception ex)
             {
-                Console.Error.WriteLine($"Translator error(at {moduleName}): {ex.Message}");
+                Console.Error.WriteLine($"Translator error(at {_currentModule.GetFullName()}): {ex.Message}");
                 Environment.Exit(-1);
             }
 
@@ -62,7 +63,7 @@ namespace KoalaLang.Translators
                 int index = 0;
                 foreach((string argName, string argType) in func.Args)
                 {
-                    Type type = GetTypeByName(argType);
+                    Type type = GetTypeByName(argType, func.Line);
 
                     LocalBuilder local = il.DeclareLocal(type);
                     varStack.Add(argName, local);
@@ -84,7 +85,7 @@ namespace KoalaLang.Translators
 
                 else if (node is ASTVariableDeclaration varDecl)
                 {
-                    LocalBuilder localVariable = il.DeclareLocal(GetTypeByName(varDecl.Type));
+                    LocalBuilder localVariable = il.DeclareLocal(GetTypeByName(varDecl.Type, varDecl.Line));
                     varStack.Add(varDecl.Name, localVariable);
                 }
 
@@ -92,7 +93,7 @@ namespace KoalaLang.Translators
                 {
                     if (!varStack.ContainsKey(assignment.DestinationName))
                     {
-                        throw new Exception($"Cannot use undefined variable '{assignment.DestinationName}'!");
+                        throw new Exception($"[Error at line {assignment.Line}]: Cannot assign to undefined variable '{assignment.DestinationName}'");
                     }
                     TranslateExpression(il, assignment.Value, varStack);
                     il.Emit(OpCodes.Stloc, varStack[assignment.DestinationName]);
@@ -113,7 +114,7 @@ namespace KoalaLang.Translators
             {
                 if (!varStack.ContainsKey(varUse.VariableName))
                 {
-                    throw new Exception($"Cannot use undefined variable '{varUse.VariableName}'!");
+                    throw new Exception($"[Error at line {varUse.Line}]: Variable '{varUse.VariableName}' is used before being defined");
                 }
                 il.Emit(OpCodes.Ldloc, varStack[varUse.VariableName]);
             }
@@ -136,7 +137,7 @@ namespace KoalaLang.Translators
                     case BinOperationType.Divide: il.Emit(OpCodes.Div); break;
                     case BinOperationType.Remain: il.Emit(OpCodes.Rem); break;
 
-                    default: throw new Exception($"Unknown binary operation: {binOp.OperationType}");
+                    default: throw new Exception($"[Error at line {binOp.Line}]: Unknown binary operation '{binOp.OperationType}'");
                 }
             }
 
@@ -148,11 +149,11 @@ namespace KoalaLang.Translators
                 {
                     case UnaryOperationType.Negate: il.Emit(OpCodes.Neg); break;
 
-                    default: throw new Exception($"Unknown unary operation: {unOp.OperationType}");
+                    default: throw new Exception($"[Error at line {unOp.Line}]: Unknown unary operation '{unOp.OperationType}'");
                 }
             }
 
-            else throw new Exception($"Unknown expression type: {expr.GetType().Name}");
+            else throw new Exception($"[Error at line {expr.Line}]: Unknown expression type '{expr.GetType().Name}'");
         }
 
         private void TranslateFunctionCall(ILGenerator il, ASTFunctionCall funcCall, Dictionary<string, LocalBuilder> varStack)
@@ -168,7 +169,7 @@ namespace KoalaLang.Translators
                 {
                     if(info.Args.Count != funcCall.Args.Count)
                     {
-                        throw new Exception("Incorrect arguments amount");
+                        throw new Exception($"[Error at line {funcCall.Line}]: Function '{shortName}' called with incorrect number of arguments (expected {info.Args.Count}, got {funcCall.Args.Count})");
                     }
 
                     methodInfo = info.Info;
@@ -178,11 +179,11 @@ namespace KoalaLang.Translators
 
             if (methodInfo == null)
             {
-                throw new Exception($"Cannot call undefined function '{shortName}'");
+                throw new Exception($"[Error at line {funcCall.Line}]: Cannot call undefined function '{shortName}'");
             }
 
             //loading args
-            foreach(ASTNode arg in funcCall.Args)
+            foreach (ASTNode arg in funcCall.Args)
             {
                 TranslateExpression(il, arg, varStack);
             }
@@ -203,7 +204,7 @@ namespace KoalaLang.Translators
                         int i = 0;
                         foreach (var (argName, argValue) in func.Args)
                         {
-                            args[i] = GetTypeByName(argValue);
+                            args[i] = GetTypeByName(argValue, func.Line);
                             i += 1;
                         }
                     }
@@ -211,7 +212,7 @@ namespace KoalaLang.Translators
                     MethodBuilder methodBuilder = typeBuilder.DefineMethod(
                         func.FunctionName,
                         MethodAttributes.Public | MethodAttributes.Static,
-                        GetTypeByName(func.ReturnTypeName),
+                        GetTypeByName(func.ReturnTypeName, func.Line),
                         func.Args.Count == 0 ? Type.EmptyTypes : args
                     );
 
@@ -223,15 +224,17 @@ namespace KoalaLang.Translators
             modules.Add(mod);
         }
 
-        private Type GetTypeByName(string typeName) {
+        private Type GetTypeByName(string typeName, int line) {
             return typeName switch
             {
                 "void" => typeof(void),
 
                 "int" => typeof(int),
                 "float" => typeof(float),
-                _ => throw new Exception($"Unknown type: {typeName}"),
+
+                _ => throw new Exception($"[Error at line {line}]: Unknown type '{typeName}'"),
             };
         }
+
     }
 }

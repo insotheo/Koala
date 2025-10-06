@@ -5,7 +5,7 @@
         Negate, //-x
     }
 
-    public sealed class ASTUnOperation(UnaryOperationType type, ASTNode op) : ASTNode
+    public sealed class ASTUnOperation(UnaryOperationType type, ASTNode op, int line) : ASTNode(line)
     {
         internal ASTNode Operand = op;
         internal UnaryOperationType OperationType = type;

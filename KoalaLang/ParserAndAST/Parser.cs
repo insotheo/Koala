@@ -3,6 +3,7 @@ using KoalaLang.ParserAndAST.AST;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection.Metadata;
 
 namespace KoalaLang.ParserAndAST
 {
@@ -33,7 +34,7 @@ namespace KoalaLang.ParserAndAST
         ASTCodeBlock ParseCodeBlock(bool initShift = true, bool tillTheLeftBrace = true)
         {
             if (initShift) Next();
-            ASTCodeBlock block = new ASTCodeBlock();
+            ASTCodeBlock block = new ASTCodeBlock(-1);
 
             try
             {
@@ -45,16 +46,20 @@ namespace KoalaLang.ParserAndAST
 
                         else if (_tokens[_idx].Value == "return")
                         {
+                            int line = _tokens[_idx].Line;
+
                             Next();
 
-                            ASTNode expr = _tokens[_idx].Type == TokenType.Semicolon ? null : ParseExpression();
+                            ASTNode expr = _tokens[_idx].Type == TokenType.Semicolon ? null : ParseExpression(line);
                             FatalCheck(TokenType.Semicolon);
 
-                            block.Nodes.Add(new ASTReturn(expr));
+                            block.Nodes.Add(new ASTReturn(expr, line));
                         }
 
                         else if( _tokens[_idx].Value == "let") //let <identifier>: <identifier>
                         {
+                            int line = _tokens[_idx].Line;
+
                             FatalNext(TokenType.Identifier);
                             string varName = _tokens[_idx].Value;
 
@@ -64,38 +69,40 @@ namespace KoalaLang.ParserAndAST
 
                             Next();
 
-                            ASTVariableDeclaration varDecl = new ASTVariableDeclaration(varName, typeName);
+                            ASTVariableDeclaration varDecl = new ASTVariableDeclaration(varName, typeName, line);
 
                             if (_tokens[_idx].Type == TokenType.AssignmentSign)
                             {
                                 Next();
-                                ASTNode expr = ParseExpression();
+                                ASTNode expr = ParseExpression(line);
                                 FatalCheck(TokenType.Semicolon);
 
                                 block.Nodes.Add(varDecl);
-                                block.Nodes.Add(new ASTAssignment(varName, expr));
+                                block.Nodes.Add(new ASTAssignment(varName, expr, line));
                             }
                             else if (_tokens[_idx].Type == TokenType.Semicolon) block.Nodes.Add(varDecl);
 
-                            else throw new Exception("Invalid variable declaration signature");
+                            else throw new Exception($"Invalid variable declaration signature");
                         }
                     }
 
                     else if (_tokens[_idx].Type == TokenType.Identifier)
                     {
+                        int line = _tokens[_idx].Line;
+
                         string identifier = _tokens[_idx].Value;
                         Next();
 
                         if (_tokens[_idx].Type == TokenType.AssignmentSign)
                         {
                             Next();
-                            ASTNode expr = ParseExpression();
+                            ASTNode expr = ParseExpression(line);
                             FatalCheck(TokenType.Semicolon);
-                            block.Nodes.Add(new ASTAssignment(identifier, expr));
+                            block.Nodes.Add(new ASTAssignment(identifier, expr, line));
                         }
                         else if (_tokens[_idx].Type == TokenType.LParen)
                         {
-                            block.Nodes.Add(ParseFunctionCall(identifier));
+                            block.Nodes.Add(ParseFunctionCall(identifier, line));
                         }
                     }
 
@@ -115,7 +122,7 @@ namespace KoalaLang.ParserAndAST
 
         ASTFunction ParseFunction()
         {
-            ASTFunction function = new ASTFunction();
+            ASTFunction function = new ASTFunction(-1);
 
             FatalNext(TokenType.Identifier);
             function.FunctionName = _tokens[_idx].Value;
@@ -133,7 +140,7 @@ namespace KoalaLang.ParserAndAST
                 string identifier = _tokens[_idx].Value;
                 if (args.ContainsKey(identifier))
                 {
-                    throw new Exception($"Argument {identifier} already exists at functnion {function.FunctionName}");
+                    throw new Exception($"Argument '{identifier}' already exists in function '{function.FunctionName}'");
                 }
 
                 FatalNext(TokenType.Colon);
@@ -167,21 +174,21 @@ namespace KoalaLang.ParserAndAST
             return function;
         }
 
-        ASTNode ParseExpression()
+        ASTNode ParseExpression(int line)
         {
-            ASTNode left = ParseTerm();
+            ASTNode left = ParseTerm(line);
             while(_idx < _tokens.Count && (_tokens[_idx].Type == TokenType.Plus || _tokens[_idx].Type == TokenType.Minus))
             {
                 BinOperationType op = _tokens[_idx].Type == TokenType.Plus ? BinOperationType.Add : BinOperationType.Subtract;
                 Next();
-                ASTNode right = ParseTerm();
-                left = new ASTBinOperation(left, op, right);
+                ASTNode right = ParseTerm(line);
+                left = new ASTBinOperation(left, op, right, line);
             }
             return left;
         }
-        ASTNode ParseTerm()
+        ASTNode ParseTerm(int line)
         {
-            ASTNode left = ParseFactor();
+            ASTNode left = ParseFactor(line);
             while (_idx < _tokens.Count && (_tokens[_idx].Type == TokenType.Asterisk || _tokens[_idx].Type == TokenType.Slash || _tokens[_idx].Type == TokenType.Percent))
             {
                 BinOperationType op = _tokens[_idx].Type switch
@@ -190,26 +197,26 @@ namespace KoalaLang.ParserAndAST
                     TokenType.Slash => BinOperationType.Divide,
                     TokenType.Percent => BinOperationType.Remain,
 
-                    _ => throw new Exception("Unknow operation in expression!")
+                    _ => throw new Exception("Unknown operation in expression")
                 };
 
                 Next();
-                ASTNode right = ParseFactor();
-                left = new ASTBinOperation(left, op, right);
+                ASTNode right = ParseFactor(line);
+                left = new ASTBinOperation(left, op, right, line);
             }
             return left;
         }
-        ASTNode ParseFactor()
+        ASTNode ParseFactor(int line)
         {
             if (_tokens[_idx].Type == TokenType.Number)
             {
-                ASTNode number = new ASTConstant<int>(int.Parse(_tokens[_idx].Value));
+                ASTNode number = new ASTConstant<int>(int.Parse(_tokens[_idx].Value), line);
                 Next();
                 return number;
             }
             else if (_tokens[_idx].Type == TokenType.FloatNumber)
             {
-                ASTNode number = new ASTConstant<float>(float.Parse(_tokens[_idx].Value));
+                ASTNode number = new ASTConstant<float>(float.Parse(_tokens[_idx].Value), line);
                 Next();
                 return number;
             }
@@ -221,22 +228,22 @@ namespace KoalaLang.ParserAndAST
 
                 if (_tokens[_idx].Type == TokenType.LParen)
                 {
-                    return ParseFunctionCall(identifier);
+                    return ParseFunctionCall(identifier, line);
                 }
-                else return new ASTVariableUse(identifier);
+                else return new ASTVariableUse(identifier, line);
             }
 
             else if (_tokens[_idx].Type == TokenType.Minus)
             {
                 Next();
-                ASTNode expr = ParseFactor();
-                return new ASTUnOperation(UnaryOperationType.Negate, expr);
+                ASTNode expr = ParseFactor(line);
+                return new ASTUnOperation(UnaryOperationType.Negate, expr, line);
             }
 
             else if (_tokens[_idx].Type == TokenType.LParen)
             {
                 Next();
-                ASTNode expr = ParseExpression();
+                ASTNode expr = ParseExpression(line);
                 FatalCheck(TokenType.RParen);
                 Next();
                 return expr;
@@ -246,13 +253,13 @@ namespace KoalaLang.ParserAndAST
         }
 
         //Token before call is LParen
-        private ASTNode ParseFunctionCall(string identifier)
+        private ASTNode ParseFunctionCall(string identifier, int line)
         {
             Next(); //skips LParen
             List<ASTNode> args = new();
             while (_idx < _tokens.Count && _tokens[_idx].Type != TokenType.RParen)
             {
-                ASTNode expression = ParseExpression();
+                ASTNode expression = ParseExpression(line);
                 args.Add(expression);
                 if (_tokens[_idx].Type == TokenType.Comma)
                 {
@@ -265,7 +272,7 @@ namespace KoalaLang.ParserAndAST
             FatalCheck(TokenType.RParen);
             Next();
 
-            return new ASTFunctionCall(identifier, args);
+            return new ASTFunctionCall(identifier, args, line);
         }
 
         void Next()
@@ -277,7 +284,8 @@ namespace KoalaLang.ParserAndAST
             if (_tokens[_idx].Type != type)
             {
                 string line = _lexer.GetStringLine(_tokens[_idx].Line);
-                Console.Error.WriteLine($"Unexpected token({_tokens[_idx].Type}: \"{_tokens[_idx].Value}\") at ln: {_tokens[_idx].Line}, col: {_tokens[_idx].Column}; expected: {type}: {line}");
+                Console.Error.WriteLine($"Error at line {_tokens[_idx].Line}, col {_tokens[_idx].Column}: Unexpected token{(_tokens[_idx].Value != String.Empty ? " '" + _tokens[_idx].Value + "' " : " ")}of type {_tokens[_idx].Type}; expected token of type {type}: {line}");
+                Console.Error.WriteLine($"Unexpected token{(_tokens[_idx].Value != String.Empty ? " '" + _tokens[_idx].Value + "' " : " ")}of type {_tokens[_idx].Type} at line {_tokens[_idx].Line}, col {_tokens[_idx].Column}; expected token of type {type}: {line}");
                 Environment.Exit(-1);
             }
         }

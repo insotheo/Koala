@@ -9,13 +9,13 @@ namespace KoalaLang.Translators
         internal List<ModuleInfo> Submodules = new List<ModuleInfo>();
         internal ModuleInfo ParentModule = _parentModule;
 
-        internal string GetFullPath(bool includeSelf = true)
+        internal string GetFullName(bool includeSelf = true)
         {
             if(ParentModule == null)
             {
                 return Name;
             }
-            string parentsFullPath = ParentModule.GetFullPath(true);
+            string parentsFullPath = ParentModule.GetFullName(true);
             string fullPath = parentsFullPath + "." + (includeSelf ? Name : "");
             return fullPath.TrimEnd('.');
         }
