@@ -109,6 +109,7 @@ namespace KoalaLang.Translators
 
             else if (expr is ASTConstant<int> intConst) il.Emit(OpCodes.Ldc_I4, intConst.Value);
             else if (expr is ASTConstant<float> floatConst) il.Emit(OpCodes.Ldc_R4, floatConst.Value);
+            else if (expr is ASTConstant<bool> boolConst) il.Emit(boolConst.Value ? OpCodes.Ldc_I4_1 : OpCodes.Ldc_I4_0);
 
             else if (expr is ASTVariableUse varUse)
             {
@@ -231,6 +232,8 @@ namespace KoalaLang.Translators
 
                 "int" => typeof(int),
                 "float" => typeof(float),
+
+                "bool" => typeof(float),
 
                 _ => throw new Exception($"[Error at line {line}]: Unknown type '{typeName}'"),
             };

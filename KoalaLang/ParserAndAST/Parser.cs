@@ -220,6 +220,12 @@ namespace KoalaLang.ParserAndAST
                 Next();
                 return number;
             }
+            else if (_tokens[_idx].Type == TokenType.BooleanValue)
+            {
+                ASTNode boolean = new ASTConstant<bool>(_tokens[_idx].Value == "true" ? true : false, line);
+                Next();
+                return boolean;
+            }
 
             else if (_tokens[_idx].Type == TokenType.Identifier)
             {

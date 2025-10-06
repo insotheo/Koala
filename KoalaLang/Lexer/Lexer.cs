@@ -57,7 +57,11 @@ namespace KoalaLang.Lexer
                         || identifier == "return"
                         || identifier == "let"
                         ) _tokens.Add(new(TokenType.Keyword, identifier, _ln, _col));
+
+                    else if (identifier == "true" || identifier == "false") _tokens.Add(new(TokenType.BooleanValue, identifier, _ln, _col));
+
                     else _tokens.Add(new(TokenType.Identifier, identifier, _ln, _col));
+                    
                     continue;
                 }
 
