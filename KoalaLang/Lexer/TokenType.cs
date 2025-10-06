@@ -6,6 +6,6 @@
 
         Plus, Minus, Asterisk, Slash, AssignmentSign, Percent,
 
-        Colon, Semicolon, LParen, RParen, LBrace, RBrace
+        Colon, Semicolon, Comma, LParen, RParen, LBrace, RBrace
     }
 }

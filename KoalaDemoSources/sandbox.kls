@@ -1,7 +1,18 @@
-/*
-This is a multi-line comment
-*/
+func Square(x: int): int{
+	return x * x;
+}
+
+func Sum(the_first_arg: int, the_second_arg: int): int{
+	return the_first_arg + the_second_arg;
+}
 
 func Main(): int{
-	return 20 % 3;
+	Hello();
+	let x: int = Square(5); //x = 5 * 5 = 25
+	x = Square(x * 2); //(25 * 2) * (25 * 2) = 50 * 50 = 2500
+	return Sum(Square(x), Square(10 + 1)); //(2500 * 2500) + ((10 + 1) * (10 + 1)) = 6250000 + 121 = 6250121
+}
+
+func Hello(): void{
+	return;
 }

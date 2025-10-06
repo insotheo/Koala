@@ -2,42 +2,48 @@
 using KoalaLang.ParserAndAST.AST;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 
 namespace KoalaLang.Translators
 {
-    public sealed class ILTranslator(Parser parser, string moduleName, string asmName)
+    public sealed class ILTranslator(string asmName)
     {
-        Parser _parser = parser;
-        string _moduleName = moduleName;
         string _asmName = asmName;
+        List<ModuleInfo> _mods = new List<ModuleInfo>();
+        ModuleInfo _currentModule = null;
 
-        public void Translate()
+        public void Translate(Parser parser, string moduleName)
         {
             AssemblyName assemblyName = new AssemblyName(_asmName);
             AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(assemblyName, AssemblyBuilderAccess.RunAndCollect);
 
             ModuleBuilder moduleBuilder = assemblyBuilder.DefineDynamicModule("ApplicationDynamicModule");
 
-            TypeBuilder typeBuilder = moduleBuilder.DefineType(_moduleName, TypeAttributes.Public | TypeAttributes.Class);
+            TypeBuilder typeBuilder = moduleBuilder.DefineType(moduleName, TypeAttributes.Public | TypeAttributes.Class);
+
+            DefineModule(ref _mods, ref typeBuilder, moduleName, parser.GetAST() as ASTCodeBlock);
+            _currentModule = _mods[0];
 
             try
             {
-                foreach (ASTNode node in (_parser.GetAST() as ASTCodeBlock).Nodes)
+                foreach (ASTNode node in (parser.GetAST() as ASTCodeBlock).Nodes)
                 {
                     if (node is ASTFunction func)
                     {
-                        MethodBuilder methodBuilder = TranslateFunction(typeBuilder, func);
-                        ILGenerator il = methodBuilder.GetILGenerator();
-                        TranslateBody(il, func.Body);
+                        FunctionInfo funcInfo = _currentModule.Functions.FirstOrDefault(x => x.Name == func.FunctionName, null);
+                        if (funcInfo == null) throw new Exception($"Function '{funcInfo.Name}' was not declared!");
+
+                        ILGenerator il = (funcInfo.Info as MethodBuilder).GetILGenerator();
+                        TranslateBody(il, func.Body, func);
                         il.Emit(OpCodes.Ret);
                     }
                 }
             }
             catch(Exception ex)
             {
-                Console.Error.WriteLine($"Translator error(at {_moduleName}): {ex.Message}");
+                Console.Error.WriteLine($"Translator error(at {moduleName}): {ex.Message}");
                 Environment.Exit(-1);
             }
 
@@ -47,23 +53,42 @@ namespace KoalaLang.Translators
             Console.WriteLine($"Function Main returned: {module.GetMethod("Main")!.Invoke(null, null)}");
         }
 
-        private void TranslateBody(ILGenerator il, ASTCodeBlock body)
+        private void TranslateBody(ILGenerator il, ASTCodeBlock body, ASTFunction func = null)
         {
             Dictionary<string, LocalBuilder> varStack = new Dictionary<string, LocalBuilder>();
 
+            if(func != null && func.Args.Count != 0)
+            {
+                int index = 0;
+                foreach((string argName, string argType) in func.Args)
+                {
+                    Type type = GetTypeByName(argType);
+
+                    LocalBuilder local = il.DeclareLocal(type);
+                    varStack.Add(argName, local);
+
+                    il.Emit(OpCodes.Ldarg, index);
+                    il.Emit(OpCodes.Stloc, local);
+
+                    index += 1;
+                }
+            }
+
             foreach(ASTNode node in body.Nodes)
             {
-                if(node is ASTReturn ret)
+                if (node is ASTReturn ret)
                 {
                     TranslateExpression(il, ret.ReturnValue, varStack);
                     il.Emit(OpCodes.Ret);
                 }
-                else if(node is ASTVariableDeclaration varDecl)
+
+                else if (node is ASTVariableDeclaration varDecl)
                 {
                     LocalBuilder localVariable = il.DeclareLocal(GetTypeByName(varDecl.Type));
                     varStack.Add(varDecl.Name, localVariable);
                 }
-                else if(node is ASTAssignment assignment)
+
+                else if (node is ASTAssignment assignment)
                 {
                     if (!varStack.ContainsKey(assignment.DestinationName))
                     {
@@ -72,34 +97,30 @@ namespace KoalaLang.Translators
                     TranslateExpression(il, assignment.Value, varStack);
                     il.Emit(OpCodes.Stloc, varStack[assignment.DestinationName]);
                 }
+
+                else if (node is ASTFunctionCall funcCall) TranslateFunctionCall(il, funcCall, varStack);
             }
-        }
-
-        private MethodBuilder TranslateFunction(TypeBuilder typeBuilder, ASTFunction functionInfo)
-        {
-            MethodBuilder methodBuilder = typeBuilder.DefineMethod(
-                functionInfo.FunctionName,
-                MethodAttributes.Public | MethodAttributes.Static,
-                GetTypeByName(functionInfo.ReturnTypeName),
-                Type.EmptyTypes
-                );
-
-
-            return methodBuilder;
         }
 
         private void TranslateExpression(ILGenerator il, ASTNode expr, Dictionary<string, LocalBuilder> varStack)
         {
-            if (expr is ASTConstant<int> intConst) il.Emit(OpCodes.Ldc_I4, intConst.Value);
+            if (expr == null) return;
+
+            else if (expr is ASTConstant<int> intConst) il.Emit(OpCodes.Ldc_I4, intConst.Value);
             else if (expr is ASTConstant<float> floatConst) il.Emit(OpCodes.Ldc_R4, floatConst.Value);
 
-            else if(expr is ASTVariableUse varUse)
+            else if (expr is ASTVariableUse varUse)
             {
                 if (!varStack.ContainsKey(varUse.VariableName))
                 {
                     throw new Exception($"Cannot use undefined variable '{varUse.VariableName}'!");
                 }
                 il.Emit(OpCodes.Ldloc, varStack[varUse.VariableName]);
+            }
+
+            else if (expr is ASTFunctionCall funcCall)
+            {
+                TranslateFunctionCall(il, funcCall, varStack);
             }
 
             else if (expr is ASTBinOperation binOp)
@@ -134,9 +155,79 @@ namespace KoalaLang.Translators
             else throw new Exception($"Unknown expression type: {expr.GetType().Name}");
         }
 
+        private void TranslateFunctionCall(ILGenerator il, ASTFunctionCall funcCall, Dictionary<string, LocalBuilder> varStack)
+        {
+            MethodInfo methodInfo = null;
+            string shortName = funcCall.FunctionName;
+
+            //TODO: make ability to interact with another modules
+            //look for it in current module
+            foreach(FunctionInfo info in _currentModule.Functions)
+            {
+                if (info.Name == shortName)
+                {
+                    if(info.Args.Count != funcCall.Args.Count)
+                    {
+                        throw new Exception("Incorrect arguments amount");
+                    }
+
+                    methodInfo = info.Info;
+                    break;
+                }
+            }
+
+            if (methodInfo == null)
+            {
+                throw new Exception($"Cannot call undefined function '{shortName}'");
+            }
+
+            //loading args
+            foreach(ASTNode arg in funcCall.Args)
+            {
+                TranslateExpression(il, arg, varStack);
+            }
+
+            //call
+            il.Emit(OpCodes.Call, methodInfo);
+        }
+
+        private void DefineModule(ref List<ModuleInfo> modules, ref TypeBuilder typeBuilder, string moduleName, ASTCodeBlock block)
+        {
+            ModuleInfo mod = new ModuleInfo(moduleName, _currentModule);
+            foreach (ASTNode node in block.Nodes)
+            {
+                if(node is ASTFunction func)
+                {
+                    Type[] args = new Type[func.Args.Count];
+                    {
+                        int i = 0;
+                        foreach (var (argName, argValue) in func.Args)
+                        {
+                            args[i] = GetTypeByName(argValue);
+                            i += 1;
+                        }
+                    }
+
+                    MethodBuilder methodBuilder = typeBuilder.DefineMethod(
+                        func.FunctionName,
+                        MethodAttributes.Public | MethodAttributes.Static,
+                        GetTypeByName(func.ReturnTypeName),
+                        func.Args.Count == 0 ? Type.EmptyTypes : args
+                    );
+
+                    FunctionInfo funcInfo = new(func.FunctionName, func.ReturnTypeName, func.Args);
+                    funcInfo.Info = methodBuilder;
+                    mod.Functions.Add(funcInfo);
+                }
+            }
+            modules.Add(mod);
+        }
+
         private Type GetTypeByName(string typeName) {
             return typeName switch
             {
+                "void" => typeof(void),
+
                 "int" => typeof(int),
                 "float" => typeof(float),
                 _ => throw new Exception($"Unknown type: {typeName}"),

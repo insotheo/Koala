@@ -88,8 +88,8 @@ namespace Koala
                 Parser parser = new(lexer);
                 parser.Parse();
 
-                ILTranslator translator = new(parser, Path.GetFileNameWithoutExtension(path), "KoalaApp");
-                translator.Translate();
+                ILTranslator translator = new("KoalaApp");
+                translator.Translate(parser, Path.GetFileNameWithoutExtension(path));
 
                 Console.WriteLine("Done!");
             }

@@ -65,7 +65,7 @@ namespace KoalaLang.Lexer
                 {
                     case ';': _tokens.Add(new(TokenType.Semicolon, "", _ln, _col)); Next(); continue;
                     case ':': _tokens.Add(new(TokenType.Colon, "", _ln, _col)); Next(); continue;
-
+                    case ',': _tokens.Add(new(TokenType.Comma, "", _ln, _col)); Next(); continue;
                     
                     case '(': _tokens.Add(new(TokenType.LParen, "", _ln, _col)); Next(); continue;
                     case ')': _tokens.Add(new(TokenType.RParen, "", _ln, _col)); Next(); continue;
