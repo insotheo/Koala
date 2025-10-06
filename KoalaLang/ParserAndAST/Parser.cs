@@ -149,12 +149,19 @@ namespace KoalaLang.ParserAndAST
             function.Args = args;
             FatalCheck(TokenType.RParen);
 
-            FatalNext(TokenType.Colon);
-
-            FatalNext(TokenType.Identifier);
-            function.ReturnTypeName = _tokens[_idx].Value;
-
-            FatalNext(TokenType.LBrace);
+            Next();
+            if (_tokens[_idx].Type == TokenType.Colon)
+            {
+                FatalNext(TokenType.Identifier);
+                function.ReturnTypeName = _tokens[_idx].Value;
+                FatalNext(TokenType.LBrace);
+            }
+            else if (_tokens[_idx].Type == TokenType.LBrace)
+            {
+                function.ReturnTypeName = "void";
+            }
+            else FatalCheck(TokenType.Colon);
+            
             function.Body = ParseCodeBlock();
 
             return function;

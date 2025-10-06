@@ -13,6 +13,6 @@ func Main(): int{
 	return Sum(Square(x), Square(10 + 1)); //(2500 * 2500) + ((10 + 1) * (10 + 1)) = 6250000 + 121 = 6250121
 }
 
-func Hello(): void{
+func Hello(){
 	return;
 }
