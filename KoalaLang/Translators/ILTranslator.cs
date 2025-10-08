@@ -169,7 +169,6 @@ namespace KoalaLang.Translators
                     case BinOperationType.Divide: il.Emit(OpCodes.Div); break;
                     case BinOperationType.Remain: il.Emit(OpCodes.Rem); break;
 
-
                     case BinOperationType.BitwiseAnd:
                     case BinOperationType.LogicalAnd: il.Emit(OpCodes.And); break;
 
@@ -180,6 +179,13 @@ namespace KoalaLang.Translators
 
                     case BinOperationType.LeftShift: il.Emit(OpCodes.Shl); break;
                     case BinOperationType.RightShift: il.Emit(OpCodes.Shr); break;
+
+                    case BinOperationType.CmpEqual: il.Emit(OpCodes.Ceq); break;
+                    case BinOperationType.CmpInequal: il.Emit(OpCodes.Ceq); il.Emit(OpCodes.Ldc_I4_0); il.Emit(OpCodes.Ceq); break;
+                    case BinOperationType.CmpLess: il.Emit(OpCodes.Clt); break;
+                    case BinOperationType.CmpLessOrEq: il.Emit(OpCodes.Cgt); il.Emit(OpCodes.Ldc_I4_0); il.Emit(OpCodes.Ceq); break; //(a > b) == false -> !(a > b) -> a <= b
+                    case BinOperationType.CmpMore: il.Emit(OpCodes.Cgt); break;
+                    case BinOperationType.CmpMoreOrEq: il.Emit(OpCodes.Clt); il.Emit(OpCodes.Ldc_I4_0); il.Emit(OpCodes.Ceq); break; //(a < b) == false -> !(a < b) -> a >= b
 
                     default: throw new Exception($"[Error at line {binOp.Line}]: Unknown binary operation '{binOp.OperationType}'");
                 }

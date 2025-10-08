@@ -236,6 +236,7 @@ namespace KoalaLang.ParserAndAST
 
                 Next();
             }
+            _idx -= 1; //step back to the } of the last cond. block
             return new(ifs, @else, -1);
         }
        
@@ -287,12 +288,46 @@ namespace KoalaLang.ParserAndAST
         }
         ASTNode ParseBitwiseAnd(int line)
         {
-            ASTNode left = ParseShift(line);
+            ASTNode left = ParseEquality(line);
             while (_idx < _tokens.Count && _tokens[_idx].Type == TokenType.BitwiseAnd)
             {
                 Next();
-                ASTNode right = ParseShift(line);
+                ASTNode right = ParseEquality(line);
                 left = new ASTBinOperation(left, BinOperationType.BitwiseAnd, right, line);
+            }
+            return left;
+        }
+        ASTNode ParseEquality(int line)
+        {
+            ASTNode left = ParseRelational(line);
+            while (_idx < _tokens.Count && (_tokens[_idx].Type == TokenType.Equal || _tokens[_idx].Type == TokenType.Inequal))
+            {
+                BinOperationType op = _tokens[_idx].Type == TokenType.Equal ? BinOperationType.CmpEqual : BinOperationType.CmpInequal;
+                Next();
+                ASTNode right = ParseRelational(line);
+                left = new ASTBinOperation(left, op, right, line);
+            }
+            return left;
+        }
+        ASTNode ParseRelational(int line)
+        {
+            ASTNode left = ParseShift(line);
+            while (_idx < _tokens.Count && (_tokens[_idx].Type == TokenType.Less || _tokens[_idx].Type == TokenType.LessOrEqual ||
+                                            _tokens[_idx].Type == TokenType.More || _tokens[_idx].Type == TokenType.MoreOrEqual))
+            {
+                BinOperationType op = _tokens[_idx].Type switch
+                {
+                    TokenType.Less => BinOperationType.CmpLess,
+                    TokenType.LessOrEqual => BinOperationType.CmpLessOrEq,
+                    TokenType.More => BinOperationType.CmpMore,
+                    TokenType.MoreOrEqual => BinOperationType.CmpMoreOrEq,
+
+                    _ => throw new Exception("Unknown operation in expression")
+                };
+
+                Next();
+                ASTNode right = ParseShift(line);
+                left = new ASTBinOperation(left, op, right, line);
             }
             return left;
         }

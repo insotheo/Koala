@@ -79,7 +79,17 @@ namespace KoalaLang.Lexer
                     case '{': _tokens.Add(new(TokenType.LBrace, "", _ln, _col)); Next(); continue;
                     case '}': _tokens.Add(new(TokenType.RBrace, "", _ln, _col)); Next(); continue;
 
-                    case '=': _tokens.Add(new(TokenType.AssignmentSign, "", _ln, _col)); Next(); continue;
+                    case '=':
+                        if(_pos + 1 < _text.Length && _text[_pos + 1] == '=')
+                        {
+                            Next();
+                            Next();
+                            _tokens.Add(new(TokenType.Equal, "", _ln, _col)); 
+                            continue;
+                        }
+                        else _tokens.Add(new(TokenType.AssignmentSign, "", _ln, _col)); 
+                        Next(); 
+                        continue;
                     case '%': _tokens.Add(new(TokenType.Percent, "", _ln, _col)); Next(); continue;
                     case '+': _tokens.Add(new(TokenType.Plus, "", _ln, _col)); Next(); continue;
                     case '-': _tokens.Add(new(TokenType.Minus, "", _ln, _col)); Next(); continue;
@@ -111,7 +121,17 @@ namespace KoalaLang.Lexer
                         Next();
                         continue;
 
-                    case '!': _tokens.Add(new(TokenType.LogicalNot, "", _ln, _col)); Next(); continue;
+                    case '!':
+                        if (_pos + 1 < _text.Length && _text[_pos + 1] == '=')
+                        {
+                            Next();
+                            Next();
+                            _tokens.Add(new(TokenType.Inequal, "", _ln, _col));
+                            continue;
+                        }
+                        _tokens.Add(new(TokenType.LogicalNot, "", _ln, _col));
+                        Next();
+                        continue;
                     case '~': _tokens.Add(new(TokenType.BitwiseNot, "", _ln, _col)); Next(); continue;
                     case '^': _tokens.Add(new(TokenType.Xor, "", _ln, _col)); Next(); continue;
                     case '&':
@@ -144,7 +164,16 @@ namespace KoalaLang.Lexer
                             _tokens.Add(new(TokenType.LeftShift, "", _ln, _col));
                             continue;
                         }
-                        break;
+                        else if (_pos + 1 < _text.Length && _text[_pos + 1] == '=')
+                        {
+                            Next();
+                            Next();
+                            _tokens.Add(new(TokenType.LessOrEqual, "", _ln, _col));
+                            continue;
+                        }
+                        else _tokens.Add(new(TokenType.Less, "", _ln, _col));
+                        Next();
+                        continue;
                     case '>':
                         if (_pos + 1 < _text.Length && _text[_pos + 1] == '>')
                         {
@@ -153,7 +182,16 @@ namespace KoalaLang.Lexer
                             _tokens.Add(new(TokenType.RightShift, "", _ln, _col));
                             continue;
                         }
-                        break;
+                        else if (_pos + 1 < _text.Length && _text[_pos + 1] == '=')
+                        {
+                            Next();
+                            Next();
+                            _tokens.Add(new(TokenType.MoreOrEqual, "", _ln, _col));
+                            continue;
+                        }
+                        else _tokens.Add(new(TokenType.More, "", _ln, _col));
+                        Next();
+                        continue;
                 }
 
                 _tokens.Add(new(TokenType.Unknown, _text[_pos].ToString(), _ln, _col));

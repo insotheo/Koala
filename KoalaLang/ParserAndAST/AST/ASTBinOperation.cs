@@ -16,6 +16,13 @@
         BitwiseOr,
         LeftShift,
         RightShift,
+
+        CmpEqual,
+        CmpInequal,
+        CmpMore,
+        CmpMoreOrEq,
+        CmpLess,
+        CmpLessOrEq,
     }
 
     public sealed class ASTBinOperation(ASTNode left, BinOperationType op, ASTNode right, int line) : ASTNode(line)

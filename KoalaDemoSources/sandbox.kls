@@ -1,10 +1,18 @@
 func Main(): int{
-	let flag: bool = false;
+	//ax^2 + bx + c = 0
+	let a: int = 9;
+	let b: int = 2*3*6;//36
+	let c: int = 36;
 
-	if(flag){
-		return 0;
+	if(a == 0){ //bx + c = 0
+		if(b != 0) { return 1; }
+		else { return 0; }
 	}
-	else{
-		return -1;
-	}
+
+	let D: int = b * b - 4 * a * c;
+	if(D > 0) { return 2; }
+	else if(D == 0) { return 1; }
+	else if(D < 0) { return 0; }
+
+	return -1;
 }
