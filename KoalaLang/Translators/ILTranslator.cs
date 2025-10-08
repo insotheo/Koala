@@ -100,6 +100,31 @@ namespace KoalaLang.Translators
                     il.Emit(OpCodes.Stloc, varController.GetVariable(assignment.DestinationName));
                 }
 
+                else if (node is ASTBranch branch)
+                {
+                    Label endLb = il.DefineLabel();
+
+                    for(int i = 0; i < branch.Ifs.Length; i++)
+                    {
+                        ASTConditionBlock ifBlock = branch.Ifs[i];
+                        Label nextIfLb = il.DefineLabel();
+
+                        TranslateExpression(il, ifBlock.Condition, varController);
+                        il.Emit(OpCodes.Brfalse, nextIfLb); //if conditions is false
+
+                        TranslateBody(il, ifBlock.Body, baseVarController: varController);
+                        il.Emit(OpCodes.Br, endLb);
+
+                        il.MarkLabel(nextIfLb);
+                    }
+
+                    if(branch.Else != null)
+                    {
+                        TranslateBody(il, branch.Else, baseVarController: varController);
+                    }
+                    il.MarkLabel(endLb);
+                }
+
                 else if (node is ASTFunctionCall funcCall) TranslateFunctionCall(il, funcCall, varController);
 
                 else if (node is ASTCodeBlock block) TranslateBody(il, block, baseVarController: varController);

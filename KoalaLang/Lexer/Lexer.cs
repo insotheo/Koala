@@ -56,6 +56,8 @@ namespace KoalaLang.Lexer
                         identifier == "func"
                         || identifier == "return"
                         || identifier == "let"
+                        || identifier == "if"
+                        || identifier == "else"
                         ) _tokens.Add(new(TokenType.Keyword, identifier, _ln, _col));
 
                     else if (identifier == "true" || identifier == "false") _tokens.Add(new(TokenType.BooleanValue, identifier, _ln, _col));

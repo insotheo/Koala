@@ -1,8 +1,10 @@
 func Main(): int{
-	{
-		let x: int = 1;
-		let y: int = 2;
+	let flag: bool = false;
+
+	if(flag){
+		return 0;
 	}
-	let x: int = 2;
-	return x + y; //ERROR: undefined variable 'y'
+	else{
+		return -1;
+	}
 }

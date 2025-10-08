@@ -85,6 +85,11 @@ namespace KoalaLang.ParserAndAST
 
                             else throw new Exception($"Invalid variable declaration signature");
                         }
+
+                        else if (_tokens[_idx].Value == "if")
+                        {
+                            block.Nodes.Add(ParseBranch());
+                        }
                     }
 
                     else if (_tokens[_idx].Type == TokenType.Identifier)
@@ -182,6 +187,58 @@ namespace KoalaLang.ParserAndAST
             return function;
         }
 
+
+        //enters with identifier "if"
+        ASTBranch ParseBranch()
+        {
+            void ParseIF(List<ASTConditionBlock> ifs)
+            {
+                int line = _tokens[_idx].Line;
+
+                FatalNext(TokenType.LParen);
+                Next();
+                ASTNode cond = ParseExpression(_tokens[_idx].Line);
+                FatalCheck(TokenType.RParen);
+
+                FatalNext(TokenType.LBrace);
+                ASTCodeBlock body = ParseCodeBlock();
+                FatalCheck(TokenType.RBrace);
+
+                ifs.Add(new(cond, body, line));
+            }
+
+            List<ASTConditionBlock> ifs = new();
+            ASTCodeBlock @else = null;
+            while (_idx < _tokens.Count && (_tokens[_idx].Value == "if" || _tokens[_idx].Value == "else"))
+            {
+                if (_tokens[_idx].Type == TokenType.Keyword)
+                {
+                    if (_tokens[_idx].Value == "if")
+                    {
+                        ParseIF(ifs);
+                    }
+                    else if (_tokens[_idx].Value == "else")
+                    {
+                        Next();
+                        if (_tokens[_idx].Type == TokenType.Keyword && _tokens[_idx].Value == "if") //else if
+                        {
+                            ParseIF(ifs);
+                        }
+                        else if (_tokens[_idx].Type == TokenType.LBrace)
+                        {
+                            @else = ParseCodeBlock();
+                            FatalCheck(TokenType.RBrace);
+                        }
+                    }
+                    else break;
+                }
+                else break;
+
+                Next();
+            }
+            return new(ifs, @else, -1);
+        }
+       
         ASTNode ParseExpression(int line) => ParseLogicalOr(line);
 
         ASTNode ParseLogicalOr(int line)
