@@ -29,6 +29,7 @@ namespace KoalaLang.ParserAndAST
             }
 
             code = ParseCodeBlock(initShift: false, tillTheLeftBrace: false);
+            FatalNext(TokenType.EOF);
         }
 
         ASTCodeBlock ParseCodeBlock(bool initShift = true, bool tillTheLeftBrace = true)
@@ -106,6 +107,13 @@ namespace KoalaLang.ParserAndAST
                         }
                     }
 
+                    else if (_tokens[_idx].Type == TokenType.LBrace)
+                    {
+                        ASTCodeBlock innerBlock = ParseCodeBlock();
+                        block.Nodes.Add(innerBlock);
+                        FatalCheck(TokenType.RBrace);
+                    }
+
                     else throw new Exception("Unknown token inside body");
 
                     Next();
@@ -122,7 +130,7 @@ namespace KoalaLang.ParserAndAST
 
         ASTFunction ParseFunction()
         {
-            ASTFunction function = new ASTFunction(-1);
+            ASTFunction function = new ASTFunction(_tokens[_idx].Line);
 
             FatalNext(TokenType.Identifier);
             function.FunctionName = _tokens[_idx].Value;

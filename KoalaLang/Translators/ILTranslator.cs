@@ -54,9 +54,10 @@ namespace KoalaLang.Translators
             Console.WriteLine($"Function Main returned: {module.GetMethod("Main")!.Invoke(null, null)}");
         }
 
-        private void TranslateBody(ILGenerator il, ASTCodeBlock body, ASTFunction func = null)
+        private void TranslateBody(ILGenerator il, ASTCodeBlock body, ASTFunction func = null, VariablesController baseVarController = null)
         {
-            Dictionary<string, LocalBuilder> varStack = new Dictionary<string, LocalBuilder>();
+            VariablesController varController = baseVarController != null ? baseVarController : new();
+            List<string> localVariablesNames = new();
 
             if(func != null && func.Args.Count != 0)
             {
@@ -65,11 +66,11 @@ namespace KoalaLang.Translators
                 {
                     Type type = GetTypeByName(argType, func.Line);
 
-                    LocalBuilder local = il.DeclareLocal(type);
-                    varStack.Add(argName, local);
+                    varController.DeclareVariable(il, argName, type, func.Line);
+                    localVariablesNames.Add(argName);
 
                     il.Emit(OpCodes.Ldarg, index);
-                    il.Emit(OpCodes.Stloc, local);
+                    il.Emit(OpCodes.Stloc, varController.GetVariable(argName));
 
                     index += 1;
                 }
@@ -79,31 +80,36 @@ namespace KoalaLang.Translators
             {
                 if (node is ASTReturn ret)
                 {
-                    TranslateExpression(il, ret.ReturnValue, varStack);
+                    TranslateExpression(il, ret.ReturnValue, varController);
                     il.Emit(OpCodes.Ret);
                 }
 
                 else if (node is ASTVariableDeclaration varDecl)
                 {
-                    LocalBuilder localVariable = il.DeclareLocal(GetTypeByName(varDecl.Type, varDecl.Line));
-                    varStack.Add(varDecl.Name, localVariable);
+                    varController.DeclareVariable(il, varDecl.Name, GetTypeByName(varDecl.Type, varDecl.Line), varDecl.Line);
+                    localVariablesNames.Add(varDecl.Name);
                 }
 
                 else if (node is ASTAssignment assignment)
                 {
-                    if (!varStack.ContainsKey(assignment.DestinationName))
+                    if (!varController.VarExists(assignment.DestinationName))
                     {
                         throw new Exception($"[Error at line {assignment.Line}]: Cannot assign to undefined variable '{assignment.DestinationName}'");
                     }
-                    TranslateExpression(il, assignment.Value, varStack);
-                    il.Emit(OpCodes.Stloc, varStack[assignment.DestinationName]);
+                    TranslateExpression(il, assignment.Value, varController);
+                    il.Emit(OpCodes.Stloc, varController.GetVariable(assignment.DestinationName));
                 }
 
-                else if (node is ASTFunctionCall funcCall) TranslateFunctionCall(il, funcCall, varStack);
+                else if (node is ASTFunctionCall funcCall) TranslateFunctionCall(il, funcCall, varController);
+
+                else if (node is ASTCodeBlock block) TranslateBody(il, block, baseVarController: varController);
             }
+
+            foreach (string localVar in localVariablesNames)
+                varController.Free(il, localVar);
         }
 
-        private void TranslateExpression(ILGenerator il, ASTNode expr, Dictionary<string, LocalBuilder> varStack)
+        private void TranslateExpression(ILGenerator il, ASTNode expr, VariablesController varController)
         {
             if (expr == null) return;
 
@@ -113,22 +119,22 @@ namespace KoalaLang.Translators
 
             else if (expr is ASTVariableUse varUse)
             {
-                if (!varStack.ContainsKey(varUse.VariableName))
+                if (!varController.VarExists(varUse.VariableName))
                 {
                     throw new Exception($"[Error at line {varUse.Line}]: Variable '{varUse.VariableName}' is used before being defined");
                 }
-                il.Emit(OpCodes.Ldloc, varStack[varUse.VariableName]);
+                il.Emit(OpCodes.Ldloc, varController.GetVariable(varUse.VariableName));
             }
 
             else if (expr is ASTFunctionCall funcCall)
             {
-                TranslateFunctionCall(il, funcCall, varStack);
+                TranslateFunctionCall(il, funcCall, varController);
             }
 
             else if (expr is ASTBinOperation binOp)
             {
-                TranslateExpression(il, binOp.Left, varStack);
-                TranslateExpression(il, binOp.Right, varStack);
+                TranslateExpression(il, binOp.Left, varController);
+                TranslateExpression(il, binOp.Right, varController);
 
                 switch (binOp.OperationType)
                 {
@@ -156,7 +162,7 @@ namespace KoalaLang.Translators
 
             else if (expr is ASTUnOperation unOp)
             {
-                TranslateExpression(il, unOp.Operand, varStack);
+                TranslateExpression(il, unOp.Operand, varController);
 
                 switch (unOp.OperationType)
                 {
@@ -171,7 +177,7 @@ namespace KoalaLang.Translators
             else throw new Exception($"[Error at line {expr.Line}]: Unknown expression type '{expr.GetType().Name}'");
         }
 
-        private void TranslateFunctionCall(ILGenerator il, ASTFunctionCall funcCall, Dictionary<string, LocalBuilder> varStack)
+        private void TranslateFunctionCall(ILGenerator il, ASTFunctionCall funcCall, VariablesController varController)
         {
             MethodInfo methodInfo = null;
             string shortName = funcCall.FunctionName;
@@ -200,7 +206,7 @@ namespace KoalaLang.Translators
             //loading args
             foreach (ASTNode arg in funcCall.Args)
             {
-                TranslateExpression(il, arg, varStack);
+                TranslateExpression(il, arg, varController);
             }
 
             //call
