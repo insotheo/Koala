@@ -54,7 +54,7 @@ namespace KoalaLang.Translators
             Console.WriteLine($"Function Main returned: {module.GetMethod("Main")!.Invoke(null, null)}");
         }
 
-        private void TranslateBody(ILGenerator il, ASTCodeBlock body, ASTFunction func = null, VariablesController baseVarController = null)
+        private void TranslateBody(ILGenerator il, ASTCodeBlock body, ASTFunction func = null, VariablesController baseVarController = null, Label? regionStartLabel = null, Label? regionEndLabel = null)
         {
             VariablesController varController = baseVarController != null ? baseVarController : new();
             List<string> localVariablesNames = new();
@@ -125,9 +125,37 @@ namespace KoalaLang.Translators
                     il.MarkLabel(endLb);
                 }
 
+                else if(node is ASTWhileLoop whileLoop)
+                {
+                    Label loopStart = il.DefineLabel();
+                    Label loopEnd = il.DefineLabel();
+                    Label loopConditionCheck = il.DefineLabel();
+
+                    il.MarkLabel(loopStart);
+                    TranslateBody(il, whileLoop.Body, baseVarController: varController, regionStartLabel: loopConditionCheck, regionEndLabel: loopEnd);
+
+                    il.MarkLabel(loopConditionCheck);
+                    TranslateExpression(il, whileLoop.Condition, varController);
+                    
+                    il.Emit(OpCodes.Brfalse, loopEnd);
+                    il.Emit(OpCodes.Br, loopStart);
+                    il.MarkLabel(loopEnd);
+                }
+
                 else if (node is ASTFunctionCall funcCall) TranslateFunctionCall(il, funcCall, varController);
 
                 else if (node is ASTCodeBlock block) TranslateBody(il, block, baseVarController: varController);
+
+                else if(node is ASTBreak)
+                {
+                    if (!regionEndLabel.HasValue) throw new Exception($"[Error at line {node.Line}]: No enclosing loop out of which to break or continue");
+                    il.Emit(OpCodes.Br, regionEndLabel.Value);
+                }
+                else if (node is ASTContinue)
+                {
+                    if (!regionStartLabel.HasValue) throw new Exception($"[Error at line {node.Line}]: No enclosing loop out of which to break or continue");
+                    il.Emit(OpCodes.Br, regionStartLabel.Value);
+                }
             }
 
             foreach (string localVar in localVariablesNames)

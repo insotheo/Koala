@@ -58,6 +58,9 @@ namespace KoalaLang.Lexer
                         || identifier == "let"
                         || identifier == "if"
                         || identifier == "else"
+                        || identifier == "while"
+                        || identifier == "break"
+                        || identifier == "continue"
                         ) _tokens.Add(new(TokenType.Keyword, identifier, _ln, _col));
 
                     else if (identifier == "true" || identifier == "false") _tokens.Add(new(TokenType.BooleanValue, identifier, _ln, _col));

@@ -57,7 +57,7 @@ namespace KoalaLang.ParserAndAST
                             block.Nodes.Add(new ASTReturn(expr, line));
                         }
 
-                        else if( _tokens[_idx].Value == "let") //let <identifier>: <identifier>
+                        else if (_tokens[_idx].Value == "let") //let <identifier>: <identifier>
                         {
                             int line = _tokens[_idx].Line;
 
@@ -90,6 +90,25 @@ namespace KoalaLang.ParserAndAST
                         {
                             block.Nodes.Add(ParseBranch());
                         }
+
+                        else if (_tokens[_idx].Value == "while")
+                        {
+                            int line = _tokens[_idx].Line;
+
+                            FatalNext(TokenType.LParen);
+                            Next();
+                            ASTNode cond = ParseExpression(_tokens[_idx].Line);
+                            FatalCheck(TokenType.RParen);
+
+                            FatalNext(TokenType.LBrace);
+                            ASTCodeBlock body = ParseCodeBlock();
+                            FatalCheck(TokenType.RBrace);
+
+                            block.Nodes.Add(new ASTWhileLoop(cond, body, line));
+                        }
+
+                        else if (_tokens[_idx].Value == "break") { block.Nodes.Add(new ASTBreak(_tokens[_idx].Line)); FatalNext(TokenType.Semicolon); }
+                        else if (_tokens[_idx].Value == "continue") { block.Nodes.Add(new ASTContinue(_tokens[_idx].Line)); FatalNext(TokenType.Semicolon); }
                     }
 
                     else if (_tokens[_idx].Type == TokenType.Identifier)
