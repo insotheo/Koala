@@ -23,17 +23,17 @@ namespace KoalaLang.Translators
 
             TypeBuilder typeBuilder = moduleBuilder.DefineType(moduleName, TypeAttributes.Public | TypeAttributes.Class);
 
-            DefineModule(ref _mods, ref typeBuilder, moduleName, parser.GetAST() as ASTCodeBlock);
-            _currentModule = _mods[0];
-
             try
             {
+                DefineModule(ref _mods, ref typeBuilder, moduleName, parser.GetAST() as ASTCodeBlock);
+                _currentModule = _mods[0];
+
                 foreach (ASTNode node in (parser.GetAST() as ASTCodeBlock).Nodes)
                 {
                     if (node is ASTFunction func)
                     {
                         FunctionInfo funcInfo = _currentModule.Functions.FirstOrDefault(x => x.Name == func.FunctionName, null);
-                        if (funcInfo == null) 
+                        if (funcInfo == null)
                             throw new Exception($"[Error at line {func.Line}]: Function '{func.FunctionName}' was not declared before use");
 
                         ILGenerator il = (funcInfo.Info as MethodBuilder).GetILGenerator();
@@ -42,9 +42,9 @@ namespace KoalaLang.Translators
                     }
                 }
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
-                Console.Error.WriteLine($"Translator error(at {_currentModule.GetFullName()}): {ex.Message}");
+                Console.Error.WriteLine($"Translator error(at {(_currentModule != null ? _currentModule.GetFullName() : moduleName)}): {ex.Message}");
                 Environment.Exit(-1);
             }
 
@@ -59,10 +59,10 @@ namespace KoalaLang.Translators
             VariablesController varController = baseVarController != null ? baseVarController : new();
             List<string> localVariablesNames = new();
 
-            if(func != null && func.Args.Count != 0)
+            if (func != null && func.Args.Count != 0)
             {
                 int index = 0;
-                foreach((string argName, string argType) in func.Args)
+                foreach ((string argName, string argType) in func.Args)
                 {
                     Type type = GetTypeByName(argType, func.Line);
 
@@ -76,7 +76,7 @@ namespace KoalaLang.Translators
                 }
             }
 
-            foreach(ASTNode node in body.Nodes)
+            foreach (ASTNode node in body.Nodes)
             {
                 TranslateNode(il, node, varController, localVariablesNames, regionStartLabel, regionEndLabel);
             }
@@ -165,7 +165,7 @@ namespace KoalaLang.Translators
                 il.MarkLabel(loopEnd);
             }
 
-            else if(node is ASTForLoop forLoop)
+            else if (node is ASTForLoop forLoop)
             {
                 ASTCodeBlock forLoopBlock = new(-1);
 
@@ -224,6 +224,11 @@ namespace KoalaLang.Translators
 
             else if (expr is ASTBinOperation binOp)
             {
+                Type leftType = GetExpressionType(binOp.Left, varController);
+                Type rightType = GetExpressionType(binOp.Right, varController);
+
+                if (leftType != rightType) throw new Exception($"[Error at line {expr.Line}]: Cannot operate with different types: {leftType}, {rightType}");
+
                 TranslateExpression(il, binOp.Left, varController);
                 TranslateExpression(il, binOp.Right, varController);
 
@@ -271,6 +276,16 @@ namespace KoalaLang.Translators
                 }
             }
 
+            else if (expr is ASTCast staticCast)
+            {
+                TranslateExpression(il, staticCast.Value, varController);
+
+                Type sourceType = GetExpressionType(staticCast.Value, varController);
+                Type targetType = GetTypeByName(staticCast.TypeName, staticCast.Line);
+
+                EmitCast(il, sourceType, targetType);
+            }
+
             else throw new Exception($"[Error at line {expr.Line}]: Unknown expression type '{expr.GetType().Name}'");
         }
 
@@ -279,21 +294,8 @@ namespace KoalaLang.Translators
             MethodInfo methodInfo = null;
             string shortName = funcCall.FunctionName;
 
-            //TODO: make ability to interact with another modules
-            //look for it in current module
-            foreach(FunctionInfo info in _currentModule.Functions)
-            {
-                if (info.Name == shortName)
-                {
-                    if(info.Args.Count != funcCall.Args.Count)
-                    {
-                        throw new Exception($"[Error at line {funcCall.Line}]: Function '{shortName}' called with incorrect number of arguments (expected {info.Args.Count}, got {funcCall.Args.Count})");
-                    }
-
-                    methodInfo = info.Info;
-                    break;
-                }
-            }
+            FunctionInfo funcInfo = FindFunctionInfo(funcCall);
+            methodInfo = funcInfo == null ? null : funcInfo.Info;
 
             if (methodInfo == null)
             {
@@ -308,6 +310,28 @@ namespace KoalaLang.Translators
 
             //call
             il.Emit(OpCodes.Call, methodInfo);
+        }
+
+        private FunctionInfo FindFunctionInfo(ASTFunctionCall funcCall)
+        {
+            string shortName = funcCall.FunctionName;
+
+            //TODO: make ability to interact with another modules
+            //look for it in current module
+            foreach (FunctionInfo info in _currentModule.Functions)
+            {
+                if (info.Name == shortName)
+                {
+                    if (info.Args.Count != funcCall.Args.Count)
+                    {
+                        throw new Exception($"[Error at line {funcCall.Line}]: Function '{shortName}' called with incorrect number of arguments (expected {info.Args.Count}, got {funcCall.Args.Count})");
+                    }
+
+                    return info;
+                }
+            }
+
+            return null;
         }
 
         private void DefineModule(ref List<ModuleInfo> modules, ref TypeBuilder typeBuilder, string moduleName, ASTCodeBlock block)
@@ -342,13 +366,95 @@ namespace KoalaLang.Translators
             modules.Add(mod);
         }
 
+        void EmitCast(ILGenerator il, Type sourceType, Type targetType)
+        {
+            if (sourceType == targetType) return;
+
+            bool sourceIsValue = sourceType.IsValueType;
+            bool targetIsValue = targetType.IsValueType;
+
+            //value to value
+            if(sourceIsValue && targetIsValue)
+            {
+                OpCode convOp = targetType switch
+                {
+                    var t when t == typeof(sbyte) => OpCodes.Conv_I1,
+                    var t when t == typeof(byte) => OpCodes.Conv_U1,
+                    var t when t == typeof(short) => OpCodes.Conv_I2,
+                    var t when t == typeof(ushort) => OpCodes.Conv_U2,
+                    var t when t == typeof(int) => OpCodes.Conv_I4,
+                    var t when t == typeof(uint) => OpCodes.Conv_U4,
+                    var t when t == typeof(long) => OpCodes.Conv_I8,
+                    var t when t == typeof(ulong) => OpCodes.Conv_U8,
+                    var t when t == typeof(float) => OpCodes.Conv_R4,
+                    var t when t == typeof(double) => OpCodes.Conv_R8,
+
+                    var t when t == typeof(bool) => OpCodes.Conv_I4,
+
+                    _ => throw new NotSupportedException($"Cannot convert from {sourceType} to {targetType}")
+                };
+                il.Emit(convOp);
+            }
+
+            //value to ref
+            else if(sourceIsValue && !targetIsValue)
+            {
+                il.Emit(OpCodes.Box, sourceType);
+                if(targetType != typeof(object))
+                    il.Emit(OpCodes.Castclass, targetType);
+            }
+
+            //ref to value
+            else if(!sourceIsValue && targetIsValue)
+            {
+                il.Emit(OpCodes.Unbox_Any, targetType);
+            }
+
+            //ref to ref
+            else
+            {
+                il.Emit(OpCodes.Castclass, targetType);
+            }
+        }
+
+        Type GetExpressionType(ASTNode expr, VariablesController varController)
+        {
+            switch (expr)
+            {
+                case ASTConstant<int>: return typeof(int);
+                case ASTConstant<float>: return typeof(float);
+                case ASTConstant<bool>: return typeof(bool);
+
+                case ASTVariableUse varUse: return varController.GetVariable(varUse.VariableName).LocalType;
+
+                case ASTCast staticCast: return GetTypeByName(staticCast.TypeName, staticCast.Line);
+
+                case ASTBinOperation binOp: return GetExpressionType(binOp.Left, varController);
+                case ASTUnOperation unOp: return GetExpressionType(unOp.Operand, varController);
+                case ASTFunctionCall funcCall:
+                    FunctionInfo funcInfo = FindFunctionInfo(funcCall);
+                    if(funcInfo == null) throw new Exception($"[Error at line {funcCall.Line}]: Cannot call undefined function '{funcCall.FunctionName}'");
+                    return GetTypeByName(funcInfo.ReturnType, funcCall.Line);
+
+                default: throw new Exception($"[Error at line {expr.Line}]: Cannot deduce expression type ({expr.GetType().Name})");
+            }
+        }
+
         private Type GetTypeByName(string typeName, int line) {
             return typeName switch
             {
                 "void" => typeof(void),
 
+                "sbyte" => typeof(sbyte),
+                "byte" => typeof(byte),
+                "short" => typeof(short),
+                "ushort" => typeof(ushort),
                 "int" => typeof(int),
+                "uint" => typeof(uint),
+                "long" => typeof(long),
+                "ulong" => typeof(ulong),
                 "float" => typeof(float),
+                "double" => typeof(double),
 
                 "bool" => typeof(bool),
 

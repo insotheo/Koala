@@ -528,7 +528,29 @@ namespace KoalaLang.ParserAndAST
 
             else if (_tokens[_idx].Type == TokenType.LParen)
             {
+                int saveIdx = _idx;
                 Next();
+
+                if (_tokens[_idx].Type == TokenType.Identifier)
+                {
+                    string typeName = _tokens[_idx].Value;
+                    Next();
+
+                    if (_tokens[_idx].Type == TokenType.RParen)
+                    {
+                        try
+                        {
+                            Next();//skip )
+                            ASTNode castExpr = ParseFactor(line);
+                            return new ASTCast(typeName, castExpr, line);
+                        }
+                        catch { _idx = saveIdx + 1; }
+                    }
+                    else
+                    {
+                        _idx = saveIdx + 1;
+                    }
+                }
                 ASTNode expr = ParseExpression(line);
                 FatalCheck(TokenType.RParen);
                 Next();
