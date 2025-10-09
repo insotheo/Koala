@@ -60,6 +60,7 @@ namespace KoalaLang.Lexer
                         || identifier == "else"
                         || identifier == "while"
                         || identifier == "do"
+                        || identifier == "for"
                         || identifier == "break"
                         || identifier == "continue"
                         ) _tokens.Add(new(TokenType.Keyword, identifier, _ln, _col));

@@ -3,7 +3,6 @@ using KoalaLang.ParserAndAST.AST;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection.Metadata;
 
 namespace KoalaLang.ParserAndAST
 {
@@ -28,147 +27,87 @@ namespace KoalaLang.ParserAndAST
                 Environment.Exit(-1);
             }
 
-            code = ParseCodeBlock(initShift: false, tillTheLeftBrace: false);
+            code = ParseStatementList(TokenType.EOF);
             FatalNext(TokenType.EOF);
         }
 
-        ASTCodeBlock ParseCodeBlock(bool initShift = true, bool tillTheLeftBrace = true)
+        #region Statements
+        ASTCodeBlock ParseStatementList(TokenType endToken)
         {
-            if (initShift) Next();
-            ASTCodeBlock block = new ASTCodeBlock(-1);
+            ASTCodeBlock code = new(-1);
 
             try
             {
-                while (_idx < _tokens.Count && (!tillTheLeftBrace || _tokens[_idx].Type != TokenType.RBrace) && _tokens[_idx].Type != TokenType.EOF)
+                while(_idx < _tokens.Count && _tokens[_idx].Type != endToken && _tokens[_idx].Type != TokenType.EOF)
                 {
-                    if (_tokens[_idx].Type == TokenType.Keyword)
-                    {
-                        if (_tokens[_idx].Value == "func") block.Nodes.Add(ParseFunction());
-
-                        else if (_tokens[_idx].Value == "return")
-                        {
-                            int line = _tokens[_idx].Line;
-
-                            Next();
-
-                            ASTNode expr = _tokens[_idx].Type == TokenType.Semicolon ? null : ParseExpression(line);
-                            FatalCheck(TokenType.Semicolon);
-
-                            block.Nodes.Add(new ASTReturn(expr, line));
-                        }
-
-                        else if (_tokens[_idx].Value == "let") //let <identifier>: <identifier>
-                        {
-                            int line = _tokens[_idx].Line;
-
-                            FatalNext(TokenType.Identifier);
-                            string varName = _tokens[_idx].Value;
-
-                            FatalNext(TokenType.Colon);
-                            FatalNext(TokenType.Identifier);
-                            string typeName = _tokens[_idx].Value;
-
-                            Next();
-
-                            ASTVariableDeclaration varDecl = new ASTVariableDeclaration(varName, typeName, line);
-
-                            if (_tokens[_idx].Type == TokenType.AssignmentSign)
-                            {
-                                Next();
-                                ASTNode expr = ParseExpression(line);
-                                FatalCheck(TokenType.Semicolon);
-
-                                block.Nodes.Add(varDecl);
-                                block.Nodes.Add(new ASTAssignment(varName, expr, line));
-                            }
-                            else if (_tokens[_idx].Type == TokenType.Semicolon) block.Nodes.Add(varDecl);
-
-                            else throw new Exception("Invalid variable declaration signature");
-                        }
-
-                        else if (_tokens[_idx].Value == "if")
-                        {
-                            block.Nodes.Add(ParseBranch());
-                        }
-
-                        else if (_tokens[_idx].Value == "while")
-                        {
-                            int line = _tokens[_idx].Line;
-
-                            FatalNext(TokenType.LParen);
-                            Next();
-                            ASTNode cond = ParseExpression(_tokens[_idx].Line);
-                            FatalCheck(TokenType.RParen);
-
-                            FatalNext(TokenType.LBrace);
-                            ASTCodeBlock body = ParseCodeBlock();
-                            FatalCheck(TokenType.RBrace);
-
-                            block.Nodes.Add(new ASTWhileLoop(cond, body, line));
-                        }
-
-                        else if (_tokens[_idx].Value == "do")
-                        {
-                            int line = _tokens[_idx].Line;
-
-                            FatalNext(TokenType.LBrace);
-                            ASTCodeBlock body = ParseCodeBlock();
-                            FatalCheck(TokenType.RBrace);
-
-                            FatalNext(TokenType.Keyword);
-                            if (_tokens[_idx].Value != "while") throw new Exception("Invalid do-while loop signature!");
-                            FatalNext(TokenType.LParen);
-                            Next();
-                            ASTNode cond = ParseExpression(_tokens[_idx].Line);
-                            FatalCheck(TokenType.RParen);
-                            FatalNext(TokenType.Semicolon);
-
-                            block.Nodes.Add(new ASTDoWhileLoop(cond, body, line));
-                        }
-
-                        else if (_tokens[_idx].Value == "break") { block.Nodes.Add(new ASTBreak(_tokens[_idx].Line)); FatalNext(TokenType.Semicolon); }
-                        else if (_tokens[_idx].Value == "continue") { block.Nodes.Add(new ASTContinue(_tokens[_idx].Line)); FatalNext(TokenType.Semicolon); }
-                    }
-
-                    else if (_tokens[_idx].Type == TokenType.Identifier)
-                    {
-                        int line = _tokens[_idx].Line;
-
-                        string identifier = _tokens[_idx].Value;
-                        Next();
-
-                        if (_tokens[_idx].Type == TokenType.AssignmentSign)
-                        {
-                            Next();
-                            ASTNode expr = ParseExpression(line);
-                            FatalCheck(TokenType.Semicolon);
-                            block.Nodes.Add(new ASTAssignment(identifier, expr, line));
-                        }
-                        else if (_tokens[_idx].Type == TokenType.LParen)
-                        {
-                            block.Nodes.Add(ParseFunctionCall(identifier, line));
-                        }
-                    }
-
-                    else if (_tokens[_idx].Type == TokenType.LBrace)
-                    {
-                        ASTCodeBlock innerBlock = ParseCodeBlock();
-                        block.Nodes.Add(innerBlock);
-                        FatalCheck(TokenType.RBrace);
-                    }
-
-                    else throw new Exception("Unknown token inside body");
-
-                    Next();
+                    ASTNode statement = ParseStatement();
+                    if(statement != null)
+                        code.Nodes.Add(statement);
                 }
             }
-            catch(Exception e)
+            catch(Exception ex)
             {
-                Console.Error.WriteLine($"PARSER ERROR: \"{e.Message}\" at ln: {_tokens[_idx].Line}, col: {_tokens[_idx].Column}: {_lexer.GetStringLine(_tokens[_idx].Line)}");
+                Console.Error.WriteLine($"PARSER ERROR: \"{ex.Message}\" at ln: {_tokens[_idx].Line}, col: {_tokens[_idx].Column}: {_lexer.GetStringLine(_tokens[_idx].Line)}");
                 Environment.Exit(-1);
             }
 
+            return code;
+        }
+
+        ASTCodeBlock ParseCodeBlock()
+        {
+            FatalCheck(TokenType.LBrace);
+            Next();
+            ASTCodeBlock block = ParseStatementList(TokenType.RBrace);
+            FatalCheck(TokenType.RBrace);
+            Next();
             return block;
+        }
+
+        ASTNode ParseStatement(bool ignoreSemicolonCheck = false)
+        {
+            Token token = _tokens[_idx];
+
+            if (token.Type == TokenType.Keyword)
+            {
+                ASTNode statement = token.Value switch
+                {
+                    "func" => ParseFunction(),
+                    "return" => ParseReturn(),
+                    "let" => ParseVariableDeclaration(),
+                    "if" => ParseBranch(),
+                    "while" => ParseWhileLoop(),
+                    "do" => ParseDoWhileLoop(),
+                    "for" => ParseForLoop(),
+                    "break" => ParseBreak(),
+                    "continue" => ParseContinue(),
+
+                    _ => throw new Exception($"Unknown keyword '{token.Value}'")
+                };
+
+                if(!ignoreSemicolonCheck && token.Value is "return" or "let")
+                {
+                    FatalCheck(TokenType.Semicolon);
+                    Next();
+                }
+
+                return statement;
+            }
+
+            else if (token.Type == TokenType.Identifier)
+            {
+                ASTNode statement = ParseIdentifierStatement();
+
+                if (!ignoreSemicolonCheck)
+                {
+                    FatalCheck(TokenType.Semicolon);
+                    Next();
+                }
+
+                return statement;
+            }
+
+            throw new Exception($"Unexpected token '{token.Value}' of type {token.Type} in statement");
         }
 
         ASTFunction ParseFunction()
@@ -224,7 +163,129 @@ namespace KoalaLang.ParserAndAST
 
             return function;
         }
+        ASTReturn ParseReturn()
+        {
+            int line = _tokens[_idx].Line;
 
+            Next();
+
+            ASTNode expr = _tokens[_idx].Type == TokenType.Semicolon ? null : ParseExpression(line);
+
+            return new ASTReturn(expr, line);
+        }
+        ASTNode ParseVariableDeclaration()
+        {
+            int line = _tokens[_idx].Line;
+
+            FatalNext(TokenType.Identifier);
+            string varName = _tokens[_idx].Value;
+
+            FatalNext(TokenType.Colon);
+            FatalNext(TokenType.Identifier);
+            string typeName = _tokens[_idx].Value;
+
+            Next();
+
+            ASTVariableDeclaration varDecl = new ASTVariableDeclaration(varName, typeName, line);
+
+            if (_tokens[_idx].Type == TokenType.AssignmentSign)
+            {
+                Next();
+                ASTNode expr = ParseExpression(line);
+
+                return new ASTCompoundStatement(varDecl, new ASTAssignment(varName, expr, line), line);
+            }
+            else if (_tokens[_idx].Type == TokenType.Semicolon)
+            {
+                return varDecl;
+            }
+
+            else throw new Exception("Invalid variable declaration signature");
+        }
+        ASTWhileLoop ParseWhileLoop()
+        {
+            int line = _tokens[_idx].Line;
+
+            FatalNext(TokenType.LParen);
+            Next();
+            ASTNode cond = ParseExpression(_tokens[_idx].Line);
+            FatalCheck(TokenType.RParen);
+
+            FatalNext(TokenType.LBrace);
+            ASTCodeBlock body = ParseCodeBlock();
+
+            return new ASTWhileLoop(cond, body, line);
+        }
+        ASTDoWhileLoop ParseDoWhileLoop()
+        {
+            int line = _tokens[_idx].Line;
+
+            FatalNext(TokenType.LBrace);
+            ASTCodeBlock body = ParseCodeBlock();
+
+            FatalNext(TokenType.Keyword);
+            if (_tokens[_idx].Value != "while") throw new Exception("Invalid do-while loop signature!");
+            FatalNext(TokenType.LParen);
+            Next();
+            ASTNode cond = ParseExpression(_tokens[_idx].Line);
+            FatalCheck(TokenType.RParen);
+            Next();
+
+            return new ASTDoWhileLoop(cond, body, line);
+        }
+        ASTForLoop ParseForLoop()
+        {
+            int line = _tokens[_idx].Line;
+
+            FatalNext(TokenType.LParen);
+            Next();
+
+            ASTNode init = ParseStatement(true);
+            FatalCheck(TokenType.Semicolon);
+            Next();
+
+            ASTNode condition = ParseExpression(_tokens[_idx].Line);
+            FatalCheck(TokenType.Semicolon);
+            Next();
+
+            ASTNode iter = ParseStatement(true);
+            FatalCheck(TokenType.RParen);
+            Next();
+
+            FatalCheck(TokenType.LBrace);
+            ASTCodeBlock body = ParseCodeBlock();
+
+            return new ASTForLoop(init, condition, iter, body, line);
+        }
+        ASTContinue ParseContinue()
+        {
+            return new ASTContinue(_tokens[_idx].Line);
+        }
+        ASTBreak ParseBreak()
+        {
+            return new ASTBreak(_tokens[_idx].Line);
+        }
+        ASTNode ParseIdentifierStatement()
+        {
+            int line = _tokens[_idx].Line;
+
+            string identifier = _tokens[_idx].Value;
+            Next();
+
+            if (_tokens[_idx].Type == TokenType.AssignmentSign)
+            {
+                Next();
+                ASTNode expr = ParseExpression(line);
+                return new ASTAssignment(identifier, expr, line);
+            }
+            else if (_tokens[_idx].Type == TokenType.LParen)
+            {
+                ASTFunctionCall call = ParseFunctionCall(identifier, line);
+                return call;
+            }
+
+            throw new Exception("Unknown identifier statement");
+        }
 
         //enters with identifier "if"
         ASTBranch ParseBranch()
@@ -240,7 +301,6 @@ namespace KoalaLang.ParserAndAST
 
                 FatalNext(TokenType.LBrace);
                 ASTCodeBlock body = ParseCodeBlock();
-                FatalCheck(TokenType.RBrace);
 
                 ifs.Add(new(cond, body, line));
             }
@@ -265,7 +325,6 @@ namespace KoalaLang.ParserAndAST
                         else if (_tokens[_idx].Type == TokenType.LBrace)
                         {
                             @else = ParseCodeBlock();
-                            FatalCheck(TokenType.RBrace);
                         }
                     }
                     else break;
@@ -277,7 +336,9 @@ namespace KoalaLang.ParserAndAST
             _idx -= 1; //step back to the } of the last cond. block
             return new(ifs, @else, -1);
         }
-       
+        #endregion
+
+        #region Expressions
         ASTNode ParseExpression(int line) => ParseLogicalOr(line);
 
         ASTNode ParseLogicalOr(int line)
@@ -476,9 +537,10 @@ namespace KoalaLang.ParserAndAST
 
             throw new Exception("Unexpected token in expression");
         }
+        #endregion
 
         //Token before call is LParen
-        private ASTNode ParseFunctionCall(string identifier, int line)
+        ASTFunctionCall ParseFunctionCall(string identifier, int line)
         {
             Next(); //skips LParen
             List<ASTNode> args = new();
@@ -509,7 +571,6 @@ namespace KoalaLang.ParserAndAST
             if (_tokens[_idx].Type != type)
             {
                 string line = _lexer.GetStringLine(_tokens[_idx].Line);
-                Console.Error.WriteLine($"Error at line {_tokens[_idx].Line}, col {_tokens[_idx].Column}: Unexpected token{(_tokens[_idx].Value != String.Empty ? " '" + _tokens[_idx].Value + "' " : " ")}of type {_tokens[_idx].Type}; expected token of type {type}: {line}");
                 Console.Error.WriteLine($"Unexpected token{(_tokens[_idx].Value != String.Empty ? " '" + _tokens[_idx].Value + "' " : " ")}of type {_tokens[_idx].Type} at line {_tokens[_idx].Line}, col {_tokens[_idx].Column}; expected token of type {type}: {line}");
                 Environment.Exit(-1);
             }

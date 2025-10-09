@@ -78,102 +78,126 @@ namespace KoalaLang.Translators
 
             foreach(ASTNode node in body.Nodes)
             {
-                if (node is ASTReturn ret)
-                {
-                    TranslateExpression(il, ret.ReturnValue, varController);
-                    il.Emit(OpCodes.Ret);
-                }
-
-                else if (node is ASTVariableDeclaration varDecl)
-                {
-                    varController.DeclareVariable(il, varDecl.Name, GetTypeByName(varDecl.Type, varDecl.Line), varDecl.Line);
-                    localVariablesNames.Add(varDecl.Name);
-                }
-
-                else if (node is ASTAssignment assignment)
-                {
-                    if (!varController.VarExists(assignment.DestinationName))
-                    {
-                        throw new Exception($"[Error at line {assignment.Line}]: Cannot assign to undefined variable '{assignment.DestinationName}'");
-                    }
-                    TranslateExpression(il, assignment.Value, varController);
-                    il.Emit(OpCodes.Stloc, varController.GetVariable(assignment.DestinationName));
-                }
-
-                else if (node is ASTBranch branch)
-                {
-                    Label endLb = il.DefineLabel();
-
-                    for(int i = 0; i < branch.Ifs.Length; i++)
-                    {
-                        ASTConditionBlock ifBlock = branch.Ifs[i];
-                        Label nextIfLb = il.DefineLabel();
-
-                        TranslateExpression(il, ifBlock.Condition, varController);
-                        il.Emit(OpCodes.Brfalse, nextIfLb); //if conditions is false
-
-                        TranslateBody(il, ifBlock.Body, baseVarController: varController);
-                        il.Emit(OpCodes.Br, endLb);
-
-                        il.MarkLabel(nextIfLb);
-                    }
-
-                    if(branch.Else != null)
-                    {
-                        TranslateBody(il, branch.Else, baseVarController: varController);
-                    }
-                    il.MarkLabel(endLb);
-                }
-
-                else if(node is ASTWhileLoop whileLoop)
-                {
-                    Label loopEnd = il.DefineLabel();
-                    Label loopConditionCheck = il.DefineLabel();
-
-                    il.MarkLabel(loopConditionCheck);
-                    TranslateExpression(il, whileLoop.Condition, varController);
-                    il.Emit(OpCodes.Brfalse, loopEnd);
-
-                    TranslateBody(il, whileLoop.Body, baseVarController: varController, regionStartLabel: loopConditionCheck, regionEndLabel: loopEnd);
-                    il.Emit(OpCodes.Br, loopConditionCheck);
-                    il.MarkLabel(loopEnd);
-                }
-
-                else if (node is ASTDoWhileLoop doWhileLoop)
-                {
-                    Label loopStart = il.DefineLabel();
-                    Label loopEnd = il.DefineLabel();
-                    Label loopConditionCheck = il.DefineLabel();
-
-                    il.MarkLabel(loopStart);
-                    TranslateBody(il, doWhileLoop.Body, baseVarController: varController, regionStartLabel: loopConditionCheck, regionEndLabel: loopEnd);
-
-                    il.MarkLabel(loopConditionCheck);
-                    TranslateExpression(il, doWhileLoop.Condition, varController);
-
-                    il.Emit(OpCodes.Brfalse, loopEnd);
-                    il.Emit(OpCodes.Br, loopStart);
-                    il.MarkLabel(loopEnd);
-                }
-
-                else if (node is ASTFunctionCall funcCall) TranslateFunctionCall(il, funcCall, varController);
-
-                else if (node is ASTCodeBlock block) TranslateBody(il, block, baseVarController: varController);
-
-                else if (node is ASTBreak)
-                {
-                    if (!regionEndLabel.HasValue) throw new Exception($"[Error at line {node.Line}]: No enclosing loop out of which to break or continue");
-                    il.Emit(OpCodes.Br, regionEndLabel.Value);
-                }
-                else if (node is ASTContinue)
-                {
-                    if (!regionStartLabel.HasValue) throw new Exception($"[Error at line {node.Line}]: No enclosing loop out of which to break or continue");
-                    il.Emit(OpCodes.Br, regionStartLabel.Value);
-                }
+                TranslateNode(il, node, varController, localVariablesNames, regionStartLabel, regionEndLabel);
             }
 
             foreach (string localVar in localVariablesNames)
                 varController.Free(il, localVar);
+        }
+
+        private void TranslateNode(ILGenerator il, ASTNode node, VariablesController varController, List<string> localVariablesNames, Label? regionStartLabel, Label? regionEndLabel)
+        {
+            if (node is ASTReturn ret)
+            {
+                TranslateExpression(il, ret.ReturnValue, varController);
+                il.Emit(OpCodes.Ret);
+            }
+
+            else if (node is ASTVariableDeclaration varDecl)
+            {
+                varController.DeclareVariable(il, varDecl.Name, GetTypeByName(varDecl.Type, varDecl.Line), varDecl.Line);
+                localVariablesNames.Add(varDecl.Name);
+            }
+
+            else if (node is ASTAssignment assignment)
+            {
+                if (!varController.VarExists(assignment.DestinationName))
+                {
+                    throw new Exception($"[Error at line {assignment.Line}]: Cannot assign to undefined variable '{assignment.DestinationName}'");
+                }
+                TranslateExpression(il, assignment.Value, varController);
+                il.Emit(OpCodes.Stloc, varController.GetVariable(assignment.DestinationName));
+            }
+
+            else if (node is ASTBranch branch)
+            {
+                Label endLb = il.DefineLabel();
+
+                for (int i = 0; i < branch.Ifs.Length; i++)
+                {
+                    ASTConditionBlock ifBlock = branch.Ifs[i];
+                    Label nextIfLb = il.DefineLabel();
+
+                    TranslateExpression(il, ifBlock.Condition, varController);
+                    il.Emit(OpCodes.Brfalse, nextIfLb); //if conditions is false
+
+                    TranslateBody(il, ifBlock.Body, baseVarController: varController);
+                    il.Emit(OpCodes.Br, endLb);
+
+                    il.MarkLabel(nextIfLb);
+                }
+
+                if (branch.Else != null)
+                {
+                    TranslateBody(il, branch.Else, baseVarController: varController);
+                }
+                il.MarkLabel(endLb);
+            }
+
+            else if (node is ASTWhileLoop whileLoop)
+            {
+                Label loopEnd = il.DefineLabel();
+                Label loopConditionCheck = il.DefineLabel();
+
+                il.MarkLabel(loopConditionCheck);
+                TranslateExpression(il, whileLoop.Condition, varController);
+                il.Emit(OpCodes.Brfalse, loopEnd);
+
+                TranslateBody(il, whileLoop.Body, baseVarController: varController, regionStartLabel: loopConditionCheck, regionEndLabel: loopEnd);
+                il.Emit(OpCodes.Br, loopConditionCheck);
+                il.MarkLabel(loopEnd);
+            }
+
+            else if (node is ASTDoWhileLoop doWhileLoop)
+            {
+                Label loopStart = il.DefineLabel();
+                Label loopEnd = il.DefineLabel();
+                Label loopConditionCheck = il.DefineLabel();
+
+                il.MarkLabel(loopStart);
+                TranslateBody(il, doWhileLoop.Body, baseVarController: varController, regionStartLabel: loopConditionCheck, regionEndLabel: loopEnd);
+
+                il.MarkLabel(loopConditionCheck);
+                TranslateExpression(il, doWhileLoop.Condition, varController);
+
+                il.Emit(OpCodes.Brfalse, loopEnd);
+                il.Emit(OpCodes.Br, loopStart);
+                il.MarkLabel(loopEnd);
+            }
+
+            else if(node is ASTForLoop forLoop)
+            {
+                ASTCodeBlock forLoopBlock = new(-1);
+
+                forLoopBlock.Nodes.Add(forLoop.VariableDeclaration);
+
+                ASTCodeBlock forLoopBody = forLoop.Body;
+                forLoopBody.Nodes.Add(forLoop.IterAction);
+
+                forLoopBlock.Nodes.Add(new ASTWhileLoop(forLoop.Condition, forLoopBody, forLoop.Line));
+                TranslateNode(il, forLoopBlock, varController, localVariablesNames, regionStartLabel, regionEndLabel);
+            }
+
+            else if (node is ASTFunctionCall funcCall) TranslateFunctionCall(il, funcCall, varController);
+
+            else if (node is ASTCodeBlock block) TranslateBody(il, block, baseVarController: varController);
+
+            else if (node is ASTCompoundStatement cs)
+            {
+                TranslateNode(il, cs.I, varController, localVariablesNames, regionStartLabel, regionEndLabel);
+                TranslateNode(il, cs.II, varController, localVariablesNames, regionStartLabel, regionEndLabel);
+            }
+
+            else if (node is ASTBreak)
+            {
+                if (!regionEndLabel.HasValue) throw new Exception($"[Error at line {node.Line}]: No enclosing loop out of which to break or continue");
+                il.Emit(OpCodes.Br, regionEndLabel.Value);
+            }
+            else if (node is ASTContinue)
+            {
+                if (!regionStartLabel.HasValue) throw new Exception($"[Error at line {node.Line}]: No enclosing loop out of which to break or continue");
+                il.Emit(OpCodes.Br, regionStartLabel.Value);
+            }
         }
 
         private void TranslateExpression(ILGenerator il, ASTNode expr, VariablesController varController)
