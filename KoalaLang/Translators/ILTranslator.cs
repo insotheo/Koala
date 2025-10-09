@@ -127,16 +127,30 @@ namespace KoalaLang.Translators
 
                 else if(node is ASTWhileLoop whileLoop)
                 {
+                    Label loopEnd = il.DefineLabel();
+                    Label loopConditionCheck = il.DefineLabel();
+
+                    il.MarkLabel(loopConditionCheck);
+                    TranslateExpression(il, whileLoop.Condition, varController);
+                    il.Emit(OpCodes.Brfalse, loopEnd);
+
+                    TranslateBody(il, whileLoop.Body, baseVarController: varController, regionStartLabel: loopConditionCheck, regionEndLabel: loopEnd);
+                    il.Emit(OpCodes.Br, loopConditionCheck);
+                    il.MarkLabel(loopEnd);
+                }
+
+                else if (node is ASTDoWhileLoop doWhileLoop)
+                {
                     Label loopStart = il.DefineLabel();
                     Label loopEnd = il.DefineLabel();
                     Label loopConditionCheck = il.DefineLabel();
 
                     il.MarkLabel(loopStart);
-                    TranslateBody(il, whileLoop.Body, baseVarController: varController, regionStartLabel: loopConditionCheck, regionEndLabel: loopEnd);
+                    TranslateBody(il, doWhileLoop.Body, baseVarController: varController, regionStartLabel: loopConditionCheck, regionEndLabel: loopEnd);
 
                     il.MarkLabel(loopConditionCheck);
-                    TranslateExpression(il, whileLoop.Condition, varController);
-                    
+                    TranslateExpression(il, doWhileLoop.Condition, varController);
+
                     il.Emit(OpCodes.Brfalse, loopEnd);
                     il.Emit(OpCodes.Br, loopStart);
                     il.MarkLabel(loopEnd);
@@ -146,7 +160,7 @@ namespace KoalaLang.Translators
 
                 else if (node is ASTCodeBlock block) TranslateBody(il, block, baseVarController: varController);
 
-                else if(node is ASTBreak)
+                else if (node is ASTBreak)
                 {
                     if (!regionEndLabel.HasValue) throw new Exception($"[Error at line {node.Line}]: No enclosing loop out of which to break or continue");
                     il.Emit(OpCodes.Br, regionEndLabel.Value);

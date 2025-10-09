@@ -83,7 +83,7 @@ namespace KoalaLang.ParserAndAST
                             }
                             else if (_tokens[_idx].Type == TokenType.Semicolon) block.Nodes.Add(varDecl);
 
-                            else throw new Exception($"Invalid variable declaration signature");
+                            else throw new Exception("Invalid variable declaration signature");
                         }
 
                         else if (_tokens[_idx].Value == "if")
@@ -105,6 +105,25 @@ namespace KoalaLang.ParserAndAST
                             FatalCheck(TokenType.RBrace);
 
                             block.Nodes.Add(new ASTWhileLoop(cond, body, line));
+                        }
+
+                        else if (_tokens[_idx].Value == "do")
+                        {
+                            int line = _tokens[_idx].Line;
+
+                            FatalNext(TokenType.LBrace);
+                            ASTCodeBlock body = ParseCodeBlock();
+                            FatalCheck(TokenType.RBrace);
+
+                            FatalNext(TokenType.Keyword);
+                            if (_tokens[_idx].Value != "while") throw new Exception("Invalid do-while loop signature!");
+                            FatalNext(TokenType.LParen);
+                            Next();
+                            ASTNode cond = ParseExpression(_tokens[_idx].Line);
+                            FatalCheck(TokenType.RParen);
+                            FatalNext(TokenType.Semicolon);
+
+                            block.Nodes.Add(new ASTDoWhileLoop(cond, body, line));
                         }
 
                         else if (_tokens[_idx].Value == "break") { block.Nodes.Add(new ASTBreak(_tokens[_idx].Line)); FatalNext(TokenType.Semicolon); }
