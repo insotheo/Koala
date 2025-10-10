@@ -8,6 +8,7 @@ namespace KoalaLang.ParserAndAST.AST
         internal string FunctionName = String.Empty;
         internal string ReturnTypeName = String.Empty;
         internal Dictionary<string, string> Args = new Dictionary<string, string>(); //name - type
+        internal List<string> GenericTypes = new List<string>();
         internal ASTCodeBlock Body = new(line);
     }
 }

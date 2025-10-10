@@ -110,18 +110,38 @@ namespace KoalaLang.ParserAndAST
             throw new Exception($"Unexpected token '{token.Value}' of type {token.Type} in statement");
         }
 
-        ASTFunction ParseFunction()
+        ASTFunction ParseFunction() //func funcName<Generic, Types>(args): return_type
         {
             ASTFunction function = new ASTFunction(_tokens[_idx].Line);
 
             FatalNext(TokenType.Identifier);
             function.FunctionName = _tokens[_idx].Value;
+            Next();
+            if (_tokens[_idx].Type == TokenType.Less)//Generic types, optional
+            {
+                Next();
+                List<string> genericTypes = new();
+                while(_idx < _tokens.Count && _tokens[_idx].Type != TokenType.More)
+                {
+                    if (_tokens[_idx].Type != TokenType.Identifier) break;
+                    string type = _tokens[_idx].Value;
+                    if (genericTypes.Contains(type)) throw new Exception($"Generic type '{type}' is already defined for functino '{function.FunctionName}'");
+                    genericTypes.Add(type);
 
-            FatalNext(TokenType.LParen);
+                    Next();
+                    if (_tokens[_idx].Type != TokenType.Comma) break;
+                    Next();
+                }
+                function.GenericTypes = genericTypes;
+
+                FatalCheck(TokenType.More);
+                FatalNext(TokenType.LParen);
+            }
+            else FatalCheck(TokenType.LParen);
             Next();
 
             Dictionary<string, string> args = new Dictionary<string, string>();
-            while(_idx < _tokens.Count && _tokens[_idx].Type != TokenType.RParen)
+            while (_idx < _tokens.Count && _tokens[_idx].Type != TokenType.RParen)
             {
                 if (_tokens[_idx].Type != TokenType.Identifier)
                 {
@@ -158,7 +178,7 @@ namespace KoalaLang.ParserAndAST
                 function.ReturnTypeName = "void";
             }
             else FatalCheck(TokenType.Colon);
-            
+
             function.Body = ParseCodeBlock();
 
             return function;
@@ -278,7 +298,7 @@ namespace KoalaLang.ParserAndAST
                 ASTNode expr = ParseExpression(line);
                 return new ASTAssignment(identifier, expr, line);
             }
-            else if (_tokens[_idx].Type == TokenType.LParen)
+            else if (_tokens[_idx].Type == TokenType.LParen || _tokens[_idx].Type == TokenType.Less)
             {
                 ASTFunctionCall call = ParseFunctionCall(identifier, line);
                 return call;
@@ -500,7 +520,7 @@ namespace KoalaLang.ParserAndAST
                 string identifier = _tokens[_idx].Value;
                 Next();
 
-                if (_tokens[_idx].Type == TokenType.LParen)
+                if (_tokens[_idx].Type == TokenType.LParen || _tokens[_idx].Type == TokenType.Less)
                 {
                     return ParseFunctionCall(identifier, line);
                 }
@@ -561,9 +581,25 @@ namespace KoalaLang.ParserAndAST
         }
         #endregion
 
-        //Token before call is LParen
+        //Token before call is LParen or Less
         ASTFunctionCall ParseFunctionCall(string identifier, int line)
         {
+            List<string> genericTypes = new();
+            if (_tokens[_idx].Type == TokenType.Less)
+            {
+                Next();
+                while(_idx < _tokens.Count && _tokens[_idx].Type != TokenType.More)
+                {
+                    if (_tokens[_idx].Type != TokenType.Identifier) break;
+                    genericTypes.Add(_tokens[_idx].Value);
+                    Next();
+                    if (_tokens[_idx].Type != TokenType.Comma) break;
+                    Next();
+                }
+                FatalCheck(TokenType.More);
+                FatalNext(TokenType.LParen);
+            }
+
             Next(); //skips LParen
             List<ASTNode> args = new();
             while (_idx < _tokens.Count && _tokens[_idx].Type != TokenType.RParen)
@@ -581,7 +617,7 @@ namespace KoalaLang.ParserAndAST
             FatalCheck(TokenType.RParen);
             Next();
 
-            return new ASTFunctionCall(identifier, args, line);
+            return new ASTFunctionCall(identifier, args, genericTypes, line);
         }
 
         void Next()
