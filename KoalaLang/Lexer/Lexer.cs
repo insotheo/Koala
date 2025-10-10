@@ -21,25 +21,70 @@ namespace KoalaLang.Lexer
                     continue;
                 }
 
-                if (Char.IsNumber(_text[_pos]))
+                if (Char.IsDigit(_text[_pos]))
                 {
+                    //number
                     string number = String.Empty;
                     bool hasDecimalPoint = false, hasMoreThanOneDecimalPoint = false;
-                    while (_pos < _text.Length && (Char.IsNumber(_text[_pos]) || _text[_pos] == '.'))
+                    while (_pos < _text.Length && (Char.IsDigit(_text[_pos]) || _text[_pos] == '.' || _text[_pos] == '_'))
                     {
                         if (_text[_pos] == '.')
                         {
                             if (hasDecimalPoint) hasMoreThanOneDecimalPoint = true;
                             hasDecimalPoint = true;
                         }
+                        else if (_text[_pos] == '_')
+                        {
+                            Next();
+                            continue;
+                        }
                         number += _text[_pos];
                         Next();
                     }
 
-                    if (hasDecimalPoint && !hasMoreThanOneDecimalPoint) _tokens.Add(new(TokenType.FloatNumber, number, _ln, _col)); 
-                    else if (!hasDecimalPoint && !hasMoreThanOneDecimalPoint) _tokens.Add(new(TokenType.Number, number, _ln, _col)); 
-                    else _tokens.Add(new(TokenType.Unknown, number, _ln, _col));
+                    //suffix
+                    string suffix = String.Empty;
+                    while(_pos < _text.Length && Char.IsLetter(_text[_pos]))
+                    {
+                        suffix += _text[_pos];
+                        Next();
+                    }
+                    string originalSuffix = suffix;
+                    suffix = suffix.ToLowerInvariant();
 
+                    bool valid = true;
+                    TokenType type = TokenType.Unknown;
+                    if (hasMoreThanOneDecimalPoint)
+                    {
+                        valid = false;
+                    }
+                    else if (hasDecimalPoint)
+                    {
+                        if (suffix == "" || suffix == "f")
+                        {
+                            type = TokenType.FloatNumber;
+                        }
+                        else
+                        {
+                            number = "Float number can have only zero or f suffix: " + number + originalSuffix;
+                            valid = false;
+                        }
+                    }
+                    else
+                    {
+                        if (suffix is "b" or "ub" or "s" or "us" or "" or "u" or "l" or "ul")
+                        {
+                            type = TokenType.Number;
+                        }
+                        else
+                        {
+                            number = "Integer number can have only b, ub, s, us, u, l, ul or zero suffix: " + number + originalSuffix;
+                            valid = false;
+                        }
+                    }
+                    string literal = number + ";" + suffix;
+
+                    _tokens.Add(new(valid ? type : TokenType.Unknown, literal, _ln, _col));
                     continue;
                 }
 

@@ -228,8 +228,48 @@ namespace KoalaLang.Translators
 
             if (expr == null) return;
 
-            else if (expr is ASTConstant<int> intConst) il.Emit(OpCodes.Ldc_I4, intConst.Value);
-            else if (expr is ASTConstant<float> floatConst) il.Emit(OpCodes.Ldc_R4, floatConst.Value);
+            else if (expr is ASTConstant<sbyte> bConst)
+            {
+                il.Emit(OpCodes.Ldc_I4, (int)bConst.Value);
+                il.Emit(OpCodes.Conv_I1);
+            }
+            else if (expr is ASTConstant<byte> ubConst)
+            {
+                il.Emit(OpCodes.Ldc_I4, (int)ubConst.Value);
+                il.Emit(OpCodes.Conv_U1);
+            }
+            else if (expr is ASTConstant<short> sConst)
+            {
+                il.Emit(OpCodes.Ldc_I4, (int)sConst.Value);
+                il.Emit(OpCodes.Conv_I2);
+            }
+            else if (expr is ASTConstant<ushort> usConst)
+            {
+                il.Emit(OpCodes.Ldc_I4, (int)usConst.Value);
+                il.Emit(OpCodes.Conv_U2);
+            }
+            else if (expr is ASTConstant<int> intConst)
+            {
+                il.Emit(OpCodes.Ldc_I4, intConst.Value);
+            }
+            else if (expr is ASTConstant<uint> uConst)
+            {
+                il.Emit(OpCodes.Ldc_I4, (int)uConst.Value);
+                il.Emit(OpCodes.Conv_U4);
+            }
+            else if (expr is ASTConstant<long> lConst)
+            {
+                il.Emit(OpCodes.Ldc_I8, lConst.Value);
+            }
+            else if (expr is ASTConstant<ulong> ulConst)
+            {
+                il.Emit(OpCodes.Ldc_I8, (long)ulConst.Value);
+                il.Emit(OpCodes.Conv_U8);
+            }
+
+            else if (expr is ASTConstant<float> fConst) il.Emit(OpCodes.Ldc_R4, fConst.Value);
+            else if (expr is ASTConstant<double> doubleConst) il.Emit(OpCodes.Ldc_R8, doubleConst.Value);
+
             else if (expr is ASTConstant<bool> boolConst) il.Emit(boolConst.Value ? OpCodes.Ldc_I4_1 : OpCodes.Ldc_I4_0);
 
             else if (expr is ASTVariableUse varUse)
@@ -410,8 +450,16 @@ namespace KoalaLang.Translators
         {
             switch (expr)
             {
+                case ASTConstant<sbyte>: return typeof(sbyte);
+                case ASTConstant<byte>: return typeof(byte);
+                case ASTConstant<short>: return typeof(short);
+                case ASTConstant<ushort>: return typeof(ushort);
                 case ASTConstant<int>: return typeof(int);
+                case ASTConstant<uint>: return typeof(uint);
+                case ASTConstant<long>: return typeof(long);
+                case ASTConstant<ulong>: return typeof(ulong);
                 case ASTConstant<float>: return typeof(float);
+                case ASTConstant<double>: return typeof(double);
                 case ASTConstant<bool>: return typeof(bool);
 
                 case ASTVariableUse varUse: return ctx.Vars.GetVariable(varUse.VariableName).LocalType;
@@ -449,17 +497,17 @@ namespace KoalaLang.Translators
                 return typeName switch
                 {
                     "void" => typeof(void),
-
-                    "sbyte" => typeof(sbyte),
-                    "byte" => typeof(byte),
-                    "short" => typeof(short),
-                    "ushort" => typeof(ushort),
-                    "int" => typeof(int),
-                    "uint" => typeof(uint),
-                    "long" => typeof(long),
-                    "ulong" => typeof(ulong),
-                    "float" => typeof(float),
-                    "double" => typeof(double),
+                    
+                    "sbyte" => typeof(sbyte), //b - byte
+                    "byte" => typeof(byte), //ub - unsigned byte
+                    "short" => typeof(short), //s - short
+                    "ushort" => typeof(ushort), //us - unsigned short
+                    "int" => typeof(int), //no suffix - int
+                    "uint" => typeof(uint), //u - unsidnged int
+                    "long" => typeof(long), //l - long
+                    "ulong" => typeof(ulong), //ul - unsigned long
+                    "float" => typeof(float), //f - float
+                    "double" => typeof(double), //no suffix - double
 
                     "bool" => typeof(bool),
 

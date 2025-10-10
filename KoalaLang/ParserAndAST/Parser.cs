@@ -1,8 +1,5 @@
 ﻿using KoalaLang.Lexer;
 using KoalaLang.ParserAndAST.AST;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 
 namespace KoalaLang.ParserAndAST
 {

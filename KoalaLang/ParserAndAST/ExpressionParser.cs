@@ -2,6 +2,7 @@
 using KoalaLang.ParserAndAST.AST;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 
 namespace KoalaLang.ParserAndAST
 {
@@ -152,13 +153,39 @@ namespace KoalaLang.ParserAndAST
         {
             if (_ctx.Current.Type == TokenType.Number)
             {
-                ASTNode number = new ASTConstant<int>(int.Parse(_ctx.Current.Value), _ctx.Current.Line);
+                var parts = _ctx.Current.Value.Split(';');
+                string num = parts[0];
+                string suffix = parts.Length > 1 ? parts[1] : "";
+
+                ASTNode number = suffix switch
+                {
+                    "b" => new ASTConstant<sbyte>(sbyte.Parse(num, CultureInfo.InvariantCulture), _ctx.Current.Line),
+                    "ub" => new ASTConstant<byte>(byte.Parse(num, CultureInfo.InvariantCulture), _ctx.Current.Line),
+                    "s" => new ASTConstant<short>(short.Parse(num, CultureInfo.InvariantCulture), _ctx.Current.Line),
+                    "us" => new ASTConstant<ushort>(ushort.Parse(num, CultureInfo.InvariantCulture), _ctx.Current.Line),
+                    "" => new ASTConstant<int>(int.Parse(num, CultureInfo.InvariantCulture), _ctx.Current.Line),
+                    "u" => new ASTConstant<uint>(uint.Parse(num, CultureInfo.InvariantCulture), _ctx.Current.Line),
+                    "l" => new ASTConstant<long>(long.Parse(num, CultureInfo.InvariantCulture), _ctx.Current.Line),
+                    "ul" => new ASTConstant<ulong>(ulong.Parse(num, CultureInfo.InvariantCulture), _ctx.Current.Line),
+
+                    _ => throw new Exception($"Integer number can have b, ub, s, us, u, l, ul or zero suffix: {_ctx.Current.Value}")
+                };
                 _ctx.Next();
                 return number;
             }
             else if (_ctx.Current.Type == TokenType.FloatNumber)
             {
-                ASTNode number = new ASTConstant<float>(float.Parse(_ctx.Current.Value), _ctx.Current.Line);
+                var parts = _ctx.Current.Value.Split(';');
+                string num = parts[0];
+                string suffix = parts.Length > 1 ? parts[1] : "";
+
+                ASTNode number = suffix switch
+                {
+                    "f" => new ASTConstant<float>(float.Parse(num, CultureInfo.InvariantCulture), _ctx.Current.Line),
+                    "" => new ASTConstant<double>(double.Parse(num, CultureInfo.InvariantCulture), _ctx.Current.Line),
+
+                    _ => throw new Exception($"Float number can have only zero or f suffix: {_ctx.Current.Value}")
+                };
                 _ctx.Next();
                 return number;
             }
