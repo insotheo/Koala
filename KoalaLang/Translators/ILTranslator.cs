@@ -14,31 +14,51 @@ namespace KoalaLang.Translators
         List<ModuleInfo> _mods = new List<ModuleInfo>();
         ModuleInfo _currentModule = null;
 
+        AssemblyBuilder _assemblyBuilder;
+        ModuleBuilder _moduleBuilder;
+
         public void Translate(Parser parser, string moduleName)
         {
             AssemblyName assemblyName = new AssemblyName(_asmName);
-            AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(assemblyName, AssemblyBuilderAccess.RunAndCollect);
 
-            ModuleBuilder moduleBuilder = assemblyBuilder.DefineDynamicModule("ApplicationDynamicModule");
-
-            TypeBuilder typeBuilder = moduleBuilder.DefineType(moduleName, TypeAttributes.Public | TypeAttributes.Class);
+            _assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(assemblyName, AssemblyBuilderAccess.RunAndCollect);
+            _moduleBuilder = _assemblyBuilder.DefineDynamicModule("ApplicationDynamicModule");
 
             try
             {
-                DefineModule(ref _mods, ref typeBuilder, moduleName, parser.GetAST() as ASTCodeBlock);
+                DefineModule(ref _mods, moduleName, parser.GetAST() as ASTCodeBlock);
                 _currentModule = _mods[0];
 
                 foreach (ASTNode node in (parser.GetAST() as ASTCodeBlock).Nodes)
                 {
                     if (node is ASTFunction func)
                     {
-                        FunctionInfo funcInfo = _currentModule.Functions.FirstOrDefault(x => x.Name == func.FunctionName, null);
-                        if (funcInfo == null)
-                            throw new Exception($"[Error at line {func.Line}]: Function '{func.FunctionName}' was not declared before use");
+                        FunctionInfo funcInfo = _currentModule.Functions.FirstOrDefault(x => x.Name == func.FunctionName, null)
+                            ?? throw new Exception($"[Error at line {func.Line}]: Function '{func.FunctionName}' was not declared before use");
 
                         ILGenerator il = (funcInfo.Info as MethodBuilder).GetILGenerator();
-                        TranslateBody(il, func.Body, func);
+
+                        TranslationContext funcCtx = new(il, funcInfo)
+                        {
+                            CurrentFunction = funcInfo,
+                            GenericMap = funcInfo.GenericMap,
+                        };
+
+                        {
+                            int argIdx = 0;
+                            foreach ((string argName, string argType) in func.Args)
+                            {
+                                funcCtx.DeclareLocalVariable(argName, ResolveType(argType, funcCtx, func.Line), func.Line);
+                                il.Emit(OpCodes.Ldarg, argIdx);
+                                il.Emit(OpCodes.Stloc, funcCtx.Vars.GetVariable(argName));
+                                argIdx += 1;
+                            }
+                        }
+
+                        TranslateBody(func.Body, funcCtx);
                         il.Emit(OpCodes.Ret);
+
+                        funcCtx.Free();
                     }
                 }
             }
@@ -48,165 +68,164 @@ namespace KoalaLang.Translators
                 Environment.Exit(-1);
             }
 
-            Type module = typeBuilder.CreateType();
+            Type[] translatedModules = _mods.Select(m => m.TypeBuilder.CreateType()).ToArray();
 
             //DBG
-            Console.WriteLine($"Function Main returned: {module.GetMethod("Main")!.Invoke(null, null)}");
+            Console.WriteLine($"Function Main returned: {translatedModules[0].GetMethod("Main")!.Invoke(null, null)}");
         }
 
-        private void TranslateBody(ILGenerator il, ASTCodeBlock body, ASTFunction func = null, VariablesController baseVarController = null, Label? regionStartLabel = null, Label? regionEndLabel = null)
+        private void TranslateBody(ASTCodeBlock block, TranslationContext ctx)
         {
-            VariablesController varController = baseVarController != null ? baseVarController : new();
-            Dictionary<string, GenericTypeParameterBuilder> genericMap = new();
-            List<string> localVariablesNames = new();
-
-            if (func != null && func.Args.Count != 0)
-            {
-                int index = 0;
-                FunctionInfo funcInfo = FindFunctionInfo(func.FunctionName, -1, -1);
-                if (funcInfo == null) return;
-                genericMap = funcInfo.GenericMap;
-
-                foreach ((string argName, string argType) in func.Args)
-                {
-                    Type type = ResolvePossibleGenericType(argType, genericMap, func.Line);
-
-                    varController.DeclareVariable(il, argName, type, func.Line);
-                    localVariablesNames.Add(argName);
-
-                    il.Emit(OpCodes.Ldarg, index);
-                    il.Emit(OpCodes.Stloc, varController.GetVariable(argName));
-
-                    index += 1;
-                }
-            }
-
-            foreach (ASTNode node in body.Nodes)
-            {
-                TranslateNode(il, node, varController, genericMap, localVariablesNames, regionStartLabel, regionEndLabel);
-            }
-
-            foreach (string localVar in localVariablesNames)
-                varController.Free(il, localVar);
+            foreach (ASTNode node in block.Nodes)
+                TranslateNode(node, ctx);
         }
 
-        private void TranslateNode(ILGenerator il, ASTNode node, VariablesController varController, Dictionary<string, GenericTypeParameterBuilder> genericMap, List<string> localVariablesNames, Label? regionStartLabel, Label? regionEndLabel)
+        private void TranslateNode(ASTNode node, TranslationContext ctx)
         {
-            if (node is ASTReturn ret)
+            ILGenerator il = ctx.IL;
+
+            switch (node)
             {
-                TranslateExpression(il, ret.ReturnValue, varController, genericMap);
-                il.Emit(OpCodes.Ret);
-            }
+                case ASTReturn ret:
+                    TranslateExpression(ret.ReturnValue, ctx);
+                    il.Emit(OpCodes.Ret);
+                    break;
 
-            else if (node is ASTVariableDeclaration varDecl)
-            {
-                varController.DeclareVariable(il, varDecl.Name, ResolvePossibleGenericType(varDecl.Type, genericMap, varDecl.Line), varDecl.Line);
-                localVariablesNames.Add(varDecl.Name);
-            }
+                case ASTVariableDeclaration varDecl:
+                    ctx.DeclareLocalVariable(varDecl.Name, ResolveType(varDecl.Type, ctx, varDecl.Line), varDecl.Line);
+                    break;
 
-            else if (node is ASTAssignment assignment)
-            {
-                if (!varController.VarExists(assignment.DestinationName))
-                {
-                    throw new Exception($"[Error at line {assignment.Line}]: Cannot assign to undefined variable '{assignment.DestinationName}'");
-                }
-                TranslateExpression(il, assignment.Value, varController, genericMap);
-                il.Emit(OpCodes.Stloc, varController.GetVariable(assignment.DestinationName));
-            }
+                case ASTAssignment assign:
+                    if (!ctx.Vars.VarExists(assign.DestinationName))
+                        throw new Exception($"[Error at line {assign.Line}]: Cannot assign to undefined variable '{assign.DestinationName}'");
+                    TranslateExpression(assign.Value, ctx);
+                    il.Emit(OpCodes.Stloc, ctx.Vars.GetVariable(assign.DestinationName));
+                    break;
 
-            else if (node is ASTBranch branch)
-            {
-                Label endLb = il.DefineLabel();
+                case ASTBranch branch:
+                    {
+                        TranslationContext branchCtx = ctx.CreateKid();
+                        Label endLb = il.DefineLabel();
 
-                for (int i = 0; i < branch.Ifs.Length; i++)
-                {
-                    ASTConditionBlock ifBlock = branch.Ifs[i];
-                    Label nextIfLb = il.DefineLabel();
+                        for(int i = 0; i < branch.Ifs.Length; i++)
+                        {
+                            ASTConditionBlock ifBlock = branch.Ifs[i];
+                            TranslationContext ifCtx = branchCtx.CreateKid();
 
-                    TranslateExpression(il, ifBlock.Condition, varController, genericMap);
-                    il.Emit(OpCodes.Brfalse, nextIfLb); //if conditions is false
+                            Label nextIfLb = il.DefineLabel();
 
-                    TranslateBody(il, ifBlock.Body, baseVarController: varController);
-                    il.Emit(OpCodes.Br, endLb);
+                            TranslateExpression(ifBlock.Condition, ifCtx);
+                            il.Emit(OpCodes.Brfalse, nextIfLb); //if condition fails
 
-                    il.MarkLabel(nextIfLb);
-                }
+                            TranslateBody(ifBlock.Body, ifCtx);
+                            il.Emit(OpCodes.Br, endLb);
+                            
+                            ifCtx.Free();
 
-                if (branch.Else != null)
-                {
-                    TranslateBody(il, branch.Else, baseVarController: varController);
-                }
-                il.MarkLabel(endLb);
-            }
+                            il.MarkLabel(nextIfLb);
+                        }
 
-            else if (node is ASTWhileLoop whileLoop)
-            {
-                Label loopEnd = il.DefineLabel();
-                Label loopConditionCheck = il.DefineLabel();
+                        if(branch.Else != null)
+                        {
+                            TranslationContext elseCtx = branchCtx.CreateKid();
+                            TranslateBody(branch.Else, elseCtx);
+                            elseCtx.Free();
+                        }
+                        il.MarkLabel(endLb);
 
-                il.MarkLabel(loopConditionCheck);
-                TranslateExpression(il, whileLoop.Condition, varController, genericMap);
-                il.Emit(OpCodes.Brfalse, loopEnd);
+                        branchCtx.Free();
+                    }
+                    break;
 
-                TranslateBody(il, whileLoop.Body, baseVarController: varController, regionStartLabel: loopConditionCheck, regionEndLabel: loopEnd);
-                il.Emit(OpCodes.Br, loopConditionCheck);
-                il.MarkLabel(loopEnd);
-            }
+                case ASTWhileLoop whileLoop:
+                    {
+                        TranslationContext loopCtx = ctx.CreateKid();
+                        loopCtx.RegionStart = il.DefineLabel();
+                        loopCtx.RegionEnd = il.DefineLabel();
 
-            else if (node is ASTDoWhileLoop doWhileLoop)
-            {
-                Label loopStart = il.DefineLabel();
-                Label loopEnd = il.DefineLabel();
-                Label loopConditionCheck = il.DefineLabel();
+                        il.MarkLabel(loopCtx.RegionStart.Value);
+                        TranslateExpression(whileLoop.Condition, loopCtx);
+                        il.Emit(OpCodes.Brfalse, loopCtx.RegionEnd.Value);
+                        TranslateBody(whileLoop.Body, loopCtx);
+                        il.Emit(OpCodes.Br, loopCtx.RegionStart.Value);
+                        il.MarkLabel(loopCtx.RegionEnd.Value);
 
-                il.MarkLabel(loopStart);
-                TranslateBody(il, doWhileLoop.Body, baseVarController: varController, regionStartLabel: loopConditionCheck, regionEndLabel: loopEnd);
+                        loopCtx.Free();
+                    }
+                    break;
 
-                il.MarkLabel(loopConditionCheck);
-                TranslateExpression(il, doWhileLoop.Condition, varController, genericMap);
+                case ASTDoWhileLoop doWhileLoop:
+                    {
+                        TranslationContext loopCtx = ctx.CreateKid();
+                        loopCtx.RegionStart = il.DefineLabel();
+                        loopCtx.RegionEnd = il.DefineLabel();
+                        Label loopBegin = il.DefineLabel();
 
-                il.Emit(OpCodes.Brfalse, loopEnd);
-                il.Emit(OpCodes.Br, loopStart);
-                il.MarkLabel(loopEnd);
-            }
+                        il.MarkLabel(loopBegin);
+                        TranslateBody(doWhileLoop.Body, loopCtx);
+                        il.MarkLabel(loopCtx.RegionStart.Value);
+                        TranslateExpression(doWhileLoop.Condition, loopCtx);
+                        il.Emit(OpCodes.Brfalse, loopCtx.RegionEnd.Value);
+                        il.Emit(OpCodes.Br, loopBegin);
+                        il.MarkLabel(loopCtx.RegionEnd.Value);
 
-            else if (node is ASTForLoop forLoop)
-            {
-                ASTCodeBlock forLoopBlock = new(-1);
+                        loopCtx.Free();
+                    }
+                    break;
 
-                forLoopBlock.Nodes.Add(forLoop.VariableDeclaration);
+                case ASTForLoop forLoop:
+                    {
+                        TranslationContext loopCtx = ctx.CreateKid();
 
-                ASTCodeBlock forLoopBody = forLoop.Body;
-                forLoopBody.Nodes.Add(forLoop.IterAction);
+                        ASTCodeBlock forLoopCodeBlock = new(-1);
+                        forLoopCodeBlock.Nodes.Add(forLoop.VariableDeclaration);
 
-                forLoopBlock.Nodes.Add(new ASTWhileLoop(forLoop.Condition, forLoopBody, forLoop.Line));
-                TranslateNode(il, forLoopBlock, varController, genericMap, localVariablesNames, regionStartLabel, regionEndLabel);
-            }
+                        ASTCodeBlock forLoopBody = forLoop.Body;
+                        forLoopBody.Nodes.Add(forLoop.IterAction);
 
-            else if (node is ASTFunctionCall funcCall) TranslateFunctionCall(il, funcCall, varController, genericMap);
+                        forLoopCodeBlock.Nodes.Add(new ASTWhileLoop(forLoop.Condition, forLoopBody, forLoop.Line));
+                        TranslateNode(forLoopCodeBlock, loopCtx);
 
-            else if (node is ASTCodeBlock block) TranslateBody(il, block, baseVarController: varController);
+                        loopCtx.Free();
+                    }
+                    break;
 
-            else if (node is ASTCompoundStatement cs)
-            {
-                TranslateNode(il, cs.I, varController, genericMap, localVariablesNames, regionStartLabel, regionEndLabel);
-                TranslateNode(il, cs.II, varController, genericMap, localVariablesNames, regionStartLabel, regionEndLabel);
-            }
+                case ASTFunctionCall funcCall:
+                    TranslateFunctionCall(funcCall, ctx);
+                    break;
 
-            else if (node is ASTBreak)
-            {
-                if (!regionEndLabel.HasValue) throw new Exception($"[Error at line {node.Line}]: No enclosing loop out of which to break or continue");
-                il.Emit(OpCodes.Br, regionEndLabel.Value);
-            }
-            else if (node is ASTContinue)
-            {
-                if (!regionStartLabel.HasValue) throw new Exception($"[Error at line {node.Line}]: No enclosing loop out of which to break or continue");
-                il.Emit(OpCodes.Br, regionStartLabel.Value);
+                case ASTCodeBlock inner:
+                    {
+                        TranslationContext innerCtx = ctx.CreateKid();
+                        TranslateBody(inner, innerCtx);
+                    }
+                    break;
+
+                case ASTCompoundStatement compoundStatement:
+                    TranslateNode(compoundStatement.I, ctx);
+                    TranslateNode(compoundStatement.II, ctx);
+                    break;
+
+                case ASTBreak:
+                    if(!ctx.RegionEnd.HasValue)
+                        throw new Exception($"[Error at line {node.Line}]: No enclosing loop out of which to break or continue");
+                    il.Emit(OpCodes.Br, ctx.RegionEnd.Value);
+                    break;
+
+                case ASTContinue:
+                    if (!ctx.RegionStart.HasValue)
+                        throw new Exception($"[Error at line {node.Line}]: No enclosing loop out of which to break or continue");
+                    il.Emit(OpCodes.Br, ctx.RegionStart.Value);
+                    break;
+
+                default: return;
             }
         }
 
-        private void TranslateExpression(ILGenerator il, ASTNode expr, VariablesController varController, Dictionary<string, GenericTypeParameterBuilder> genericMap)
+        private void TranslateExpression(ASTNode expr, TranslationContext ctx)
         {
+            ILGenerator il = ctx.IL;
+
             if (expr == null) return;
 
             else if (expr is ASTConstant<int> intConst) il.Emit(OpCodes.Ldc_I4, intConst.Value);
@@ -215,27 +234,24 @@ namespace KoalaLang.Translators
 
             else if (expr is ASTVariableUse varUse)
             {
-                if (!varController.VarExists(varUse.VariableName))
+                if (!ctx.Vars.VarExists(varUse.VariableName))
                 {
                     throw new Exception($"[Error at line {varUse.Line}]: Variable '{varUse.VariableName}' is used before being defined");
                 }
-                il.Emit(OpCodes.Ldloc, varController.GetVariable(varUse.VariableName));
+                il.Emit(OpCodes.Ldloc, ctx.Vars.GetVariable(varUse.VariableName));
             }
 
-            else if (expr is ASTFunctionCall funcCall)
-            {
-                TranslateFunctionCall(il, funcCall, varController, genericMap);
-            }
+            else if (expr is ASTFunctionCall funcCall) TranslateFunctionCall(funcCall, ctx);
 
             else if (expr is ASTBinOperation binOp)
             {
-                Type leftType = GetExpressionType(binOp.Left, varController, genericMap);
-                Type rightType = GetExpressionType(binOp.Right, varController, genericMap);
+                Type leftType = GetExpressionType(binOp.Left, ctx);
+                Type rightType = GetExpressionType(binOp.Right, ctx);
 
                 if (leftType != rightType) throw new Exception($"[Error at line {expr.Line}]: Cannot operate with different types: {leftType}, {rightType}");
 
-                TranslateExpression(il, binOp.Left, varController, genericMap);
-                TranslateExpression(il, binOp.Right, varController, genericMap);
+                TranslateExpression(binOp.Left, ctx);
+                TranslateExpression(binOp.Right, ctx);
 
                 switch (binOp.OperationType)
                 {
@@ -269,7 +285,7 @@ namespace KoalaLang.Translators
 
             else if (expr is ASTUnOperation unOp)
             {
-                TranslateExpression(il, unOp.Operand, varController, genericMap);
+                TranslateExpression(unOp.Operand, ctx);
 
                 switch (unOp.OperationType)
                 {
@@ -283,10 +299,10 @@ namespace KoalaLang.Translators
 
             else if (expr is ASTCast staticCast)
             {
-                TranslateExpression(il, staticCast.Value, varController, genericMap);
+                TranslateExpression(staticCast.Value, ctx);
 
-                Type sourceType = GetExpressionType(staticCast.Value, varController, genericMap);
-                Type targetType = ResolvePossibleGenericType(staticCast.TypeName, genericMap, staticCast.Line);
+                Type sourceType = GetExpressionType(staticCast.Value, ctx);
+                Type targetType = ResolveType(staticCast.TypeName, ctx, staticCast.Line);
 
                 EmitCast(il, sourceType, targetType);
             }
@@ -294,31 +310,28 @@ namespace KoalaLang.Translators
             else throw new Exception($"[Error at line {expr.Line}]: Unknown expression type '{expr.GetType().Name}'");
         }
 
-        private void TranslateFunctionCall(ILGenerator il, ASTFunctionCall funcCall, VariablesController varController, Dictionary<string, GenericTypeParameterBuilder> genericMap)
+        private void TranslateFunctionCall(ASTFunctionCall funcCall, TranslationContext ctx)
         {
-            MethodInfo methodInfo = null;
-            string shortName = funcCall.FunctionName;
+            ILGenerator il = ctx.IL;
 
-            FunctionInfo funcInfo = FindFunctionInfo(funcCall.FunctionName, funcCall.Args.Count, funcCall.Line);
-            methodInfo = funcInfo == null ? null : funcInfo.Info;
+            FunctionInfo funcInfo = FindFunctionInfo(funcCall.FunctionName, -1, funcCall.Line) 
+                ?? throw new Exception($"[Error at line {funcCall.Line}]: Undefined function '{funcCall.FunctionName}'");
+            MethodInfo methodInfo = funcInfo.Info;
 
-            if (methodInfo == null)
-            {
-                throw new Exception($"[Error at line {funcCall.Line}]: Cannot call undefined function '{shortName}'");
-            }
+            if (methodInfo == null) 
+                throw new Exception($"[Error at line {funcCall.Line}]: Cannot call undefined function '{funcCall.FunctionName}'");
 
             if(funcCall.GenericTypes.Count != 0 && methodInfo.IsGenericMethod)
             {
-                Type[] typeArgs = funcCall.GenericTypes.Select(t => GetTypeByName(t, funcCall.Line)).ToArray();
+                Type[] typeArgs = funcCall.GenericTypes.Select(t => ResolveType(t, ctx, funcCall.Line)).ToArray();
                 methodInfo = methodInfo.MakeGenericMethod(typeArgs);
             }
-            if (methodInfo.IsGenericMethod && funcCall.GenericTypes.Count == 0) throw new Exception($"[Error at line {funcCall.Line}]: Function '{shortName}' is generic");
+            else if (methodInfo.IsGenericMethod && funcCall.GenericTypes.Count == 0) 
+                throw new Exception($"[Error at line {funcCall.Line}]: Function '{funcCall.FunctionName}' is generic");
 
             //loading args
             foreach (ASTNode arg in funcCall.Args)
-            {
-                TranslateExpression(il, arg, varController, genericMap);
-            }
+                TranslateExpression(arg, ctx);
 
             //call
             il.Emit(OpCodes.Call, methodInfo);
@@ -333,60 +346,13 @@ namespace KoalaLang.Translators
                 if (info.Name == funcName)
                 {
                     if (info.Args.Count != argsCount && argsCount != -1)
-                    {
                         throw new Exception($"[Error at line {line}]: Function '{funcName}' called with incorrect number of arguments (expected {info.Args.Count}, got {argsCount})");
-                    }
 
                     return info;
                 }
             }
 
             return null;
-        }
-
-        private void DefineModule(ref List<ModuleInfo> modules, ref TypeBuilder typeBuilder, string moduleName, ASTCodeBlock block)
-        {
-            ModuleInfo mod = new ModuleInfo(moduleName, _currentModule);
-            foreach (ASTNode node in block.Nodes)
-            {
-                if(node is ASTFunction func)
-                {
-                    MethodBuilder methodBuilder = typeBuilder.DefineMethod(
-                        func.FunctionName,
-                        MethodAttributes.Public | MethodAttributes.Static
-                    );
-
-                    Dictionary<string, GenericTypeParameterBuilder> genericMap = new();
-                    if(func.GenericTypes.Count != 0)
-                    {
-                        var genParams = methodBuilder.DefineGenericParameters(func.GenericTypes.ToArray());
-                        for(int i = 0; i < genParams.Length; i++)
-                        {
-                            genericMap.Add(func.GenericTypes[i], genParams[i]);
-                        }
-                    }
-
-                    Type[] args = new Type[func.Args.Count];
-                    {
-                        int i = 0;
-                        foreach (var (argName, argType) in func.Args)
-                        {
-                            args[i] = ResolvePossibleGenericType(argType, genericMap, func.Line);
-                            i += 1;
-                        }
-                    }
-
-                    Type returnType = ResolvePossibleGenericType(func.ReturnTypeName, genericMap, func.Line);
-
-                    methodBuilder.SetReturnType(returnType);
-                    methodBuilder.SetParameters(args);
-
-                    FunctionInfo funcInfo = new(func.FunctionName, func.ReturnTypeName, func.Args) { GenericMap = genericMap };
-                    funcInfo.Info = methodBuilder;
-                    mod.Functions.Add(funcInfo);
-                }
-            }
-            modules.Add(mod);
         }
 
         void EmitCast(ILGenerator il, Type sourceType, Type targetType)
@@ -440,7 +406,7 @@ namespace KoalaLang.Translators
             }
         }
 
-        Type GetExpressionType(ASTNode expr, VariablesController varController, Dictionary<string, GenericTypeParameterBuilder> genericMap)
+        Type GetExpressionType(ASTNode expr, TranslationContext ctx)
         {
             switch (expr)
             {
@@ -448,54 +414,108 @@ namespace KoalaLang.Translators
                 case ASTConstant<float>: return typeof(float);
                 case ASTConstant<bool>: return typeof(bool);
 
-                case ASTVariableUse varUse: return varController.GetVariable(varUse.VariableName).LocalType;
+                case ASTVariableUse varUse: return ctx.Vars.GetVariable(varUse.VariableName).LocalType;
 
-                case ASTCast staticCast: return ResolvePossibleGenericType(staticCast.TypeName, genericMap, staticCast.Line);
+                case ASTCast staticCast: return ResolveType(staticCast.TypeName, ctx, staticCast.Line);
 
-                case ASTBinOperation binOp: return GetExpressionType(binOp.Left, varController, genericMap);
-                case ASTUnOperation unOp: return GetExpressionType(unOp.Operand, varController, genericMap);
+                case ASTBinOperation binOp: return GetExpressionType(binOp.Left, ctx);
+                case ASTUnOperation unOp: return GetExpressionType(unOp.Operand, ctx);
+
                 case ASTFunctionCall funcCall:
-                    FunctionInfo funcInfo = FindFunctionInfo(funcCall.FunctionName, funcCall.Args.Count, funcCall.Line);
-                    if(funcInfo == null) throw new Exception($"[Error at line {funcCall.Line}]: Cannot call undefined function '{funcCall.FunctionName}'");
-                    int indexOfTypeAtGenericTypes = Array.IndexOf(funcInfo.GenericMap.Keys.ToArray(), funcInfo.ReturnType);
-                    if (indexOfTypeAtGenericTypes != -1)
-                        return ResolvePossibleGenericType(funcCall.GenericTypes[indexOfTypeAtGenericTypes], genericMap, funcCall.Line);
-                    else
-                        return ResolvePossibleGenericType(funcInfo.ReturnType, genericMap, funcCall.Line);
+                    {
+                        FunctionInfo funcInfo = FindFunctionInfo(funcCall.FunctionName, funcCall.Args.Count, funcCall.Line)
+                            ?? throw new Exception($"[Error at line {funcCall.Line}]: Cannot call undefined function '{funcCall.FunctionName}'");
 
-                   default: throw new Exception($"[Error at line {expr.Line}]: Cannot deduce expression type ({expr.GetType().Name})");
+                        int indexOfGenericType = Array.IndexOf(funcInfo.GenericMap.Keys.ToArray(), funcInfo.ReturnType);
+
+                        if (indexOfGenericType != -1)
+                            return ResolveType(funcCall.GenericTypes[indexOfGenericType], ctx, funcCall.Line);
+                        else
+                            return ResolveType(funcInfo.ReturnType, ctx, funcCall.Line);
+                    }
+
+                default: throw new Exception($"[Error at line {expr.Line}]: Cannot deduce expression type ({expr.GetType().Name})");
             }
         }
 
-        private Type ResolvePossibleGenericType(string typeName, Dictionary<string, GenericTypeParameterBuilder> genericMap, int line)
+        Type ResolveType(string typeName, TranslationContext ctx, int line)
         {
-            if (genericMap.TryGetValue(typeName, out var genParam))
-                return genParam;
+            if (ctx.GenericMap.TryGetValue(typeName, out var type))
+                return type;
 
-            return GetTypeByName(typeName, line);
+            else
+            {
+                //TODO: Add parser for generic types!!!
+                return typeName switch
+                {
+                    "void" => typeof(void),
+
+                    "sbyte" => typeof(sbyte),
+                    "byte" => typeof(byte),
+                    "short" => typeof(short),
+                    "ushort" => typeof(ushort),
+                    "int" => typeof(int),
+                    "uint" => typeof(uint),
+                    "long" => typeof(long),
+                    "ulong" => typeof(ulong),
+                    "float" => typeof(float),
+                    "double" => typeof(double),
+
+                    "bool" => typeof(bool),
+
+                    _ => throw new Exception($"[Error at line {line}]: Unknown type '{typeName}'"),
+                };
+            }
         }
 
-        private Type GetTypeByName(string typeName, int line) {
-            //TODO: Add parser for generic types!!!
-            return typeName switch
+        private void DefineModule(ref List<ModuleInfo> modules, string moduleName, ASTCodeBlock block)
+        {
+            ModuleInfo mod = new ModuleInfo(moduleName, _currentModule, _moduleBuilder.DefineType(moduleName, TypeAttributes.Class | TypeAttributes.Public));
+            foreach (ASTNode node in block.Nodes)
             {
-                "void" => typeof(void),
+                if (node is ASTFunction func)
+                {
+                    MethodBuilder methodBuilder = mod.TypeBuilder.DefineMethod(
+                        func.FunctionName,
+                        MethodAttributes.Public | MethodAttributes.Static
+                    );
 
-                "sbyte" => typeof(sbyte),
-                "byte" => typeof(byte),
-                "short" => typeof(short),
-                "ushort" => typeof(ushort),
-                "int" => typeof(int),
-                "uint" => typeof(uint),
-                "long" => typeof(long),
-                "ulong" => typeof(ulong),
-                "float" => typeof(float),
-                "double" => typeof(double),
+                    Dictionary<string, GenericTypeParameterBuilder> genericMap = new();
+                    if (func.GenericTypes.Count != 0)
+                    {
+                        var genParams = methodBuilder.DefineGenericParameters(func.GenericTypes.ToArray());
+                        for (int i = 0; i < genParams.Length; i++)
+                        {
+                            genericMap.Add(func.GenericTypes[i], genParams[i]);
+                        }
+                    }
 
-                "bool" => typeof(bool),
+                    TranslationContext tmpCtx = new(null, null)
+                    {
+                        GenericMap = genericMap,
+                    };
 
-                _ => throw new Exception($"[Error at line {line}]: Unknown type '{typeName}'"),
-            };
+                    Type[] args = new Type[func.Args.Count];
+                    {
+                        int i = 0;
+                        foreach (var (argName, argType) in func.Args)
+                        {
+                            args[i] = ResolveType(argType, tmpCtx, func.Line);
+                            i += 1;
+                        }
+                    }
+
+                    Type returnType = ResolveType(func.ReturnTypeName, tmpCtx, func.Line);
+
+                    methodBuilder.SetReturnType(returnType);
+                    methodBuilder.SetParameters(args);
+
+                    FunctionInfo funcInfo = new(func.FunctionName, func.ReturnTypeName, func.Args) { GenericMap = genericMap };
+                    funcInfo.Info = methodBuilder;
+                    mod.Functions.Add(funcInfo);
+                }
+            }
+            modules.Add(mod);
         }
 
     }

@@ -1,13 +1,15 @@
 ﻿using System.Collections.Generic;
+using System.Reflection.Emit;
 
 namespace KoalaLang.Translators
 {
-    public sealed class ModuleInfo(string name, ModuleInfo _parentModule)
+    public sealed class ModuleInfo(string name, ModuleInfo _parentModule, TypeBuilder typeBuilder)
     {
         internal string Name = name;
         internal List<FunctionInfo> Functions = new List<FunctionInfo>();
         internal List<ModuleInfo> Submodules = new List<ModuleInfo>();
         internal ModuleInfo ParentModule = _parentModule;
+        internal TypeBuilder @TypeBuilder = typeBuilder;
 
         internal string GetFullName(bool includeSelf = true)
         {

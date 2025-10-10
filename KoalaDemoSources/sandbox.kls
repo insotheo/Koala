@@ -2,6 +2,6 @@ func Get<T>(value: T): T{
 	return value;
 }
 
-func Main(): bool{
-	return (bool)(int)Get<float>(0.0);
+func Main(): int{
+	return (int)Get<float>(1.7);
 }
