@@ -2,7 +2,7 @@
 {
     public enum TokenType
     {
-        EOF, Identifier, Number, FloatNumber, BooleanValue, Unknown, Keyword,
+        EOF, Identifier, Number, FloatNumber, BooleanValue, StringLiteral, CharLiteral, Unknown, Keyword,
 
         Plus, Minus, Asterisk, Slash, AssignmentSign, Percent,
 

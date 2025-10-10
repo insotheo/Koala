@@ -272,6 +272,14 @@ namespace KoalaLang.Translators
 
             else if (expr is ASTConstant<bool> boolConst) il.Emit(boolConst.Value ? OpCodes.Ldc_I4_1 : OpCodes.Ldc_I4_0);
 
+            else if (expr is ASTConstant<char> charConst)
+            {
+                il.Emit(OpCodes.Ldc_I4, (int)charConst.Value);
+                il.Emit(OpCodes.Conv_U2);
+            }
+
+            else if(expr is ASTConstant<string> stringConst) il.Emit(OpCodes.Ldstr, stringConst.Value);
+
             else if (expr is ASTVariableUse varUse)
             {
                 if (!ctx.Vars.VarExists(varUse.VariableName))
@@ -295,7 +303,16 @@ namespace KoalaLang.Translators
 
                 switch (binOp.OperationType)
                 {
-                    case BinOperationType.Add: il.Emit(OpCodes.Add); break;
+                    case BinOperationType.Add:
+                        {
+                            if (leftType == typeof(string) && rightType == typeof(string))
+                            {
+                                il.Emit(OpCodes.Call, typeof(string).GetMethod("Concat", new[] { typeof(string), typeof(string) }));
+                            }
+                            else il.Emit(OpCodes.Add);
+                        }
+                        break;
+
                     case BinOperationType.Subtract: il.Emit(OpCodes.Sub); break;
                     case BinOperationType.Multiply: il.Emit(OpCodes.Mul); break;
                     case BinOperationType.Divide: il.Emit(OpCodes.Div); break;
@@ -418,6 +435,8 @@ namespace KoalaLang.Translators
                     var t when t == typeof(float) => OpCodes.Conv_R4,
                     var t when t == typeof(double) => OpCodes.Conv_R8,
 
+                    var t when t == typeof(char) => OpCodes.Conv_U2,
+
                     var t when t == typeof(bool) => OpCodes.Conv_I4,
 
                     _ => throw new NotSupportedException($"Cannot convert from {sourceType} to {targetType}")
@@ -461,6 +480,8 @@ namespace KoalaLang.Translators
                 case ASTConstant<float>: return typeof(float);
                 case ASTConstant<double>: return typeof(double);
                 case ASTConstant<bool>: return typeof(bool);
+                case ASTConstant<char>: return typeof(char);
+                case ASTConstant<string>: return typeof(string);
 
                 case ASTVariableUse varUse: return ctx.Vars.GetVariable(varUse.VariableName).LocalType;
 
@@ -510,6 +531,9 @@ namespace KoalaLang.Translators
                     "double" => typeof(double), //no suffix - double
 
                     "bool" => typeof(bool),
+
+                    "char" => typeof(char),
+                    "string" => typeof(string),
 
                     _ => throw new Exception($"[Error at line {line}]: Unknown type '{typeName}'"),
                 };

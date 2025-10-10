@@ -242,6 +242,39 @@ namespace KoalaLang.Lexer
                         else _tokens.Add(new(TokenType.More, "", _ln, _col));
                         Next();
                         continue;
+
+                    case '\'':
+                        Next();
+                        string c = "";
+                        while (_pos < _text.Length && _text[_pos] != '\'')
+                        {
+                            if (_text[_pos] == '\\')
+                                Next();
+                            c += _text[_pos];
+                            Next();
+                        }
+                        Next();
+                        if(c.Length == 1)
+                            _tokens.Add(new(TokenType.CharLiteral, c, _ln, _col));
+                        else
+                            _tokens.Add(new(TokenType.Unknown, c, _ln, _col));
+                        continue;
+
+                    case '"':
+                        Next();
+                        string str = "";
+                        while(_pos < _text.Length && _text[_pos] != '"')
+                        {
+                            if (_text[_pos] == '\\')//TODO: special characters, either for character
+                            {
+                                Next();
+                            }
+                            str += _text[_pos];
+                            Next();
+                        }
+                        Next();
+                        _tokens.Add(new(TokenType.StringLiteral, str, _ln, _col));
+                        continue;
                 }
 
                 _tokens.Add(new(TokenType.Unknown, _text[_pos].ToString(), _ln, _col));

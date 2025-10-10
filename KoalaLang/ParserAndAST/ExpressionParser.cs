@@ -195,6 +195,18 @@ namespace KoalaLang.ParserAndAST
                 _ctx.Next();
                 return boolean;
             }
+            else if(_ctx.Current.Type == TokenType.CharLiteral)
+            {
+                ASTNode c = new ASTConstant<char>(_ctx.Current.Value[0], _ctx.Current.Line);
+                _ctx.Next();
+                return c;
+            }
+            else if(_ctx.Current.Type == TokenType.StringLiteral)
+            {
+                ASTNode str = new ASTConstant<string>(_ctx.Current.Value, _ctx.Current.Line);
+                _ctx.Next();
+                return str;
+            }
 
             else if (_ctx.Current.Type == TokenType.Identifier)
             {

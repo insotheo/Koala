@@ -1,16 +1,8 @@
-func Round(float_number: double): int{
-	let floored_number: int = (int)float_number;
-	let decimal_part: double = (double)float_number - (double)floored_number;
-	if(decimal_part >= 0.5){
-		return floored_number + 1;
-	}
-	return floored_number;
+func Hello(): string{
+	return "Hello";
 }
 
-func Main(): long{
-	let PI: float = 3.1415f;
-	return (long)Round((double)-PI) * 1_000l;
-
-	//return 18_446_744_073_709_551_615_UL; <- the biggest number Koala can store
-	//return -9_223_372_036_854_775_807_L; <- the lowest number Koala can store
+func Main(): string{
+	let world: string = "World";
+	return Hello() + ", " + world + "!";
 }
