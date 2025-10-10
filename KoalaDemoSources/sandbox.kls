@@ -1,7 +1,13 @@
-func Get<T>(value: T): T{
-	return value;
+func Round(float_number: double): int{
+	let floored_number: int = (int)float_number;
+	let decimal_part: double = (double)float_number - (double)floored_number;
+	if(decimal_part >= (double)0.5){
+		return floored_number + 1;
+	}
+	return floored_number;
 }
 
 func Main(): int{
-	return (int)Get<float>(1.7);
+	let PI: double = (double)3.1415926535897;
+	return Round(PI);
 }
