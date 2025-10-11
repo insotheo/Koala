@@ -96,10 +96,58 @@ namespace KoalaLang.Translators
                     break;
 
                 case ASTAssignment assign:
-                    if (!ctx.Vars.VarExists(assign.DestinationName))
-                        throw new Exception($"[Error at line {assign.Line}]: Cannot assign to undefined variable '{assign.DestinationName}'");
-                    TranslateExpression(assign.Value, ctx);
-                    il.Emit(OpCodes.Stloc, ctx.Vars.GetVariable(assign.DestinationName));
+                    {
+                        if(assign.Destination is ASTVariableUse varDest)
+                        {
+                            if (!ctx.Vars.VarExists(varDest.VariableName))
+                                throw new Exception($"[Error at line {assign.Line}]: Cannot assign to undefined variable '{varDest.VariableName}'");
+
+                            TranslateExpression(assign.Value, ctx);
+                            il.Emit(OpCodes.Stloc, ctx.Vars.GetVariable(varDest.VariableName));
+                        }
+                        else if(assign.Destination is ASTIndexAccess idxAccess)
+                        {
+                            Type targetType = GetExpressionType(idxAccess.Target, ctx);
+                            Type idxType = GetExpressionType(idxAccess.Index, ctx);
+                            Type valueType = GetExpressionType(assign.Value, ctx);
+
+                            if(targetType == typeof(string))
+                            {
+                                if (idxAccess.Target is not ASTVariableUse varUse)
+                                    throw new Exception($"[Error at line {assign.Line}]: Cannot assign to string literal - only string variables are mutable via copy");
+
+                                if (!ctx.Vars.VarExists(varUse.VariableName))
+                                    throw new Exception($"[Error at line {assign.Line}]: Cannot assign to undefined variable '{varUse.VariableName}'");
+
+                                il.Emit(OpCodes.Ldloc, ctx.Vars.GetVariable(varUse.VariableName));
+                                il.Emit(OpCodes.Call, typeof(string).GetMethod("ToCharArray", Type.EmptyTypes));
+                                il.Emit(OpCodes.Dup);
+
+                                TranslateExpression(idxAccess.Index, ctx); //load index
+                                TranslateExpression(assign.Value, ctx); // load new char
+                                il.Emit(OpCodes.Stelem_I2);
+
+                                il.Emit(OpCodes.Newobj, typeof(string).GetConstructor(new[] { typeof(char[]) }));
+                                il.Emit(OpCodes.Stloc, ctx.Vars.GetVariable(varUse.VariableName));
+                            }
+                            else if (targetType.IsArray)
+                            {
+                                Type elementType = targetType.GetElementType();
+
+                                if(idxType != typeof(int))
+                                    throw new Exception($"[Error at line {idxAccess.Line}]: Array index must be type of int");
+                                if (elementType != valueType)
+                                    throw new Exception($"[Error at line {assign.Line}]: Cannot assign value of type '{valueType}' to array of '{elementType}'");
+
+                                TranslateExpression(idxAccess.Target, ctx); //load array
+                                TranslateExpression(idxAccess.Index, ctx); //load index
+                                TranslateExpression(assign.Value, ctx); //load value
+                                il.Emit(OpCodes.Stelem, elementType);
+                            }
+                            else throw new Exception($"[Error at line {assign.Line}]: Type '{targetType}' does not support indexed assignment");
+                        }
+                        else throw new Exception($"[Error at line {assign.Line}]: Invalid assignment target");
+                    }
                     break;
 
                 case ASTBranch branch:
@@ -354,6 +402,30 @@ namespace KoalaLang.Translators
                 }
             }
 
+            else if(expr is ASTIndexAccess indexAccess)
+            {
+                TranslateExpression(indexAccess.Target, ctx);
+                TranslateExpression(indexAccess.Index, ctx);
+
+                Type targetType = GetExpressionType(indexAccess.Target, ctx);
+                Type indexType = GetExpressionType(indexAccess.Index, ctx);
+
+                if (targetType == typeof(string))
+                {
+                    il.Emit(OpCodes.Callvirt, typeof(string).GetProperty("Chars").GetGetMethod());
+                }
+                else if (targetType.IsArray)
+                {
+                    if (indexType != typeof(int))
+                        throw new Exception($"[Error at line {expr.Line}]: Array index must be type of int");
+
+                    Type elementType = targetType.GetElementType();
+                    il.Emit(OpCodes.Ldelem, elementType);
+                }
+                else
+                    throw new Exception($"[Error at line {expr.Line}] Type '{targetType}' does not support indexing");
+            }
+
             else if (expr is ASTCast staticCast)
             {
                 TranslateExpression(staticCast.Value, ctx);
@@ -501,6 +573,16 @@ namespace KoalaLang.Translators
                             return ResolveType(funcCall.GenericTypes[indexOfGenericType], ctx, funcCall.Line);
                         else
                             return ResolveType(funcInfo.ReturnType, ctx, funcCall.Line);
+                    }
+
+                case ASTIndexAccess indexAccess:
+                    {
+                        Type targetType = GetExpressionType(indexAccess.Target, ctx);
+                        if (targetType == typeof(string))
+                            return typeof(char);
+                        else if (targetType.IsArray)
+                            return targetType.GetElementType();
+                        else throw new Exception($"[Error at line {expr.Line}] Type '{targetType}' does not support indexing");
                     }
 
                 default: throw new Exception($"[Error at line {expr.Line}]: Cannot deduce expression type ({expr.GetType().Name})");

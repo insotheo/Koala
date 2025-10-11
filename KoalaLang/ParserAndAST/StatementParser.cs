@@ -116,7 +116,7 @@ namespace KoalaLang.ParserAndAST
                 _ctx.Next();
                 ASTNode expr = _expressionParser.ParseExpression();
 
-                return new ASTCompoundStatement(varDecl, new ASTAssignment(varName, expr, line), line);
+                return new ASTCompoundStatement(varDecl, new ASTAssignment(new ASTVariableUse(varDecl.Name, line), expr, line), line);
             }
             else if (_ctx.Current.Type == TokenType.Semicolon)
             {
@@ -185,18 +185,29 @@ namespace KoalaLang.ParserAndAST
             int line = _ctx.Current.Line;
 
             string identifier = _ctx.Current.Value;
+            ASTNode left = new ASTVariableUse(identifier, line);
             _ctx.Next();
+
+            while(_ctx.Current.Type == TokenType.LBracket)
+            {
+                _ctx.Next();
+                ASTNode index = _expressionParser.ParseExpression();
+                _ctx.Expect(TokenType.RBracket);
+                _ctx.Next();
+                left = new ASTIndexAccess(left, index, line);
+            }
 
             if (_ctx.Current.Type == TokenType.AssignmentSign)
             {
                 _ctx.Next();
-                ASTNode expr = _expressionParser.ParseExpression();
-                return new ASTAssignment(identifier, expr, line);
+                ASTNode value = _expressionParser.ParseExpression();
+                return new ASTAssignment(left, value, line);
             }
             else if (_ctx.Current.Type == TokenType.LParen || _ctx.Current.Type == TokenType.Less)
             {
-                ASTFunctionCall call = _expressionParser.ParseFunctionCall(identifier);
-                return call;
+                if (left is ASTVariableUse)
+                    return _expressionParser.ParseFunctionCall(identifier);
+                else _ctx.Fatal("Invalid function call target");
             }
 
             throw new Exception("Unknown identifier statement");

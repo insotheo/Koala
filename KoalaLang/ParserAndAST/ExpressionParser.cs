@@ -149,7 +149,29 @@ namespace KoalaLang.ParserAndAST
             }
             return left;
         }
+
         ASTNode ParseFactor()
+        {
+            ASTNode expr = ParsePrimary();
+
+            while (!_ctx.End)
+            {
+                if (_ctx.Current.Type == TokenType.LBracket)
+                {
+                    _ctx.Next();
+                    ASTNode idxExpr = ParseExpression();
+                    _ctx.Expect(TokenType.RBracket);
+                    _ctx.Next();
+                    expr = new ASTIndexAccess(expr, idxExpr, expr.Line);
+                }
+
+                else break;
+            }
+
+            return expr;
+        }
+
+        ASTNode ParsePrimary()
         {
             if (_ctx.Current.Type == TokenType.Number)
             {
@@ -195,29 +217,17 @@ namespace KoalaLang.ParserAndAST
                 _ctx.Next();
                 return boolean;
             }
-            else if(_ctx.Current.Type == TokenType.CharLiteral)
+            else if (_ctx.Current.Type == TokenType.CharLiteral)
             {
                 ASTNode c = new ASTConstant<char>(_ctx.Current.Value[0], _ctx.Current.Line);
                 _ctx.Next();
                 return c;
             }
-            else if(_ctx.Current.Type == TokenType.StringLiteral)
+            else if (_ctx.Current.Type == TokenType.StringLiteral)
             {
                 ASTNode str = new ASTConstant<string>(_ctx.Current.Value, _ctx.Current.Line);
                 _ctx.Next();
                 return str;
-            }
-
-            else if (_ctx.Current.Type == TokenType.Identifier)
-            {
-                string identifier = _ctx.Current.Value;
-                _ctx.Next();
-
-                if (_ctx.Current.Type == TokenType.LParen || _ctx.Current.Type == TokenType.Less)
-                {
-                    return ParseFunctionCall(identifier);
-                }
-                else return new ASTVariableUse(identifier, _ctx.Current.Line);
             }
 
             else if (_ctx.Current.Type == TokenType.Minus)
@@ -237,6 +247,18 @@ namespace KoalaLang.ParserAndAST
                 _ctx.Next();
                 ASTNode expr = ParseFactor();
                 return new ASTUnOperation(UnaryOperationType.BitwiseNot, expr, _ctx.Current.Line);
+            }
+
+            else if (_ctx.Current.Type == TokenType.Identifier)
+            {
+                string identifier = _ctx.Current.Value;
+                int line = _ctx.Current.Line;
+                _ctx.Next();
+
+                if (_ctx.Current.Type == TokenType.LParen || _ctx.Current.Type == TokenType.Less)
+                    return ParseFunctionCall(identifier);
+                else
+                    return new ASTVariableUse(identifier, line);
             }
 
             else if (_ctx.Current.Type == TokenType.LParen)
