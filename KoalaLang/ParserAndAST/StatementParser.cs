@@ -14,7 +14,7 @@ namespace KoalaLang.ParserAndAST
         internal StatementParser(ParserContext context)
         {
             _ctx = context;
-            _expressionParser = new(context);
+            _expressionParser = new(context, this);
             _functionParser = new(context, this);
         }
 
@@ -22,10 +22,18 @@ namespace KoalaLang.ParserAndAST
         {
             ASTCodeBlock block = new ASTCodeBlock(-1);
 
-            while(!_ctx.End && _ctx.Current.Type != endToken && _ctx.Current.Type != TokenType.EOF)
+            try
             {
-                ASTNode statement = ParseStatement();
-                if(statement != null) block.Nodes.Add(statement);
+                while (!_ctx.End && _ctx.Current.Type != endToken && _ctx.Current.Type != TokenType.EOF)
+                {
+                    ASTNode statement = ParseStatement();
+                    if (statement != null) block.Nodes.Add(statement);
+                }
+            }
+            catch(Exception ex)
+            {
+                Console.Error.WriteLine(ex.Message);
+                Environment.Exit(-1);
             }
 
             return block;
@@ -105,9 +113,7 @@ namespace KoalaLang.ParserAndAST
 
             _ctx.ExpectNext(TokenType.Colon);
             _ctx.ExpectNext(TokenType.Identifier);
-            string typeName = _ctx.Current.Value;
-
-            _ctx.Next();
+            string typeName = ParseType();
 
             ASTVariableDeclaration varDecl = new ASTVariableDeclaration(varName, typeName, line);
 
@@ -147,7 +153,7 @@ namespace KoalaLang.ParserAndAST
             ASTCodeBlock body = ParseCodeBlock();
 
             _ctx.ExpectNext(TokenType.Keyword);
-            if (_ctx.Current.Value != "while") throw new Exception("Invalid do-while loop signature!");
+            if (_ctx.Current.Value != "while") _ctx.Fatal("Invalid do-while loop signature!");
             _ctx.ExpectNext(TokenType.LParen);
             _ctx.Next();
             ASTNode cond = _expressionParser.ParseExpression();
@@ -261,6 +267,34 @@ namespace KoalaLang.ParserAndAST
             }
             _ctx.Index -= 1; //step back to the } of the last cond. block
             return new(ifs, @else, -1);
+        }
+
+        internal string ParseType()
+        {
+            _ctx.Expect(TokenType.Identifier);
+            string typeName = _ctx.Current.Value;
+            _ctx.Next();
+
+            while (!_ctx.End)
+            {
+                if (_ctx.Current.Type == TokenType.LBracket)
+                {
+                    _ctx.ExpectNext(TokenType.RBracket);
+                    _ctx.Next();
+                    typeName += "[]";
+                }
+                else if(_ctx.Current.Type == TokenType.Less)
+                {
+                    _ctx.Next();
+                    string genericType = ParseType();
+                    _ctx.Expect(TokenType.More);
+                    _ctx.Next();
+                    typeName += "<" + genericType + ">";
+                }
+                else break;
+            }
+
+            return typeName.Trim();
         }
     }
 }

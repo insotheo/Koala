@@ -9,10 +9,12 @@ namespace KoalaLang.ParserAndAST
     internal sealed class ExpressionParser
     {
         private readonly ParserContext _ctx;
+        private readonly StatementParser _statementParser;
 
-        internal ExpressionParser(ParserContext context)
+        internal ExpressionParser(ParserContext context, StatementParser statementParser)
         {
             _ctx = context;
+            _statementParser = statementParser;
         }
         internal ASTNode ParseExpression() => ParseLogicalOr();
 
@@ -255,10 +257,15 @@ namespace KoalaLang.ParserAndAST
                 int line = _ctx.Current.Line;
                 _ctx.Next();
 
-                if (_ctx.Current.Type == TokenType.LParen || _ctx.Current.Type == TokenType.Less)
-                    return ParseFunctionCall(identifier);
-                else
-                    return new ASTVariableUse(identifier, line);
+                int saveIdx = _ctx.Index;
+                try
+                {
+                    if (_ctx.Current.Type == TokenType.LParen || _ctx.Current.Type == TokenType.Less)
+                        return ParseFunctionCall(identifier);
+                }
+                catch { _ctx.Index = saveIdx; }
+
+                return new ASTVariableUse(identifier, line);
             }
 
             else if (_ctx.Current.Type == TokenType.LParen)
@@ -268,8 +275,7 @@ namespace KoalaLang.ParserAndAST
 
                 if (_ctx.Current.Type == TokenType.Identifier)
                 {
-                    string typeName = _ctx.Current.Value;
-                    _ctx.Next();
+                    string typeName = _statementParser.ParseType();
 
                     if (_ctx.Current.Type == TokenType.RParen)
                     {
@@ -290,6 +296,37 @@ namespace KoalaLang.ParserAndAST
                 _ctx.Expect(TokenType.RParen);
                 _ctx.Next();
                 return expr;
+            }
+
+            else if (_ctx.Current.Type == TokenType.Keyword)
+            {
+                if (_ctx.Current.Value == "new")
+                {
+                    int line = _ctx.Current.Line;
+                    _ctx.ExpectNext(TokenType.Identifier);
+                    string typeName = _statementParser.ParseType();
+
+                    _ctx.Expect(TokenType.LParen);
+                    _ctx.Next();
+
+                    List<ASTNode> args = new();
+                    while (!_ctx.End && _ctx.Current.Type != TokenType.RParen)
+                    {
+                        ASTNode expr = ParseExpression();
+                        args.Add(expr);
+                        if (_ctx.Current.Type == TokenType.Comma)
+                        {
+                            _ctx.Next();
+                            continue;
+                        }
+                        else if (_ctx.Current.Type == TokenType.RParen) break;
+                        else _ctx.Expect(TokenType.Comma);
+                    }
+                    _ctx.Expect(TokenType.RParen);
+                    _ctx.Next();
+
+                    return new ASTNew(typeName, args, line);
+                }
             }
 
             throw new Exception("Unexpected token in expression");

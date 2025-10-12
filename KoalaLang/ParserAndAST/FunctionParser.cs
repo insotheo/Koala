@@ -62,10 +62,9 @@ namespace KoalaLang.ParserAndAST
                 _ctx.ExpectNext(TokenType.Colon);
                 _ctx.ExpectNext(TokenType.Identifier);
 
-                string typeName = _ctx.Current.Value;
+                string typeName = _statementParser.ParseType();
                 args.Add(identifier, typeName);
 
-                _ctx.Next();
                 if (_ctx.Current.Type != TokenType.Comma) break;
                 _ctx.Next();
             }
@@ -75,9 +74,9 @@ namespace KoalaLang.ParserAndAST
             _ctx.Next();
             if (_ctx.Current.Type == TokenType.Colon)
             {
-                _ctx.ExpectNext(TokenType.Identifier);
-                function.ReturnTypeName = _ctx.Current.Value;
-                _ctx.ExpectNext(TokenType.LBrace);
+                _ctx.Next();
+                function.ReturnTypeName = _statementParser.ParseType();
+                _ctx.Expect(TokenType.LBrace);
             }
             else if (_ctx.Current.Type == TokenType.LBrace)
             {

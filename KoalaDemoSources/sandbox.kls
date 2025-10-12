@@ -1,11 +1,12 @@
-func Hello(): string{
-	return "HellO";
-}
+func Main(): int{
+	let word: string = "Hello"; //length: 5
+	let len: int = 5;
 
-func Main(): string{
-	let world: string = "Worl.";
-	world[4] = 'd';
-	let hello: string = Hello();
-	hello[4] = "Oo"[2 - 1];
-	return hello + ", " + world + "!";
+	let buff: int[] = new int[](1<<10); //1024
+
+	for(let i: int = 0; i < len; i = i + 1){
+		buff[i] = (int)word[i];
+	}
+
+	return buff[0]; //H
 }

@@ -19,6 +19,7 @@ namespace Koala
 
                 > koala <build|make> <args>
                     -p <path> - REQUIRED, path to source file(usually *.kls)
+                    -a <name> - assembly name(default KoalaApp)
 
                 """);
         }
@@ -66,6 +67,8 @@ namespace Koala
                     return;
                 }
 
+                string asmName = argsFlags.ContainsKey("-a") ? argsFlags["-a"] : "KoalaApp";
+
                 string source = String.Empty;
                 using(FileStream file = File.OpenRead(path))
                 {
@@ -88,7 +91,7 @@ namespace Koala
                 Parser parser = new(lexer);
                 parser.Parse();
 
-                ILTranslator translator = new("KoalaApp");
+                ILTranslator translator = new(asmName);
                 translator.Translate(parser, Path.GetFileNameWithoutExtension(path));
 
                 Console.WriteLine("Done!");

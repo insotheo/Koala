@@ -436,6 +436,61 @@ namespace KoalaLang.Translators
                 EmitCast(il, sourceType, targetType);
             }
 
+            else if(expr is ASTNew newNode)
+            {
+                Type newType = ResolveType(newNode.TypeName, ctx, newNode.Line);
+
+                if (newType.IsArray)
+                {
+                    if (newNode.Args.Length != 1)
+                        throw new Exception($"[Error at line {newNode.Line}]: Array creation requires a single length argument");
+
+                    Type argType = GetExpressionType(newNode.Args[0], ctx);
+                    if (argType != typeof(int))
+                        throw new Exception($"[Error at line {newNode.Args[0].Line}]: Array index must be type of int");
+
+                    TranslateExpression(newNode.Args[0], ctx); //push length
+                    Type elType = newType.GetElementType();
+                    il.Emit(OpCodes.Newarr, elType);
+                }
+                else
+                {
+                    Type[] paramTypes = new Type[newNode.Args.Length];
+                    for (int i = 0; i < newNode.Args.Length; i++)
+                        paramTypes[i] = GetExpressionType(newNode.Args[i], ctx);
+
+                    ConstructorInfo ctor = newType.GetConstructor(paramTypes);
+
+                    if (ctor == null)
+                    {
+                        var candidates = newType.GetConstructors().Where(c => c.GetParameters().Length == paramTypes.Length).ToArray();
+                        foreach (var c in candidates)
+                        {
+                            var pi = c.GetParameters();
+                            bool ok = true;
+                            for (int i = 0; i < pi.Length; i++)
+                            {
+                                if (!pi[i].ParameterType.IsAssignableFrom(paramTypes[i]))
+                                {
+                                    if (pi[i].ParameterType.IsPrimitive && paramTypes[i].IsPrimitive)
+                                        continue;
+                                    ok = false;
+                                    break;
+                                }
+                            }
+                            if (ok) { ctor = c; break; }
+                        }
+                    }
+
+                    if (ctor == null)
+                        throw new Exception($"[Error at line {newNode.Line}]: No constructor found for '{newNode.TypeName}' with {newNode.Args.Length} arguments");
+
+                    foreach (var arg in newNode.Args)
+                        TranslateExpression(arg, ctx);
+                    il.Emit(OpCodes.Newobj, ctor);
+                }
+            }
+
             else throw new Exception($"[Error at line {expr.Line}]: Unknown expression type '{expr.GetType().Name}'");
         }
 
@@ -585,41 +640,111 @@ namespace KoalaLang.Translators
                         else throw new Exception($"[Error at line {expr.Line}] Type '{targetType}' does not support indexing");
                     }
 
+                case ASTNew newNode:
+                    return ResolveType(newNode.TypeName, ctx, newNode.Line);
+
                 default: throw new Exception($"[Error at line {expr.Line}]: Cannot deduce expression type ({expr.GetType().Name})");
             }
         }
 
         Type ResolveType(string typeName, TranslationContext ctx, int line)
         {
-            if (ctx.GenericMap.TryGetValue(typeName, out var type))
-                return type;
+            if (ctx.GenericMap.TryGetValue(typeName, out var mapped))
+                return mapped;
 
-            else
+            Type primitive = typeName switch
             {
-                //TODO: Add parser for generic types!!!
-                return typeName switch
-                {
-                    "void" => typeof(void),
-                    
-                    "sbyte" => typeof(sbyte), //b - byte
-                    "byte" => typeof(byte), //ub - unsigned byte
-                    "short" => typeof(short), //s - short
-                    "ushort" => typeof(ushort), //us - unsigned short
-                    "int" => typeof(int), //no suffix - int
-                    "uint" => typeof(uint), //u - unsidnged int
-                    "long" => typeof(long), //l - long
-                    "ulong" => typeof(ulong), //ul - unsigned long
-                    "float" => typeof(float), //f - float
-                    "double" => typeof(double), //no suffix - double
+                "void" => typeof(void),
+                "bool" => typeof(bool),
+                "byte" => typeof(byte),
+                "sbyte" => typeof(sbyte),
+                "short" => typeof(short),
+                "ushort" => typeof(ushort),
+                "int" => typeof(int),
+                "uint" => typeof(uint),
+                "long" => typeof(long),
+                "ulong" => typeof(ulong),
+                "float" => typeof(float),
+                "double" => typeof(double),
+                "char" => typeof(char),
+                "string" => typeof(string),
+                "object" => typeof(object),
+                _ => null
+            };
+            if (primitive != null)
+                return primitive;
 
-                    "bool" => typeof(bool),
-
-                    "char" => typeof(char),
-                    "string" => typeof(string),
-
-                    _ => throw new Exception($"[Error at line {line}]: Unknown type '{typeName}'"),
-                };
+            int arrayDepth = 0;
+            while (typeName.EndsWith("[]"))
+            {
+                typeName = typeName.Substring(0, typeName.Length - 2);
+                arrayDepth += 1;
             }
+
+            List<Type> genericArgs = null;
+            int genericStart = typeName.IndexOf('<');
+            if(genericStart != -1)
+            {
+                int genericEnd = typeName.LastIndexOf('>');
+
+                string genericBase = typeName.Substring(0, genericStart);
+                string inside = typeName.Substring(genericStart + 1, genericEnd - genericStart - 1);
+                string[] argNames = inside.Split(',');
+
+                genericArgs = new();
+                foreach(string argName in argNames)
+                {
+                    genericArgs.Add(ResolveType(argName.Trim(), ctx, line));
+                }
+
+                typeName = genericBase;
+            }
+
+            Type baseType = FindClrTypeByName(typeName, genericArgs == null ? 0 : genericArgs.Count);
+            if(baseType == null)
+                throw new Exception($"[Error at line {line}]: Unknown type '{typeName}'");
+
+            if (genericArgs != null && baseType.IsGenericTypeDefinition)
+            {
+                try
+                {
+                    baseType = baseType.MakeGenericType(genericArgs.ToArray());
+                }
+                catch (Exception ex)
+                {
+                    throw new Exception($"[Error at line {line}]: Failed to construct generic type '{typeName}': {ex.Message}");
+                }
+            }
+
+            while (arrayDepth-- > 0)
+                baseType = baseType.MakeArrayType();
+
+            return baseType;
+        }
+
+        Type FindClrTypeByName(string id, int genericArity)
+        {
+            //TODO: finding clr types through libraries, when implement import feature
+            //For now, it just returns primitive types
+            return id switch
+            {
+                "void" => typeof(void),
+                "bool" => typeof(bool),
+                "byte" => typeof(byte),
+                "sbyte" => typeof(sbyte),
+                "short" => typeof(short),
+                "ushort" => typeof(ushort),
+                "int" => typeof(int),
+                "uint" => typeof(uint),
+                "long" => typeof(long),
+                "ulong" => typeof(ulong),
+                "float" => typeof(float),
+                "double" => typeof(double),
+                "char" => typeof(char),
+                "string" => typeof(string),
+                "object" => typeof(object),
+                _ => null
+            };
         }
 
         private void DefineModule(ref List<ModuleInfo> modules, string moduleName, ASTCodeBlock block)
