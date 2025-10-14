@@ -1,5 +1,6 @@
 ﻿using KoalaLang.Lexer;
 using KoalaLang.ParserAndAST.AST;
+using System;
 
 namespace KoalaLang.ParserAndAST
 {
@@ -22,9 +23,18 @@ namespace KoalaLang.ParserAndAST
                     _ctx.Fatal($"Unknown token '{token.Value}'");
             }
 
-            StatementParser statementParser = new(_ctx);
-            _astRoot = statementParser.ParseStatementList(TokenType.EOF);
-            _ctx.Expect(TokenType.EOF);
+            try
+            {
+                StatementParser statementParser = new(_ctx);
+                _astRoot = statementParser.ParseStatementList(TokenType.EOF);
+                _ctx.Expect(TokenType.EOF);
+            }
+            catch(Exception ex)
+            {
+                string line = _ctx.Lexer.GetStringLine(_ctx.Current.Line);
+                Console.Error.WriteLine($"Parser error: {ex.Message} at line {_ctx.Current.Line}, col {_ctx.Current.Column}: {line}");
+                Environment.Exit(-1);
+            }
         }
 
         internal ASTNode GetAST() => _astRoot;

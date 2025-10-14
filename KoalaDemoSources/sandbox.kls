@@ -1,12 +1,36 @@
-func Main(): int{
-	let word: string = "Hello"; //length: 5
-	let len: int = 5;
+//System is being imported by default... for now
 
-	let buff: int[] = new int[](1<<10); //1024
+func Main(){
+	Console.Write("Enter the 1st number: ");
+	let a: double = Convert.ToDouble(Console.ReadLine());
+	Console.Write("Enter operation(+, -, *, /): ");
+	let op: char = Console.ReadLine()[0];
+	Console.Write("Enter the 2nd number: ");
+	let b: double = Convert.ToDouble(Console.ReadLine());
 
-	for(let i: int = 0; i < len; i = i + 1){
-		buff[i] = (int)word[i];
+	let result: double = 0.0;
+
+	if(op == '+') { result = a + b; }
+	else if(op == '-') { result = a - b; }
+	else if(op == '*') { result = a * b; }
+	else if(op == '/') 
+	{ 
+		if(b == 0.0){
+			Console.ForegroundColor = 12;
+			Console.Error.WriteLine("Zero division exception!");
+			Console.ResetColor();
+			return;
+		}
+		result = a / b;
+	}
+	else {
+		Console.ForegroundColor = 12;
+		Console.Error.WriteLine("Unknown operation exception!");
+		Console.ResetColor();
+		return;
 	}
 
-	return buff[0]; //H
+	Console.ForegroundColor = 10;
+	Console.WriteLine("Answer is " + result.ToString());
+	Console.ResetColor();
 }

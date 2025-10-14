@@ -35,8 +35,7 @@ namespace KoalaLang.ParserAndAST
 
         internal void Fatal(string msg)
         {
-            string line = Lexer.GetStringLine(Current.Line);
-            throw new Exception($"Parser error: {msg} at line {Current.Line}, col {Current.Column}: {line}");
+            throw new Exception($"{msg}");
         }
     }
 }

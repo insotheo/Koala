@@ -93,8 +93,6 @@ namespace Koala
 
                 ILTranslator translator = new(asmName);
                 translator.Translate(parser, Path.GetFileNameWithoutExtension(path));
-
-                Console.WriteLine("Done!");
             }
             else
             {

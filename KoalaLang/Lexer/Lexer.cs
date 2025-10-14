@@ -279,6 +279,8 @@ namespace KoalaLang.Lexer
 
                     case '[': _tokens.Add(new(TokenType.LBracket, "", _ln, _col)); Next(); continue;
                     case ']': _tokens.Add(new(TokenType.RBracket, "", _ln, _col)); Next(); continue;
+
+                    case '.': _tokens.Add(new(TokenType.Dot, "", _ln, _col)); Next(); continue;
                 }
 
                 _tokens.Add(new(TokenType.Unknown, _text[_pos].ToString(), _ln, _col));

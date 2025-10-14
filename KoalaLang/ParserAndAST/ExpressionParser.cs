@@ -152,12 +152,13 @@ namespace KoalaLang.ParserAndAST
             return left;
         }
 
-        ASTNode ParseFactor()
+        internal ASTNode ParseFactor()
         {
             ASTNode expr = ParsePrimary();
 
             while (!_ctx.End)
             {
+                //index access
                 if (_ctx.Current.Type == TokenType.LBracket)
                 {
                     _ctx.Next();
@@ -165,6 +166,57 @@ namespace KoalaLang.ParserAndAST
                     _ctx.Expect(TokenType.RBracket);
                     _ctx.Next();
                     expr = new ASTIndexAccess(expr, idxExpr, expr.Line);
+                }
+
+                //dot
+                else if(_ctx.Current.Type == TokenType.Dot)
+                {
+                    _ctx.Next();
+                    _ctx.Expect(TokenType.Identifier);
+                    string member = _ctx.Current.Value;
+                    int memberLine = _ctx.Current.Line;
+                    _ctx.Next();
+
+                    List<string> genericTypes = new();
+                    if(_ctx.Current.Type == TokenType.Less)
+                    {
+                        _ctx.Next();
+                        while (!_ctx.End && _ctx.Current.Type != TokenType.More)
+                        {
+                            if (_ctx.Current.Type != TokenType.Identifier) break;
+                            genericTypes.Add(_ctx.Current.Value);
+                            _ctx.Next();
+                            if (_ctx.Current.Type != TokenType.Comma) break;
+                            _ctx.Next();
+                        }
+                        _ctx.Expect(TokenType.More);
+                        _ctx.Next();
+                    }
+
+                    List<ASTNode> args = new();
+                    if (_ctx.Current.Type == TokenType.LParen)
+                    {
+                        _ctx.Next();
+                        while (!_ctx.End && _ctx.Current.Type != TokenType.RParen)
+                        {
+                            ASTNode expression = ParseExpression();
+                            args.Add(expression);
+                            if (_ctx.Current.Type == TokenType.Comma)
+                            {
+                                _ctx.Next();
+                                continue;
+                            }
+                            else if (_ctx.Current.Type == TokenType.RParen) break;
+                            else _ctx.Expect(TokenType.Comma);
+                        }
+                        _ctx.Expect(TokenType.RParen);
+                        _ctx.Next();
+                        expr = new ASTMethodCall(expr, member, args, genericTypes, memberLine);
+                    }
+                    else
+                    {
+                        expr = new ASTMemberAccess(expr, member, memberLine);
+                    }
                 }
 
                 else break;

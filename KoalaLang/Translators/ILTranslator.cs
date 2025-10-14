@@ -29,6 +29,9 @@ namespace KoalaLang.Translators
                 DefineModule(ref _mods, moduleName, parser.GetAST() as ASTCodeBlock);
                 _currentModule = _mods[0];
 
+                //DBG
+                _currentModule.Imports.Add("System");
+
                 foreach (ASTNode node in (parser.GetAST() as ASTCodeBlock).Nodes)
                 {
                     if (node is ASTFunction func)
@@ -71,7 +74,7 @@ namespace KoalaLang.Translators
             Type[] translatedModules = _mods.Select(m => m.TypeBuilder.CreateType()).ToArray();
 
             //DBG
-            Console.WriteLine($"Function Main returned: {translatedModules[0].GetMethod("Main")!.Invoke(null, null)}");
+            translatedModules[0].GetMethod("Main")!.Invoke(null, null);
         }
 
         private void TranslateBody(ASTCodeBlock block, TranslationContext ctx)
@@ -145,6 +148,34 @@ namespace KoalaLang.Translators
                                 il.Emit(OpCodes.Stelem, elementType);
                             }
                             else throw new Exception($"[Error at line {assign.Line}]: Type '{targetType}' does not support indexed assignment");
+                        }
+                        else if(assign.Destination is ASTMemberAccess member)
+                        {
+                            Type targetType = GetExpressionType(member.Target, ctx);
+                            TranslateExpression(member.Target, ctx);
+
+                            //field
+                            FieldInfo field = targetType.GetField(member.MemberName,
+                                BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
+                            if (field != null)
+                            {
+                                TranslateExpression(assign.Value, ctx);
+                                il.Emit(field.IsStatic ? OpCodes.Stsfld : OpCodes.Stfld, field);
+                                return;
+                            }
+
+                            //prop
+                            PropertyInfo prop = targetType.GetProperty(member.MemberName,
+                                BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
+                            if (prop != null)
+                            {
+                                MethodInfo setter = prop.GetSetMethod(true);
+                                if (setter == null)
+                                    throw new Exception($"[Error at line {assign.Line}]: Property '{member.MemberName}' has no setter");
+                                TranslateExpression(assign.Value, ctx);
+                                il.Emit(setter.IsVirtual ? OpCodes.Callvirt : OpCodes.Call, setter);
+                                return;
+                            }
                         }
                         else throw new Exception($"[Error at line {assign.Line}]: Invalid assignment target");
                     }
@@ -242,6 +273,10 @@ namespace KoalaLang.Translators
                     TranslateFunctionCall(funcCall, ctx);
                     break;
 
+                case ASTMethodCall methodCall:
+                    TranslateFunctionCall(methodCall, ctx);
+                    break;
+
                 case ASTCodeBlock inner:
                     {
                         TranslationContext innerCtx = ctx.CreateKid();
@@ -326,10 +361,17 @@ namespace KoalaLang.Translators
                 il.Emit(OpCodes.Conv_U2);
             }
 
-            else if(expr is ASTConstant<string> stringConst) il.Emit(OpCodes.Ldstr, stringConst.Value);
+            else if (expr is ASTConstant<string> stringConst) il.Emit(OpCodes.Ldstr, stringConst.Value);
 
             else if (expr is ASTVariableUse varUse)
             {
+                //if such type exists and it is static - pass
+                Type staticType = FindClrTypeByName(varUse.VariableName, 0);
+                if(staticType != null && (staticType.IsAbstract && staticType.IsSealed))
+                {
+                    return;
+                }
+
                 if (!ctx.Vars.VarExists(varUse.VariableName))
                 {
                     throw new Exception($"[Error at line {varUse.Line}]: Variable '{varUse.VariableName}' is used before being defined");
@@ -338,6 +380,7 @@ namespace KoalaLang.Translators
             }
 
             else if (expr is ASTFunctionCall funcCall) TranslateFunctionCall(funcCall, ctx);
+            else if (expr is ASTMethodCall methodCall) TranslateFunctionCall(methodCall, ctx);
 
             else if (expr is ASTBinOperation binOp)
             {
@@ -402,7 +445,7 @@ namespace KoalaLang.Translators
                 }
             }
 
-            else if(expr is ASTIndexAccess indexAccess)
+            else if (expr is ASTIndexAccess indexAccess)
             {
                 TranslateExpression(indexAccess.Target, ctx);
                 TranslateExpression(indexAccess.Index, ctx);
@@ -436,7 +479,7 @@ namespace KoalaLang.Translators
                 EmitCast(il, sourceType, targetType);
             }
 
-            else if(expr is ASTNew newNode)
+            else if (expr is ASTNew newNode)
             {
                 Type newType = ResolveType(newNode.TypeName, ctx, newNode.Line);
 
@@ -491,37 +534,125 @@ namespace KoalaLang.Translators
                 }
             }
 
+            else if (expr is ASTMemberAccess member)
+            {
+                TranslateExpression(member.Target, ctx);
+                Type targetType = GetExpressionType(member.Target, ctx);
+
+                //field
+                FieldInfo fieldInfo = targetType.GetField(member.MemberName,
+                    BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
+                if (fieldInfo != null)
+                {
+                    il.Emit(fieldInfo.IsStatic ? OpCodes.Ldsfld : OpCodes.Ldfld, fieldInfo);
+                    return;
+                }
+
+                //prop
+                PropertyInfo propInfo = targetType.GetProperty(member.MemberName,
+                    BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
+                if (propInfo != null)
+                {
+                    MethodInfo getter = propInfo.GetGetMethod();
+                    if (getter == null)
+                        throw new Exception($"[Error at line {expr.Line}]: Property '{member.MemberName}' has no getter");
+                    il.Emit(getter.IsVirtual ? OpCodes.Callvirt : OpCodes.Call, getter);
+                    return;
+                }
+
+                //nested type
+                Type nested = targetType.GetNestedType(member.MemberName,
+                    BindingFlags.Public | BindingFlags.NonPublic);
+                if (nested != null)
+                {
+                    return;
+                }
+
+                throw new Exception($"[Error at line {expr.Line}]: Member '{member.MemberName}' not found on type '{targetType}'");
+            }
+
             else throw new Exception($"[Error at line {expr.Line}]: Unknown expression type '{expr.GetType().Name}'");
         }
 
-        private void TranslateFunctionCall(ASTFunctionCall funcCall, TranslationContext ctx)
+        private void TranslateFunctionCall(ASTNode callNode, TranslationContext ctx)
         {
             ILGenerator il = ctx.IL;
 
-            FunctionInfo funcInfo = FindFunctionInfo(funcCall.FunctionName, -1, funcCall.Line) 
-                ?? throw new Exception($"[Error at line {funcCall.Line}]: Undefined function '{funcCall.FunctionName}'");
-            MethodInfo methodInfo = funcInfo.Info;
-
-            if (methodInfo == null) 
-                throw new Exception($"[Error at line {funcCall.Line}]: Cannot call undefined function '{funcCall.FunctionName}'");
-
-            if(funcCall.GenericTypes.Count != 0 && methodInfo.IsGenericMethod)
+            if (callNode is ASTFunctionCall funcCall)
             {
-                Type[] typeArgs = funcCall.GenericTypes.Select(t => ResolveType(t, ctx, funcCall.Line)).ToArray();
-                methodInfo = methodInfo.MakeGenericMethod(typeArgs);
+
+                FunctionInfo funcInfo = FindFunctionInfo(funcCall.FunctionName, -1, funcCall.Line)
+                    ?? throw new Exception($"[Error at line {funcCall.Line}]: Undefined function '{funcCall.FunctionName}'");
+                MethodInfo methodInfo = funcInfo.Info;
+
+                if (methodInfo == null)
+                    throw new Exception($"[Error at line {funcCall.Line}]: Cannot call undefined function '{funcCall.FunctionName}'");
+
+                if (funcCall.GenericTypes.Count != 0 && methodInfo.IsGenericMethod)
+                {
+                    Type[] typeArgs = funcCall.GenericTypes.Select(t => ResolveType(t, ctx, funcCall.Line)).ToArray();
+                    methodInfo = methodInfo.MakeGenericMethod(typeArgs);
+                }
+                else if (methodInfo.IsGenericMethod && funcCall.GenericTypes.Count == 0)
+                    throw new Exception($"[Error at line {funcCall.Line}]: Function '{funcCall.FunctionName}' is generic");
+
+                //loading args
+                foreach (ASTNode arg in funcCall.Args)
+                    TranslateExpression(arg, ctx);
+
+                //call
+                il.Emit(OpCodes.Call, methodInfo);
             }
-            else if (methodInfo.IsGenericMethod && funcCall.GenericTypes.Count == 0) 
-                throw new Exception($"[Error at line {funcCall.Line}]: Function '{funcCall.FunctionName}' is generic");
+            else if (callNode is ASTMethodCall methodCall)
+            {
+                Type targetType = GetExpressionType(methodCall.Target, ctx);
 
-            //loading args
-            foreach (ASTNode arg in funcCall.Args)
-                TranslateExpression(arg, ctx);
+                MethodInfo method = targetType.GetMethod(
+                        methodCall.MethodName,
+                         BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static,
+                         null,
+                         methodCall.Args.Select(a => GetExpressionType(a, ctx)).ToArray(),
+                         null
+                ) ?? throw new Exception($"[Error at line {methodCall.Line}]: No method '{methodCall.MethodName}' found on '{targetType}'");
 
-            //call
-            il.Emit(OpCodes.Call, methodInfo);
+                if (methodCall.GenericTypes.Count != 0 && method.IsGenericMethod)
+                {
+                    Type[] typeArgs = methodCall.GenericTypes.Select(t => ResolveType(t, ctx, methodCall.Line)).ToArray();
+                    method = method.MakeGenericMethod(typeArgs);
+                }
+                else if (method.IsGenericMethod && methodCall.GenericTypes.Count == 0)
+                    throw new Exception($"[Error at line {methodCall.Line}]: Function '{methodCall.MethodName}' is generic");
+
+                bool isValueType = targetType.IsValueType;
+                if (isValueType)
+                {
+                    if (methodCall.Target is ASTVariableUse varUse && ctx.Vars.VarExists(varUse.VariableName))
+                    {
+                        il.Emit(OpCodes.Ldloca, ctx.Vars.GetVariable(varUse.VariableName));
+                    }
+                    else
+                    {
+                        TranslateExpression(methodCall.Target, ctx);
+                        il.Emit(OpCodes.Box, targetType);
+                    }
+
+                    foreach (ASTNode arg in methodCall.Args)
+                        TranslateExpression(arg, ctx);
+
+                    il.Emit(OpCodes.Call, method);
+                }
+                else
+                {
+                    TranslateExpression(methodCall.Target, ctx);
+                    foreach (ASTNode arg in methodCall.Args)
+                        TranslateExpression(arg, ctx);
+
+                    il.Emit(method.IsVirtual ? OpCodes.Callvirt : OpCodes.Call, method);
+                }
+            }
         }
 
-        private FunctionInfo FindFunctionInfo(string funcName, int argsCount, int line)
+        private FunctionInfo FindFunctionInfo(string funcName, int argsCount, int line)//?
         {
             //TODO: make ability to interact with another modules
             //look for it in current module
@@ -610,7 +741,20 @@ namespace KoalaLang.Translators
                 case ASTConstant<char>: return typeof(char);
                 case ASTConstant<string>: return typeof(string);
 
-                case ASTVariableUse varUse: return ctx.Vars.GetVariable(varUse.VariableName).LocalType;
+                case ASTVariableUse varUse:
+                    {
+                        try
+                        {
+                            return ctx.Vars.GetVariable(varUse.VariableName).LocalType;
+                        }
+                        catch
+                        {
+                            Type t = FindClrTypeByName(varUse.VariableName, -1);
+                            if (t != null)
+                                return t;
+                        }
+                        throw new Exception($"[Error at line {varUse.Line}]: Unknown variable or type '{varUse.VariableName}'");
+                    }
 
                 case ASTCast staticCast: return ResolveType(staticCast.TypeName, ctx, staticCast.Line);
 
@@ -630,6 +774,21 @@ namespace KoalaLang.Translators
                             return ResolveType(funcInfo.ReturnType, ctx, funcCall.Line);
                     }
 
+                case ASTMethodCall methodCall:
+                    {
+                        Type targetType = GetExpressionType(methodCall.Target, ctx);
+
+                        MethodInfo method = targetType.GetMethod(
+                            methodCall.MethodName,
+                             BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static,
+                             null,
+                             methodCall.Args.Select(a => GetExpressionType(a, ctx)).ToArray(),
+                             null
+                        ) ?? throw new Exception($"[Error at line {methodCall.Line}]: No method '{methodCall.MethodName}' found on '{targetType}'");
+
+                        return method.ReturnType;
+                    }
+
                 case ASTIndexAccess indexAccess:
                     {
                         Type targetType = GetExpressionType(indexAccess.Target, ctx);
@@ -642,6 +801,25 @@ namespace KoalaLang.Translators
 
                 case ASTNew newNode:
                     return ResolveType(newNode.TypeName, ctx, newNode.Line);
+
+                case ASTMemberAccess member:
+                    {
+                        Type targetType = GetExpressionType(member.Target, ctx);
+
+                        //field
+                        var field = targetType.GetField(member.MemberName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
+                        if (field != null) return field.FieldType;
+
+                        //prop
+                        var prop = targetType.GetProperty(member.MemberName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
+                        if (prop != null) return prop.PropertyType;
+
+                        //nested
+                        var nestedType = targetType.GetNestedType(member.MemberName, BindingFlags.Public | BindingFlags.NonPublic);
+                        if (nestedType != null) return nestedType;
+
+                        throw new Exception($"[Error at line {expr.Line}]: Member '{member.MemberName}' not found on '{targetType}'");
+                    }
 
                 default: throw new Exception($"[Error at line {expr.Line}]: Cannot deduce expression type ({expr.GetType().Name})");
             }
@@ -724,9 +902,21 @@ namespace KoalaLang.Translators
 
         Type FindClrTypeByName(string id, int genericArity)
         {
-            //TODO: finding clr types through libraries, when implement import feature
-            //For now, it just returns primitive types
-            return id switch
+            //static bool MatchesTypeName(Type t, string id, int genericArity)
+            //{
+            //    if (genericArity > 0)
+            //    {
+            //        return t.IsGenericTypeDefinition &&
+            //               (t.Name == id + "`" + genericArity ||
+            //                t.FullName?.EndsWith("." + id + "`" + genericArity) == true);
+            //    }
+            //    else
+            //    {
+            //        return t.Name == id || t.FullName?.EndsWith("." + id) == true;
+            //    }
+            //}
+
+            Type t = id switch
             {
                 "void" => typeof(void),
                 "bool" => typeof(bool),
@@ -745,6 +935,34 @@ namespace KoalaLang.Translators
                 "object" => typeof(object),
                 _ => null
             };
+            if (t != null)
+                return t;
+
+            //find in imports
+            foreach(string import in _currentModule.Imports)
+            {
+                string fullName = $"{import}.{id}";
+
+                foreach(var asm in AppDomain.CurrentDomain.GetAssemblies())
+                {
+                    Type found = null;
+                    try
+                    {
+                        found = asm.GetType(fullName, throwOnError: false, ignoreCase: false);
+                    }
+                    catch {}
+
+                    if(found != null)
+                    {
+                        if (genericArity > 0 && found.IsGenericTypeDefinition && found.GetGenericArguments().Length == genericArity)
+                            return found;
+                        if (genericArity == 0 || genericArity == -1)
+                            return found;
+                    }
+                }
+            }
+
+            return null;
         }
 
         private void DefineModule(ref List<ModuleInfo> modules, string moduleName, ASTCodeBlock block)

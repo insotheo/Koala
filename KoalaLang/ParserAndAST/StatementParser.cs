@@ -21,19 +21,10 @@ namespace KoalaLang.ParserAndAST
         internal ASTCodeBlock ParseStatementList(TokenType endToken)
         {
             ASTCodeBlock block = new ASTCodeBlock(-1);
-
-            try
+            while (!_ctx.End && _ctx.Current.Type != endToken && _ctx.Current.Type != TokenType.EOF)
             {
-                while (!_ctx.End && _ctx.Current.Type != endToken && _ctx.Current.Type != TokenType.EOF)
-                {
-                    ASTNode statement = ParseStatement();
-                    if (statement != null) block.Nodes.Add(statement);
-                }
-            }
-            catch(Exception ex)
-            {
-                Console.Error.WriteLine(ex.Message);
-                Environment.Exit(-1);
+                ASTNode statement = ParseStatement();
+                if (statement != null) block.Nodes.Add(statement);
             }
 
             return block;
@@ -191,17 +182,7 @@ namespace KoalaLang.ParserAndAST
             int line = _ctx.Current.Line;
 
             string identifier = _ctx.Current.Value;
-            ASTNode left = new ASTVariableUse(identifier, line);
-            _ctx.Next();
-
-            while(_ctx.Current.Type == TokenType.LBracket)
-            {
-                _ctx.Next();
-                ASTNode index = _expressionParser.ParseExpression();
-                _ctx.Expect(TokenType.RBracket);
-                _ctx.Next();
-                left = new ASTIndexAccess(left, index, line);
-            }
+            ASTNode left = _expressionParser.ParseFactor();
 
             if (_ctx.Current.Type == TokenType.AssignmentSign)
             {
@@ -209,14 +190,7 @@ namespace KoalaLang.ParserAndAST
                 ASTNode value = _expressionParser.ParseExpression();
                 return new ASTAssignment(left, value, line);
             }
-            else if (_ctx.Current.Type == TokenType.LParen || _ctx.Current.Type == TokenType.Less)
-            {
-                if (left is ASTVariableUse)
-                    return _expressionParser.ParseFunctionCall(identifier);
-                else _ctx.Fatal("Invalid function call target");
-            }
-
-            throw new Exception("Unknown identifier statement");
+            return left;
         }
 
         //enters with identifier "if"
@@ -262,10 +236,7 @@ namespace KoalaLang.ParserAndAST
                     else break;
                 }
                 else break;
-
-                _ctx.Next();
             }
-            _ctx.Index -= 1; //step back to the } of the last cond. block
             return new(ifs, @else, -1);
         }
 

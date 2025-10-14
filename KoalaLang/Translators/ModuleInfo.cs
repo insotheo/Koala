@@ -10,6 +10,7 @@ namespace KoalaLang.Translators
         internal List<ModuleInfo> Submodules = new List<ModuleInfo>();
         internal ModuleInfo ParentModule = _parentModule;
         internal TypeBuilder @TypeBuilder = typeBuilder;
+        internal List<string> Imports = new();
 
         internal string GetFullName(bool includeSelf = true)
         {
@@ -20,6 +21,15 @@ namespace KoalaLang.Translators
             string parentsFullPath = ParentModule.GetFullName(true);
             string fullPath = parentsFullPath + "." + (includeSelf ? Name : "");
             return fullPath.TrimEnd('.');
+        }
+
+        internal List<string> GetImports()
+        {
+            if(ParentModule != null)
+            {
+                return ParentModule.GetImports();
+            }
+            return Imports;
         }
     }
 }
