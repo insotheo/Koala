@@ -12,6 +12,7 @@ namespace KoalaLang.Translators
         internal Label? RegionStart;
         internal Label? RegionEnd;
         internal FunctionInfo CurrentFunction;
+        internal ModuleInfo CurrentModuleHandler = null;
 
         private List<string> _kidsLocals = null;
 
@@ -32,6 +33,7 @@ namespace KoalaLang.Translators
                 GenericMap = GenericMap,
                 Vars = Vars,
                 _kidsLocals = new(),
+                CurrentModuleHandler = CurrentModuleHandler
             };
         }
 

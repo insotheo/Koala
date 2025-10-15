@@ -1,10 +1,21 @@
 //System is being imported by default... for now
 
+func Panic(msg: string){
+	Console.ForegroundColor = ConsoleColor.Red;
+	Console.Error.WriteLine("ERROR: " + msg);
+	Console.ResetColor();
+	Environment.Exit(0);
+}
+
 func Main(){
 	Console.Write("Enter the 1st number: ");
 	let a: double = Convert.ToDouble(Console.ReadLine());
 	Console.Write("Enter operation(+, -, *, /): ");
-	let op: char = Console.ReadLine()[0];
+	let opInput: string = Console.ReadLine();
+	if(opInput.Length != 1){
+		Panic("Operator is just one char!");
+	}
+	let op: char = opInput[0];
 	Console.Write("Enter the 2nd number: ");
 	let b: double = Convert.ToDouble(Console.ReadLine());
 
@@ -16,21 +27,15 @@ func Main(){
 	else if(op == '/') 
 	{ 
 		if(b == 0.0){
-			Console.ForegroundColor = 12;
-			Console.Error.WriteLine("Zero division exception!");
-			Console.ResetColor();
-			return;
+			Panic("Zero division exception!");
 		}
 		result = a / b;
 	}
 	else {
-		Console.ForegroundColor = 12;
-		Console.Error.WriteLine("Unknown operation exception!");
-		Console.ResetColor();
-		return;
+		Panic("Unknown operation exception!");
 	}
 
-	Console.ForegroundColor = 10;
+	Console.ForegroundColor = ConsoleColor.Green;
 	Console.WriteLine("Answer is " + result.ToString());
 	Console.ResetColor();
 }

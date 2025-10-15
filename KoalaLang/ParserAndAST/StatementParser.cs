@@ -113,7 +113,7 @@ namespace KoalaLang.ParserAndAST
                 _ctx.Next();
                 ASTNode expr = _expressionParser.ParseExpression();
 
-                return new ASTCompoundStatement(varDecl, new ASTAssignment(new ASTVariableUse(varDecl.Name, line), expr, line), line);
+                return new ASTCompoundStatement(varDecl, new ASTAssignment(new ASTIdentifier(varDecl.Name, line), expr, line), line);
             }
             else if (_ctx.Current.Type == TokenType.Semicolon)
             {

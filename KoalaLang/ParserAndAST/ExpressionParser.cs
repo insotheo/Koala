@@ -317,7 +317,7 @@ namespace KoalaLang.ParserAndAST
                 }
                 catch { _ctx.Index = saveIdx; }
 
-                return new ASTVariableUse(identifier, line);
+                return new ASTIdentifier(identifier, line);
             }
 
             else if (_ctx.Current.Type == TokenType.LParen)

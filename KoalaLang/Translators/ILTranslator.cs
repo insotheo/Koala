@@ -6,13 +6,14 @@ using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 
+using static KoalaLang.Translators.TypeTranslator;
+
 namespace KoalaLang.Translators
 {
     public sealed class ILTranslator(string asmName)
     {
         string _asmName = asmName;
         List<ModuleInfo> _mods = new List<ModuleInfo>();
-        ModuleInfo _currentModule = null;
 
         AssemblyBuilder _assemblyBuilder;
         ModuleBuilder _moduleBuilder;
@@ -24,19 +25,20 @@ namespace KoalaLang.Translators
             _assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(assemblyName, AssemblyBuilderAccess.RunAndCollect);
             _moduleBuilder = _assemblyBuilder.DefineDynamicModule("ApplicationDynamicModule");
 
+            ModuleInfo mod = null;
             try
             {
-                DefineModule(ref _mods, moduleName, parser.GetAST() as ASTCodeBlock);
-                _currentModule = _mods[0];
+                DefineModule(ref _mods, moduleName, parser.GetAST() as ASTCodeBlock, null); //head module
+                mod = _mods.Last();
 
                 //DBG
-                _currentModule.Imports.Add("System");
+                mod.GetImports().Add("System");
 
                 foreach (ASTNode node in (parser.GetAST() as ASTCodeBlock).Nodes)
                 {
                     if (node is ASTFunction func)
                     {
-                        FunctionInfo funcInfo = _currentModule.Functions.FirstOrDefault(x => x.Name == func.FunctionName, null)
+                        FunctionInfo funcInfo = mod.Functions.FirstOrDefault(x => x.Name == func.FunctionName, null)
                             ?? throw new Exception($"[Error at line {func.Line}]: Function '{func.FunctionName}' was not declared before use");
 
                         ILGenerator il = (funcInfo.Info as MethodBuilder).GetILGenerator();
@@ -45,6 +47,7 @@ namespace KoalaLang.Translators
                         {
                             CurrentFunction = funcInfo,
                             GenericMap = funcInfo.GenericMap,
+                            CurrentModuleHandler = mod,
                         };
 
                         {
@@ -67,7 +70,7 @@ namespace KoalaLang.Translators
             }
             catch (Exception ex)
             {
-                Console.Error.WriteLine($"Translator error(at {(_currentModule != null ? _currentModule.GetFullName() : moduleName)}): {ex.Message}");
+                Console.Error.WriteLine($"Translator error(at {(mod != null ? mod.GetFullName() : moduleName)}): {ex.Message}");
                 Environment.Exit(-1);
             }
 
@@ -100,13 +103,13 @@ namespace KoalaLang.Translators
 
                 case ASTAssignment assign:
                     {
-                        if(assign.Destination is ASTVariableUse varDest)
+                        if(assign.Destination is ASTIdentifier varDest)
                         {
-                            if (!ctx.Vars.VarExists(varDest.VariableName))
-                                throw new Exception($"[Error at line {assign.Line}]: Cannot assign to undefined variable '{varDest.VariableName}'");
+                            if (!ctx.Vars.VarExists(varDest.Identifier))
+                                throw new Exception($"[Error at line {assign.Line}]: Cannot assign to undefined variable '{varDest.Identifier}'");
 
                             TranslateExpression(assign.Value, ctx);
-                            il.Emit(OpCodes.Stloc, ctx.Vars.GetVariable(varDest.VariableName));
+                            il.Emit(OpCodes.Stloc, ctx.Vars.GetVariable(varDest.Identifier));
                         }
                         else if(assign.Destination is ASTIndexAccess idxAccess)
                         {
@@ -116,13 +119,13 @@ namespace KoalaLang.Translators
 
                             if(targetType == typeof(string))
                             {
-                                if (idxAccess.Target is not ASTVariableUse varUse)
+                                if (idxAccess.Target is not ASTIdentifier varUse)
                                     throw new Exception($"[Error at line {assign.Line}]: Cannot assign to string literal - only string variables are mutable via copy");
 
-                                if (!ctx.Vars.VarExists(varUse.VariableName))
-                                    throw new Exception($"[Error at line {assign.Line}]: Cannot assign to undefined variable '{varUse.VariableName}'");
+                                if (!ctx.Vars.VarExists(varUse.Identifier))
+                                    throw new Exception($"[Error at line {assign.Line}]: Cannot assign to undefined variable '{varUse.Identifier}'");
 
-                                il.Emit(OpCodes.Ldloc, ctx.Vars.GetVariable(varUse.VariableName));
+                                il.Emit(OpCodes.Ldloc, ctx.Vars.GetVariable(varUse.Identifier));
                                 il.Emit(OpCodes.Call, typeof(string).GetMethod("ToCharArray", Type.EmptyTypes));
                                 il.Emit(OpCodes.Dup);
 
@@ -131,7 +134,7 @@ namespace KoalaLang.Translators
                                 il.Emit(OpCodes.Stelem_I2);
 
                                 il.Emit(OpCodes.Newobj, typeof(string).GetConstructor(new[] { typeof(char[]) }));
-                                il.Emit(OpCodes.Stloc, ctx.Vars.GetVariable(varUse.VariableName));
+                                il.Emit(OpCodes.Stloc, ctx.Vars.GetVariable(varUse.Identifier));
                             }
                             else if (targetType.IsArray)
                             {
@@ -311,72 +314,29 @@ namespace KoalaLang.Translators
 
             if (expr == null) return;
 
-            else if (expr is ASTConstant<sbyte> bConst)
-            {
-                il.Emit(OpCodes.Ldc_I4, (int)bConst.Value);
-                il.Emit(OpCodes.Conv_I1);
-            }
-            else if (expr is ASTConstant<byte> ubConst)
-            {
-                il.Emit(OpCodes.Ldc_I4, (int)ubConst.Value);
-                il.Emit(OpCodes.Conv_U1);
-            }
-            else if (expr is ASTConstant<short> sConst)
-            {
-                il.Emit(OpCodes.Ldc_I4, (int)sConst.Value);
-                il.Emit(OpCodes.Conv_I2);
-            }
-            else if (expr is ASTConstant<ushort> usConst)
-            {
-                il.Emit(OpCodes.Ldc_I4, (int)usConst.Value);
-                il.Emit(OpCodes.Conv_U2);
-            }
-            else if (expr is ASTConstant<int> intConst)
-            {
-                il.Emit(OpCodes.Ldc_I4, intConst.Value);
-            }
-            else if (expr is ASTConstant<uint> uConst)
-            {
-                il.Emit(OpCodes.Ldc_I4, (int)uConst.Value);
-                il.Emit(OpCodes.Conv_U4);
-            }
-            else if (expr is ASTConstant<long> lConst)
-            {
-                il.Emit(OpCodes.Ldc_I8, lConst.Value);
-            }
-            else if (expr is ASTConstant<ulong> ulConst)
-            {
-                il.Emit(OpCodes.Ldc_I8, (long)ulConst.Value);
-                il.Emit(OpCodes.Conv_U8);
-            }
-
+            else if (expr is ASTConstant<sbyte> bConst) { il.Emit(OpCodes.Ldc_I4, (int)bConst.Value); il.Emit(OpCodes.Conv_I1); }
+            else if (expr is ASTConstant<byte> ubConst) { il.Emit(OpCodes.Ldc_I4, (int)ubConst.Value); il.Emit(OpCodes.Conv_U1); }
+            else if (expr is ASTConstant<short> sConst) { il.Emit(OpCodes.Ldc_I4, (int)sConst.Value); il.Emit(OpCodes.Conv_I2); }
+            else if (expr is ASTConstant<ushort> usConst) { il.Emit(OpCodes.Ldc_I4, (int)usConst.Value); il.Emit(OpCodes.Conv_U2); }
+            else if (expr is ASTConstant<int> intConst) { il.Emit(OpCodes.Ldc_I4, intConst.Value); }
+            else if (expr is ASTConstant<uint> uConst) { il.Emit(OpCodes.Ldc_I4, (int)uConst.Value); il.Emit(OpCodes.Conv_U4); }
+            else if (expr is ASTConstant<long> lConst) { il.Emit(OpCodes.Ldc_I8, lConst.Value); }
+            else if (expr is ASTConstant<ulong> ulConst) { il.Emit(OpCodes.Ldc_I8, (long)ulConst.Value); il.Emit(OpCodes.Conv_U8); }
             else if (expr is ASTConstant<float> fConst) il.Emit(OpCodes.Ldc_R4, fConst.Value);
             else if (expr is ASTConstant<double> doubleConst) il.Emit(OpCodes.Ldc_R8, doubleConst.Value);
-
             else if (expr is ASTConstant<bool> boolConst) il.Emit(boolConst.Value ? OpCodes.Ldc_I4_1 : OpCodes.Ldc_I4_0);
-
-            else if (expr is ASTConstant<char> charConst)
-            {
-                il.Emit(OpCodes.Ldc_I4, (int)charConst.Value);
-                il.Emit(OpCodes.Conv_U2);
-            }
-
+            else if (expr is ASTConstant<char> charConst) { il.Emit(OpCodes.Ldc_I4, (int)charConst.Value); il.Emit(OpCodes.Conv_U2); }
             else if (expr is ASTConstant<string> stringConst) il.Emit(OpCodes.Ldstr, stringConst.Value);
 
-            else if (expr is ASTVariableUse varUse)
+            else if (expr is ASTIdentifier varUse)
             {
                 //if such type exists and it is static - pass
-                Type staticType = FindClrTypeByName(varUse.VariableName, 0);
-                if(staticType != null && (staticType.IsAbstract && staticType.IsSealed))
-                {
-                    return;
-                }
+                Type staticType = FindClrTypeByName(varUse.Identifier, 0, ctx);
+                if (staticType != null && ((staticType.IsAbstract && staticType.IsSealed) || staticType.IsEnum)) return;
 
-                if (!ctx.Vars.VarExists(varUse.VariableName))
-                {
-                    throw new Exception($"[Error at line {varUse.Line}]: Variable '{varUse.VariableName}' is used before being defined");
-                }
-                il.Emit(OpCodes.Ldloc, ctx.Vars.GetVariable(varUse.VariableName));
+                if (!ctx.Vars.VarExists(varUse.Identifier))
+                    throw new Exception($"[Error at line {varUse.Line}]: Variable '{varUse.Identifier}' is used before being defined");
+                il.Emit(OpCodes.Ldloc, ctx.Vars.GetVariable(varUse.Identifier));
             }
 
             else if (expr is ASTFunctionCall funcCall) TranslateFunctionCall(funcCall, ctx);
@@ -536,8 +496,52 @@ namespace KoalaLang.Translators
 
             else if (expr is ASTMemberAccess member)
             {
-                TranslateExpression(member.Target, ctx);
-                Type targetType = GetExpressionType(member.Target, ctx);
+                Type targetType = null;
+                bool exprWasTranslated = false;
+
+                if(member.Target is ASTIdentifier id)
+                {
+                    targetType = FindClrTypeByName(id.Identifier, -1, ctx);
+                }
+                else
+                {
+                    TranslateExpression(member.Target, ctx);
+                    exprWasTranslated = true;
+                    targetType = GetExpressionType(member.Target, ctx);
+                }
+
+                if(targetType == null)
+                {
+                    TranslateExpression(member.Target, ctx);
+                    exprWasTranslated = true;
+                    targetType = GetExpressionType(member.Target, ctx);
+                }
+
+                //enum
+                if (targetType.IsEnum)
+                {
+                    var enumField = targetType.GetField(member.MemberName, BindingFlags.Public | BindingFlags.Static);
+                    if (enumField == null)
+                        throw new Exception($"[Error at line {expr.Line}]: Enum '{targetType}' has no member '{member.MemberName}'");
+                    var rawVal = enumField.GetRawConstantValue();
+                    if (!exprWasTranslated)
+                    {
+                        TranslateExpression(Type.GetTypeCode(Enum.GetUnderlyingType(targetType)) switch
+                        {
+                            TypeCode.SByte => new ASTConstant<sbyte>((sbyte)rawVal, -1),
+                            TypeCode.Byte => new ASTConstant<byte>((byte)rawVal, -1),
+                            TypeCode.Int16 => new ASTConstant<short>((short)rawVal, -1),
+                            TypeCode.UInt16 => new ASTConstant<ushort>((ushort)rawVal, -1),
+                            TypeCode.Int32 => new ASTConstant<int>((int)rawVal, -1),
+                            TypeCode.UInt32 => new ASTConstant<uint>((uint)rawVal, -1),
+                            TypeCode.Int64 => new ASTConstant<long>((long)rawVal, -1),
+                            TypeCode.UInt64 => new ASTConstant<ulong>((ulong)rawVal, -1),
+
+                            _ => throw new Exception($"[Error at line {expr.Line}]: Unsupported enum base type")
+                        }, ctx);
+                    }
+                    return;
+                }
 
                 //field
                 FieldInfo fieldInfo = targetType.GetField(member.MemberName,
@@ -581,7 +585,7 @@ namespace KoalaLang.Translators
             if (callNode is ASTFunctionCall funcCall)
             {
 
-                FunctionInfo funcInfo = FindFunctionInfo(funcCall.FunctionName, -1, funcCall.Line)
+                FunctionInfo funcInfo = FindFunctionInfo(funcCall.FunctionName, -1, ctx, funcCall.Line)
                     ?? throw new Exception($"[Error at line {funcCall.Line}]: Undefined function '{funcCall.FunctionName}'");
                 MethodInfo methodInfo = funcInfo.Info;
 
@@ -626,9 +630,9 @@ namespace KoalaLang.Translators
                 bool isValueType = targetType.IsValueType;
                 if (isValueType)
                 {
-                    if (methodCall.Target is ASTVariableUse varUse && ctx.Vars.VarExists(varUse.VariableName))
+                    if (methodCall.Target is ASTIdentifier varUse && ctx.Vars.VarExists(varUse.Identifier))
                     {
-                        il.Emit(OpCodes.Ldloca, ctx.Vars.GetVariable(varUse.VariableName));
+                        il.Emit(OpCodes.Ldloca, ctx.Vars.GetVariable(varUse.Identifier));
                     }
                     else
                     {
@@ -652,322 +656,9 @@ namespace KoalaLang.Translators
             }
         }
 
-        private FunctionInfo FindFunctionInfo(string funcName, int argsCount, int line)//?
+        private void DefineModule(ref List<ModuleInfo> modules, string moduleName, ASTCodeBlock block, ModuleInfo currentModule)
         {
-            //TODO: make ability to interact with another modules
-            //look for it in current module
-            foreach (FunctionInfo info in _currentModule.Functions)
-            {
-                if (info.Name == funcName)
-                {
-                    if (info.Args.Count != argsCount && argsCount != -1)
-                        throw new Exception($"[Error at line {line}]: Function '{funcName}' called with incorrect number of arguments (expected {info.Args.Count}, got {argsCount})");
-
-                    return info;
-                }
-            }
-
-            return null;
-        }
-
-        void EmitCast(ILGenerator il, Type sourceType, Type targetType)
-        {
-            if (sourceType == targetType) return;
-
-            bool sourceIsValue = sourceType.IsValueType;
-            bool targetIsValue = targetType.IsValueType;
-
-            //value to value
-            if (sourceIsValue && targetIsValue)
-            {
-                OpCode convOp = targetType switch
-                {
-                    var t when t == typeof(sbyte) => OpCodes.Conv_I1,
-                    var t when t == typeof(byte) => OpCodes.Conv_U1,
-                    var t when t == typeof(short) => OpCodes.Conv_I2,
-                    var t when t == typeof(ushort) => OpCodes.Conv_U2,
-                    var t when t == typeof(int) => OpCodes.Conv_I4,
-                    var t when t == typeof(uint) => OpCodes.Conv_U4,
-                    var t when t == typeof(long) => OpCodes.Conv_I8,
-                    var t when t == typeof(ulong) => OpCodes.Conv_U8,
-                    var t when t == typeof(float) => OpCodes.Conv_R4,
-                    var t when t == typeof(double) => OpCodes.Conv_R8,
-
-                    var t when t == typeof(char) => OpCodes.Conv_U2,
-
-                    var t when t == typeof(bool) => OpCodes.Conv_I4,
-
-                    _ => throw new NotSupportedException($"Cannot convert from {sourceType} to {targetType}")
-                };
-                il.Emit(convOp);
-            }
-
-            //value to ref
-            else if(sourceIsValue && !targetIsValue)
-            {
-                il.Emit(OpCodes.Box, sourceType);
-                if(targetType != typeof(object))
-                    il.Emit(OpCodes.Castclass, targetType);
-            }
-
-            //ref to value
-            else if(!sourceIsValue && targetIsValue)
-            {
-                il.Emit(OpCodes.Unbox_Any, targetType);
-            }
-
-            //ref to ref
-            else
-            {
-                il.Emit(OpCodes.Castclass, targetType);
-            }
-        }
-
-        Type GetExpressionType(ASTNode expr, TranslationContext ctx)
-        {
-            switch (expr)
-            {
-                case ASTConstant<sbyte>: return typeof(sbyte);
-                case ASTConstant<byte>: return typeof(byte);
-                case ASTConstant<short>: return typeof(short);
-                case ASTConstant<ushort>: return typeof(ushort);
-                case ASTConstant<int>: return typeof(int);
-                case ASTConstant<uint>: return typeof(uint);
-                case ASTConstant<long>: return typeof(long);
-                case ASTConstant<ulong>: return typeof(ulong);
-                case ASTConstant<float>: return typeof(float);
-                case ASTConstant<double>: return typeof(double);
-                case ASTConstant<bool>: return typeof(bool);
-                case ASTConstant<char>: return typeof(char);
-                case ASTConstant<string>: return typeof(string);
-
-                case ASTVariableUse varUse:
-                    {
-                        try
-                        {
-                            return ctx.Vars.GetVariable(varUse.VariableName).LocalType;
-                        }
-                        catch
-                        {
-                            Type t = FindClrTypeByName(varUse.VariableName, -1);
-                            if (t != null)
-                                return t;
-                        }
-                        throw new Exception($"[Error at line {varUse.Line}]: Unknown variable or type '{varUse.VariableName}'");
-                    }
-
-                case ASTCast staticCast: return ResolveType(staticCast.TypeName, ctx, staticCast.Line);
-
-                case ASTBinOperation binOp: return GetExpressionType(binOp.Left, ctx);
-                case ASTUnOperation unOp: return GetExpressionType(unOp.Operand, ctx);
-
-                case ASTFunctionCall funcCall:
-                    {
-                        FunctionInfo funcInfo = FindFunctionInfo(funcCall.FunctionName, funcCall.Args.Count, funcCall.Line)
-                            ?? throw new Exception($"[Error at line {funcCall.Line}]: Cannot call undefined function '{funcCall.FunctionName}'");
-
-                        int indexOfGenericType = Array.IndexOf(funcInfo.GenericMap.Keys.ToArray(), funcInfo.ReturnType);
-
-                        if (indexOfGenericType != -1)
-                            return ResolveType(funcCall.GenericTypes[indexOfGenericType], ctx, funcCall.Line);
-                        else
-                            return ResolveType(funcInfo.ReturnType, ctx, funcCall.Line);
-                    }
-
-                case ASTMethodCall methodCall:
-                    {
-                        Type targetType = GetExpressionType(methodCall.Target, ctx);
-
-                        MethodInfo method = targetType.GetMethod(
-                            methodCall.MethodName,
-                             BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static,
-                             null,
-                             methodCall.Args.Select(a => GetExpressionType(a, ctx)).ToArray(),
-                             null
-                        ) ?? throw new Exception($"[Error at line {methodCall.Line}]: No method '{methodCall.MethodName}' found on '{targetType}'");
-
-                        return method.ReturnType;
-                    }
-
-                case ASTIndexAccess indexAccess:
-                    {
-                        Type targetType = GetExpressionType(indexAccess.Target, ctx);
-                        if (targetType == typeof(string))
-                            return typeof(char);
-                        else if (targetType.IsArray)
-                            return targetType.GetElementType();
-                        else throw new Exception($"[Error at line {expr.Line}] Type '{targetType}' does not support indexing");
-                    }
-
-                case ASTNew newNode:
-                    return ResolveType(newNode.TypeName, ctx, newNode.Line);
-
-                case ASTMemberAccess member:
-                    {
-                        Type targetType = GetExpressionType(member.Target, ctx);
-
-                        //field
-                        var field = targetType.GetField(member.MemberName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
-                        if (field != null) return field.FieldType;
-
-                        //prop
-                        var prop = targetType.GetProperty(member.MemberName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
-                        if (prop != null) return prop.PropertyType;
-
-                        //nested
-                        var nestedType = targetType.GetNestedType(member.MemberName, BindingFlags.Public | BindingFlags.NonPublic);
-                        if (nestedType != null) return nestedType;
-
-                        throw new Exception($"[Error at line {expr.Line}]: Member '{member.MemberName}' not found on '{targetType}'");
-                    }
-
-                default: throw new Exception($"[Error at line {expr.Line}]: Cannot deduce expression type ({expr.GetType().Name})");
-            }
-        }
-
-        Type ResolveType(string typeName, TranslationContext ctx, int line)
-        {
-            if (ctx.GenericMap.TryGetValue(typeName, out var mapped))
-                return mapped;
-
-            Type primitive = typeName switch
-            {
-                "void" => typeof(void),
-                "bool" => typeof(bool),
-                "byte" => typeof(byte),
-                "sbyte" => typeof(sbyte),
-                "short" => typeof(short),
-                "ushort" => typeof(ushort),
-                "int" => typeof(int),
-                "uint" => typeof(uint),
-                "long" => typeof(long),
-                "ulong" => typeof(ulong),
-                "float" => typeof(float),
-                "double" => typeof(double),
-                "char" => typeof(char),
-                "string" => typeof(string),
-                "object" => typeof(object),
-                _ => null
-            };
-            if (primitive != null)
-                return primitive;
-
-            int arrayDepth = 0;
-            while (typeName.EndsWith("[]"))
-            {
-                typeName = typeName.Substring(0, typeName.Length - 2);
-                arrayDepth += 1;
-            }
-
-            List<Type> genericArgs = null;
-            int genericStart = typeName.IndexOf('<');
-            if(genericStart != -1)
-            {
-                int genericEnd = typeName.LastIndexOf('>');
-
-                string genericBase = typeName.Substring(0, genericStart);
-                string inside = typeName.Substring(genericStart + 1, genericEnd - genericStart - 1);
-                string[] argNames = inside.Split(',');
-
-                genericArgs = new();
-                foreach(string argName in argNames)
-                {
-                    genericArgs.Add(ResolveType(argName.Trim(), ctx, line));
-                }
-
-                typeName = genericBase;
-            }
-
-            Type baseType = FindClrTypeByName(typeName, genericArgs == null ? 0 : genericArgs.Count);
-            if(baseType == null)
-                throw new Exception($"[Error at line {line}]: Unknown type '{typeName}'");
-
-            if (genericArgs != null && baseType.IsGenericTypeDefinition)
-            {
-                try
-                {
-                    baseType = baseType.MakeGenericType(genericArgs.ToArray());
-                }
-                catch (Exception ex)
-                {
-                    throw new Exception($"[Error at line {line}]: Failed to construct generic type '{typeName}': {ex.Message}");
-                }
-            }
-
-            while (arrayDepth-- > 0)
-                baseType = baseType.MakeArrayType();
-
-            return baseType;
-        }
-
-        Type FindClrTypeByName(string id, int genericArity)
-        {
-            //static bool MatchesTypeName(Type t, string id, int genericArity)
-            //{
-            //    if (genericArity > 0)
-            //    {
-            //        return t.IsGenericTypeDefinition &&
-            //               (t.Name == id + "`" + genericArity ||
-            //                t.FullName?.EndsWith("." + id + "`" + genericArity) == true);
-            //    }
-            //    else
-            //    {
-            //        return t.Name == id || t.FullName?.EndsWith("." + id) == true;
-            //    }
-            //}
-
-            Type t = id switch
-            {
-                "void" => typeof(void),
-                "bool" => typeof(bool),
-                "byte" => typeof(byte),
-                "sbyte" => typeof(sbyte),
-                "short" => typeof(short),
-                "ushort" => typeof(ushort),
-                "int" => typeof(int),
-                "uint" => typeof(uint),
-                "long" => typeof(long),
-                "ulong" => typeof(ulong),
-                "float" => typeof(float),
-                "double" => typeof(double),
-                "char" => typeof(char),
-                "string" => typeof(string),
-                "object" => typeof(object),
-                _ => null
-            };
-            if (t != null)
-                return t;
-
-            //find in imports
-            foreach(string import in _currentModule.Imports)
-            {
-                string fullName = $"{import}.{id}";
-
-                foreach(var asm in AppDomain.CurrentDomain.GetAssemblies())
-                {
-                    Type found = null;
-                    try
-                    {
-                        found = asm.GetType(fullName, throwOnError: false, ignoreCase: false);
-                    }
-                    catch {}
-
-                    if(found != null)
-                    {
-                        if (genericArity > 0 && found.IsGenericTypeDefinition && found.GetGenericArguments().Length == genericArity)
-                            return found;
-                        if (genericArity == 0 || genericArity == -1)
-                            return found;
-                    }
-                }
-            }
-
-            return null;
-        }
-
-        private void DefineModule(ref List<ModuleInfo> modules, string moduleName, ASTCodeBlock block)
-        {
-            ModuleInfo mod = new ModuleInfo(moduleName, _currentModule, _moduleBuilder.DefineType(moduleName, TypeAttributes.Class | TypeAttributes.Public));
+            ModuleInfo mod = new ModuleInfo(moduleName, currentModule, _moduleBuilder.DefineType(moduleName, TypeAttributes.Class | TypeAttributes.Public));
             foreach (ASTNode node in block.Nodes)
             {
                 if (node is ASTFunction func)
