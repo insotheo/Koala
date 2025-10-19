@@ -45,6 +45,7 @@ namespace KoalaLang.ParserAndAST
                     "while" => ParseWhileLoop(),
                     "do" => ParseDoWhileLoop(),
                     "for" => ParseForLoop(),
+                    "import" => ParseImport(),
                     "break" => new ASTBreak(_ctx.Current.Line),
                     "continue" => new ASTContinue(_ctx.Current.Line),
 
@@ -239,6 +240,29 @@ namespace KoalaLang.ParserAndAST
             }
             return new(ifs, @else, -1);
         }
+
+        internal ASTImport ParseImport()
+        {
+            int line = _ctx.Current.Line;
+            _ctx.ExpectNext(TokenType.Identifier);
+            string path = "";
+            while (!_ctx.End)
+            {
+                path += _ctx.Current.Value;
+                _ctx.Next();
+                if (_ctx.Current.Type == TokenType.Dot)
+                {
+                    path += ".";
+                    _ctx.Next();
+                    if (_ctx.Current.Type != TokenType.Identifier) break;
+                }
+                else break;
+            }
+            _ctx.Expect(TokenType.Semicolon);
+            _ctx.Next();
+            return new ASTImport(path, line);
+        }
+
 
         internal string ParseType()
         {

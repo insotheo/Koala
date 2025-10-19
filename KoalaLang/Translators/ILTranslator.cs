@@ -31,9 +31,6 @@ namespace KoalaLang.Translators
                 DefineModule(ref _mods, moduleName, parser.GetAST() as ASTCodeBlock, null); //head module
                 mod = _mods.Last();
 
-                //DBG
-                mod.GetImports().Add("System");
-
                 foreach (ASTNode node in (parser.GetAST() as ASTCodeBlock).Nodes)
                 {
                     if (node is ASTFunction func)
@@ -65,6 +62,12 @@ namespace KoalaLang.Translators
                         il.Emit(OpCodes.Ret);
 
                         funcCtx.Free();
+                    }
+
+                    else if(node is ASTImport import)
+                    {
+                        mod.Imports.Add(import.Path);
+                        //TODO: another modules support...
                     }
                 }
             }
