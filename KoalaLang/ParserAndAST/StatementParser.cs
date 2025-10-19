@@ -58,6 +58,12 @@ namespace KoalaLang.ParserAndAST
                     _ctx.Next();
                 }
 
+                else if (token.Value == "break" || token.Value == "continue")
+                {
+                    _ctx.ExpectNext(TokenType.Semicolon);
+                    _ctx.Next();
+                }
+
                 return statement;
             }
 
@@ -72,6 +78,15 @@ namespace KoalaLang.ParserAndAST
                 }
 
                 return statement;
+            }
+
+            else if (token.Type == TokenType.LBrace)
+            {
+                _ctx.Next();
+                ASTCodeBlock block = ParseStatementList(TokenType.RBrace);
+                _ctx.Expect(TokenType.RBrace);
+                _ctx.Next();
+                return block;
             }
 
             throw new Exception($"Unexpected token '{token.Value}' of type {token.Type} in statement");

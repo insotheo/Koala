@@ -1,0 +1,207 @@
+import System;
+import System.Threading;
+
+func Draw(width: int, height: int, snakeX: int[], snakeY: int[], length: int, foodX: int, foodY: int, score: int){
+    let pixel: char = '■';
+    Console.Clear();
+
+    for(let y: int = 0; y < height; y = y + 1){
+        for(let x: int = 0; x < width; x = x + 1){
+            if(x == foodX && y == foodY){
+                Console.ForegroundColor = ConsoleColor.Red;
+            }
+            else{
+                for(let i: int = 0; i < length; i = i + 1){
+                    if(snakeX[i] == x && snakeY[i] == y){
+                        if(i == 0){
+                            Console.ForegroundColor = ConsoleColor.DarkGreen;
+                        }
+                        else{
+                            Console.ForegroundColor = ConsoleColor.Green;
+                        }
+                        break;
+                    }
+                }
+            }
+            Console.Write(pixel);
+            Console.ResetColor();
+        }
+        Console.WriteLine();
+    }
+    Console.ResetColor();
+    Console.WriteLine();
+    
+    for(let j: int = 0; j < width; j = j + 1){
+        Console.Write("~");
+    }
+    Console.WriteLine();
+    Console.WriteLine("Score: " + score.ToString());
+    Console.WriteLine("WASD - move, Q - quit");
+}
+
+func PlaceFood(width: int, height: int, snakeX: int[], snakeY: int[], length: int, rnd: Random): int[]{
+    while(true){
+        let fx: int = rnd.Next(1, width - 1);
+        let fy: int = rnd.Next(1, height - 1);
+        let ok: bool = true;
+        for(let i: int = 0; i < length; i = i + 1){
+            if(snakeX[i] == fx && snakeY[i] == fy){
+                ok = false;
+                break;
+            }
+        }
+        if(ok){
+            let foodPos: int[] = new int[](2);
+            foodPos[0] = fx;
+            foodPos[1] = fy;
+            return foodPos;
+        }
+    }
+}
+
+func HandleInput(dir: int, alive: bool): int{
+    if(!Console.KeyAvailable) { return dir; }
+    let key: int = (int)Console.Read();
+
+    if(key == (int)'w' && dir != 1) { return 0; }
+    if(key == (int)'a' && dir != 3) { return 2; }
+    if(key == (int)'s' && dir != 0) { return 1; }
+    if(key == (int)'d' && dir != 2) { return 3; }
+
+    if(key == (int)'q') { return -1; }
+    return dir;
+}
+
+func Move(width: int, height: int, snakeX: int[], snakeY: int[], length: int, dir: int, foodX: int, foodY: int): int[]{
+    let newX: int = snakeX[0];
+    let newY: int = snakeY[0];
+
+    if(dir == 0) {newY = newY - 1;}
+    else if(dir == 1) {newY = newY + 1;}
+    else if(dir == 2) {newX = newX - 1;}
+    else if(dir == 3) {newX = newX + 1;}
+
+    let alive: bool = true;
+    if(newX < 0 || newX >= width || newY < 0 || newY >= height){
+        alive = false;
+    }
+    
+    for(let i: int = 0; i < length; i = i + 1){
+        if(snakeX[i] == newX && snakeY[i] == newY){
+            alive = false;
+            break;
+        }
+    }
+
+    let ate: bool = (newX == foodX && newY == foodY);
+
+    let newSnakeX: int[] = new int[](snakeX.Length);
+    let newSnakeY: int[] = new int[](snakeY.Length);
+
+    if(ate){
+        newSnakeX[0] = newX;
+        newSnakeY[0] = newY;
+        for(let i: int = 0; i < length; i = i + 1){
+            newSnakeX[i + 1] = snakeX[i];
+            newSnakeY[i + 1] = snakeY[i];
+        }
+    }
+    else{
+        newSnakeX[0] = newX;
+        newSnakeY[0] = newY;
+        for(let i: int = 1; i < length; i = i + 1){
+            newSnakeX[i] = snakeX[i - 1];
+            newSnakeY[i] = snakeY[i - 1];
+        }
+    }
+
+    let serializedReturnData: int[] = new int[](1 + newSnakeX.Length + 1 + newSnakeY.Length + 2);
+    let iter: int = 0;
+
+    serializedReturnData[iter] = newSnakeX.Length;
+    iter = iter + 1;
+    for(let i: int = 0; i < newSnakeX.Length; i = i + 1){
+        serializedReturnData[iter] = newSnakeX[i];
+        iter = iter + 1;
+    }
+    
+    serializedReturnData[iter] = newSnakeY.Length;
+    iter = iter + 1;
+    for(let i: int = 0; i < newSnakeY.Length; i = i + 1){
+        serializedReturnData[iter] = newSnakeY[i];
+        iter = iter + 1;
+    }
+    
+    serializedReturnData[iter] = (int)alive;
+    serializedReturnData[iter + 1] = (int)ate;
+
+    return serializedReturnData;
+}
+
+
+func Main(){
+    let width: int = 20;
+    let height: int = 15;
+    
+    let maxLen: int = width * height;
+    let snakeX: int[] = new int[](maxLen);
+    let snakeY: int[] = new int[](maxLen);
+    let length: int = 1;
+    let dir: int = 0;
+    let alive: bool = true;
+    let score: int = 0;
+    let tick: int = 200;
+    let rnd: Random = new Random();
+    let foodX: int = 0;
+    let foodY: int = 0;
+
+    let midX: int = width / 2;
+    let midY: int = height / 2;
+    for(let i: int = 0; i < length; i = i + 1){
+        snakeX[i] = midX - i;
+        snakeY[i] = midY;
+    }
+    let food: int[] = PlaceFood(width, height, snakeX, snakeY, length, rnd);
+    foodX = food[0]; 
+    foodY = food[1];
+
+    Console.CursorVisible = false;
+
+    while(true){
+        let newDir: int = HandleInput(dir, alive);
+        if(newDir == -1) {break;}
+        dir = newDir;
+
+        let result: int[] = Move(width, height, snakeX, snakeY, length, dir, foodX, foodY);
+        let ate: bool = false;
+        { //unpacking
+            let iter: int = 0;
+            let snakeXLen: int = result[iter];
+            iter = iter + 1;
+            for(let i: int = 0; i < snakeXLen; i = i + 1){
+                snakeX[i] = result[iter];
+                iter = iter + 1;
+            }
+            let snakeYLen: int = result[iter];
+            iter = iter + 1;
+            for(let i: int = 0; i < snakeYLen; i = i + 1){
+                snakeY[i] = result[iter];
+                iter = iter + 1;
+            }
+            alive = (bool)result[iter];
+            ate = (bool)result[iter + 1];
+        }
+
+        if(ate){
+            length = length + 1;
+            score = score + 5;
+            if(tick > 40) { tick = tick - 2; }
+            food = PlaceFood(width, height, snakeX, snakeY, length, rnd);
+            foodX = food[0];
+            foodY = food[1];
+        }
+
+        Draw(width, height, snakeX, snakeY, length, foodX, foodY, score);
+        Thread.Sleep(tick);
+    } 
+}

@@ -43,15 +43,14 @@ namespace KoalaLang.Translators
             if (_kidsLocals != null) _kidsLocals.Add(name);
         }
 
-        public void Free() => FreeKidsLocals();
-
-        public void FreeKidsLocals()
+        internal void FreeKid(TranslationContext kid)
         {
-            if (_kidsLocals == null) return;
-
-            foreach(string loc in _kidsLocals)
+            if(kid._kidsLocals != null)
             {
-                Vars.Free(IL, loc);
+                foreach(string kidLoc in kid._kidsLocals)
+                {
+                    Vars.Free(IL, kidLoc);
+                }
             }
         }
     }

@@ -2,6 +2,7 @@
 using KoalaLang.ParserAndAST.AST;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
@@ -18,7 +19,7 @@ namespace KoalaLang.Translators
         AssemblyBuilder _assemblyBuilder;
         ModuleBuilder _moduleBuilder;
 
-        public void Translate(Parser parser, string moduleName)
+        public void Translate(Parser parser, string moduleName, string outputPath)
         {
             AssemblyName assemblyName = new AssemblyName(_asmName);
 
@@ -60,14 +61,6 @@ namespace KoalaLang.Translators
 
                         TranslateBody(func.Body, funcCtx);
                         il.Emit(OpCodes.Ret);
-
-                        funcCtx.Free();
-                    }
-
-                    else if(node is ASTImport import)
-                    {
-                        mod.Imports.Add(import.Path);
-                        //TODO: another modules support...
                     }
                 }
             }
@@ -205,7 +198,7 @@ namespace KoalaLang.Translators
                             TranslateBody(ifBlock.Body, ifCtx);
                             il.Emit(OpCodes.Br, endLb);
                             
-                            ifCtx.Free();
+                            ctx.FreeKid(ifCtx);
 
                             il.MarkLabel(nextIfLb);
                         }
@@ -214,11 +207,11 @@ namespace KoalaLang.Translators
                         {
                             TranslationContext elseCtx = branchCtx.CreateKid();
                             TranslateBody(branch.Else, elseCtx);
-                            elseCtx.Free();
+                            ctx.FreeKid(elseCtx);
                         }
                         il.MarkLabel(endLb);
 
-                        branchCtx.Free();
+                        ctx.FreeKid(branchCtx);
                     }
                     break;
 
@@ -235,7 +228,7 @@ namespace KoalaLang.Translators
                         il.Emit(OpCodes.Br, loopCtx.RegionStart.Value);
                         il.MarkLabel(loopCtx.RegionEnd.Value);
 
-                        loopCtx.Free();
+                        ctx.FreeKid(loopCtx);
                     }
                     break;
 
@@ -254,7 +247,7 @@ namespace KoalaLang.Translators
                         il.Emit(OpCodes.Br, loopBegin);
                         il.MarkLabel(loopCtx.RegionEnd.Value);
 
-                        loopCtx.Free();
+                        ctx.FreeKid(loopCtx);
                     }
                     break;
 
@@ -269,9 +262,9 @@ namespace KoalaLang.Translators
                         forLoopBody.Nodes.Add(forLoop.IterAction);
 
                         forLoopCodeBlock.Nodes.Add(new ASTWhileLoop(forLoop.Condition, forLoopBody, forLoop.Line));
-                        TranslateNode(forLoopCodeBlock, loopCtx);
+                        TranslateBody(forLoopCodeBlock, loopCtx);
 
-                        loopCtx.Free();
+                        ctx.FreeKid(loopCtx);
                     }
                     break;
 
@@ -287,6 +280,7 @@ namespace KoalaLang.Translators
                     {
                         TranslationContext innerCtx = ctx.CreateKid();
                         TranslateBody(inner, innerCtx);
+                        ctx.FreeKid(innerCtx);
                     }
                     break;
 
@@ -335,7 +329,7 @@ namespace KoalaLang.Translators
             {
                 //if such type exists and it is static - pass
                 Type staticType = FindClrTypeByName(varUse.Identifier, 0, ctx);
-                if (staticType != null && ((staticType.IsAbstract && staticType.IsSealed) || staticType.IsEnum)) return;
+                if (staticType != null && ((staticType.IsAbstract && staticType.IsSealed) || (staticType.GetMethods().Select(m => m.IsStatic).ToArray().Length != 0) || staticType.IsEnum)) return;
 
                 if (!ctx.Vars.VarExists(varUse.Identifier))
                     throw new Exception($"[Error at line {varUse.Line}]: Variable '{varUse.Identifier}' is used before being defined");
@@ -354,7 +348,7 @@ namespace KoalaLang.Translators
 
                 TranslateExpression(binOp.Left, ctx);
                 TranslateExpression(binOp.Right, ctx);
-
+                
                 switch (binOp.OperationType)
                 {
                     case BinOperationType.Add:
@@ -684,6 +678,7 @@ namespace KoalaLang.Translators
                     TranslationContext tmpCtx = new(null, null)
                     {
                         GenericMap = genericMap,
+                        CurrentModuleHandler = mod,
                     };
 
                     Type[] args = new Type[func.Args.Count];
@@ -704,6 +699,11 @@ namespace KoalaLang.Translators
                     FunctionInfo funcInfo = new(func.FunctionName, func.ReturnTypeName, func.Args) { GenericMap = genericMap };
                     funcInfo.Info = methodBuilder;
                     mod.Functions.Add(funcInfo);
+                }
+                else if (node is ASTImport import)
+                {
+                    mod.Imports.Add(import.Path);
+                    //TODO: another modules support...
                 }
             }
             modules.Add(mod);
