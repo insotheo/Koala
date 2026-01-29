@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="Koala.App/Koala.App.csproj" />
+  <Project Path="Koala.Compiler/Koala.Compiler.csproj" />
+</Solution>

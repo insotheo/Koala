@@ -1,0 +1,9 @@
+int async main(){
+    return 0;
+}
+ 
+//OR
+
+func main(): int{
+    return 0;
+}
