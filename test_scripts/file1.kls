@@ -1,9 +1,3 @@
-int async main(){
-    return 0;
-}
- 
-//OR
-
-func main(): int{
+func main(){
     return 0;
 }
