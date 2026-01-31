@@ -10,10 +10,7 @@ public class Lexer
     private int _ln, _col; //_ln stands for line
     private List<Token> _tokens;
 
-    public List<Token> Tokens
-    {
-        get => _tokens;
-    }
+    public List<Token> Tokens => _tokens;
 
     public Lexer(string source)
     {
@@ -79,11 +76,12 @@ public class Lexer
             switch (current)
             {
                 case ';': AddToken(TokenType.Semicolon); Next(); continue;
+                case ':': AddToken(TokenType.Colon); Next(); continue;
 
-                case ')': AddToken(TokenType.RParen); Next(); continue;
                 case '(': AddToken(TokenType.LParen); Next(); continue;
-                case '}': AddToken(TokenType.LBrace); Next(); continue;
-                case '{': AddToken(TokenType.RBrace); Next(); continue;
+                case ')': AddToken(TokenType.RParen); Next(); continue;
+                case '{': AddToken(TokenType.LBrace); Next(); continue;
+                case '}': AddToken(TokenType.RBrace); Next(); continue;
             }
 
             AddToken(TokenType.Unknown, current.ToString());

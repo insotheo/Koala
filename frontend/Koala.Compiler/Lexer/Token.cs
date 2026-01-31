@@ -4,7 +4,7 @@ public enum TokenType
 {
     EOF, Unknown, Identifier, Int, Float,
 
-    LParen, RParen, LBrace, RBrace, Semicolon,
+    LParen, RParen, LBrace, RBrace, Semicolon, Colon,
 
     //Keywords
     Func, Return

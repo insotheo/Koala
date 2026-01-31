@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "Koala.App": {
+      "commandName": "Project",
+      "commandLineArgs": "build \"C:\\Users\\Maxim\\Desktop\\Koala\\test_scripts\\file1.kls\""
+    }
+  }
+}

@@ -1,3 +1,7 @@
-!func main():$ float{
-    return 2.71828;
+func main(){
+    return;
+}
+
+func e(): float{
+    return;
 }

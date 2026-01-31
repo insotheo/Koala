@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Koala.Compiler.Lexer;
+using Koala.Compiler.Parser;
 
 namespace Koala.App;
 
@@ -91,17 +92,27 @@ class Project
             }
         }
 
-
-        foreach ((string path, string content) in files)
+        Parser[] parsers = new Parser[files.Length];
+        for (int i = 0; i < files.Length; i++)
         {
-            Lexer lexer = new Lexer(content);
+            Lexer lexer = new Lexer(files[i].content);
             lexer.Tokenize();
 
-            //DBG
-            Console.WriteLine(path);
-            foreach(Token token in lexer.Tokens)
+            parsers[i] = new Parser(files[i].path, lexer);
+            parsers[i].Parse();
+        }
+
+        {
+            bool anyError = false;
+            foreach (Parser parser in parsers)
             {
-                Console.WriteLine($"{token.Type}({token.Line}; {token.Col}): {(token.Val == null ? "" : token.Val)}");
+                if (parser.GetErrorsCount() != 0) anyError = true;
+                parser.PrintErrors();
+            }
+            if (anyError)
+            {
+                Console.Error.WriteLine("Compilation failed!");
+                return;
             }
         }
     }
