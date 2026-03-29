@@ -31,6 +31,8 @@ namespace Skull
                         lexer.Tokenize();
                     }
 
+                    Parser parser = new(lexer);
+                    parser.Parse();
                 }
             }
         }

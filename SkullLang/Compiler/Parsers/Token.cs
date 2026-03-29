@@ -5,10 +5,10 @@
         EOF, Unknown,
         Identifier, NumberI, NumberF,
 
-        //K means keyword
-        ReturnK,
+        //KW means keyword
+        ReturnKW, FuncKW,
 
-        LParen, RParen, LBrace, RBrace,
+        LParen, RParen, LBrace, RBrace, Semicolon, Colon,
     }
 
     internal struct Token

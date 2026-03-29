@@ -12,6 +12,8 @@ namespace SkullLang.Compiler.Parsers
         ulong _ln, _col;
         List<Token> _tokens;
 
+        internal List<Token> GetTokens() => _tokens;
+
         bool _isIdxValid => _idx < _src.Length;
         char _cur => _src[_idx];
 
@@ -72,7 +74,8 @@ namespace SkullLang.Compiler.Parsers
 
                     switch (id)
                     {
-                        case "return": AddToken(TokenType.ReturnK, col:startCol); break;
+                        case "func": AddToken(TokenType.FuncKW, col:startCol); break;
+                        case "return": AddToken(TokenType.ReturnKW, col:startCol); break;
                         
                         default: AddToken(TokenType.Identifier, id, startCol); break;
                     }
@@ -82,6 +85,9 @@ namespace SkullLang.Compiler.Parsers
 
                 switch (_cur)
                 {
+                    case ';': AddToken(TokenType.Semicolon); Next(); continue;
+                    case ':': AddToken(TokenType.Colon); Next(); continue;
+
                     case '(': AddToken(TokenType.LParen); Next(); continue;
                     case ')': AddToken(TokenType.RParen); Next(); continue;
                     case '{': AddToken(TokenType.LBrace); Next(); continue;
@@ -111,6 +117,12 @@ namespace SkullLang.Compiler.Parsers
                 _ln += 1;
                 _col = 1;
             }
+        }
+
+        internal char Peek(int offset = 1)
+        {
+            int idx = _idx + offset;
+            return idx < _src.Length ? _src[idx] : '\0';
         }
 
         private void AddToken(TokenType type, string val = null, ulong col = 0) => _tokens.Add(new Token(_ln, col == 0 ? _col : col, type, val));
