@@ -2,17 +2,22 @@ namespace SkullLang.Compiler.Parsers.ASTNodes
 {
     internal class ASTConstantInt : ASTNode
     {
-        long _val;
-        internal long Value => _val;
+        internal ulong Value { get; private set; }
 
-        internal ASTConstantInt(long val, ulong ln, ulong col) : base(ln, col) => _val = val;
+        internal ASTConstantInt(ulong val, ulong ln, ulong col) : base(ln, col) => Value = val;
     }
 
     internal class ASTConstantFloat : ASTNode
     {
-        double _val;
-        internal double Value => _val;
+        internal double Value { get; private set; }
 
-        internal ASTConstantFloat(double val, ulong ln, ulong col) : base(ln, col) => _val = val;
+        internal ASTConstantFloat(double val, ulong ln, ulong col) : base(ln, col) => Value = val;
+    }
+
+    internal class ASTIdentifier : ASTNode
+    {
+        internal string Identifier { get; private set; }
+
+        internal ASTIdentifier(string identifier, ulong ln, ulong col) : base(ln, col) => Identifier = identifier;
     }
 }

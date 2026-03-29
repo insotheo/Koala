@@ -8,6 +8,8 @@
         //KW means keyword
         ReturnKW, FuncKW,
 
+        Plus, Minus, Asterisk, Slash, Persent,
+
         LParen, RParen, LBrace, RBrace, Semicolon, Colon,
     }
 

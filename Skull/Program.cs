@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using SkullLang.Compiler.Parsers;
+using SkullLang.Compiler.Parsers.ASTNodes;
 
 namespace Skull
 {
@@ -12,8 +14,11 @@ namespace Skull
             {
                 Console.Error.WriteLine("No files provided!");
             }
-            
-            foreach(string filePath in args)
+
+            bool isParsingSuccess = true;
+            var trees = new Dictionary<string, IReadOnlyList<ASTNode>>();
+
+            foreach (string filePath in args)
             {
                 string path = Path.GetFullPath(filePath, Directory.GetCurrentDirectory());
                 if (!File.Exists(path))
@@ -25,6 +30,7 @@ namespace Skull
                 {
                     Lexer lexer;
                     fs.Seek(0, SeekOrigin.Begin);
+                    
                     using(StreamReader reader = new StreamReader(fs))
                     {
                         lexer = new Lexer(reader.ReadToEnd());
@@ -33,7 +39,16 @@ namespace Skull
 
                     Parser parser = new(lexer);
                     parser.Parse();
+
+                    isParsingSuccess = isParsingSuccess && parser.IsSuccess;
+                    trees.Add(path, parser.AST);
                 }
+            }
+
+            if (!isParsingSuccess)
+            {
+                Console.Error.WriteLine("Parsing failed!");
+                return;
             }
         }
     }

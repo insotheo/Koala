@@ -13,6 +13,7 @@ namespace SkullLang.Compiler.Parsers
         List<Token> _tokens;
 
         internal List<Token> GetTokens() => _tokens;
+        internal string GetSource() => _src;
 
         bool _isIdxValid => _idx < _src.Length;
         char _cur => _src[_idx];
@@ -92,6 +93,12 @@ namespace SkullLang.Compiler.Parsers
                     case ')': AddToken(TokenType.RParen); Next(); continue;
                     case '{': AddToken(TokenType.LBrace); Next(); continue;
                     case '}': AddToken(TokenType.RBrace); Next(); continue;
+
+                    case '+': AddToken(TokenType.Plus); Next(); continue;
+                    case '-': AddToken(TokenType.Minus); Next(); continue;
+                    case '*': AddToken(TokenType.Asterisk); Next(); continue;
+                    case '/': AddToken(TokenType.Slash); Next(); continue;
+                    case '%': AddToken(TokenType.Persent); Next(); continue;
                 }
 
                 AddToken(TokenType.Unknown, _cur.ToString());
@@ -99,11 +106,6 @@ namespace SkullLang.Compiler.Parsers
             }
 
             AddToken(TokenType.EOF);
-
-            foreach(var token in _tokens)
-            {
-                System.Console.WriteLine($"{token.Type}: {token.Value} at ln: {token.Ln}, col: {token.Col}");
-            }
         }
 
         private void Next()

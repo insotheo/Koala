@@ -1,6 +1,8 @@
 using System.Collections.Generic;
 using SkullLang.Compiler.Parsers.ASTNodes;
 
+using static SkullLang.Compiler.Parsers.ParserExpression;
+
 namespace SkullLang.Compiler.Parsers
 {
     internal static class ParserStatement
@@ -54,7 +56,7 @@ namespace SkullLang.Compiler.Parsers
                 if(ctx.Current.Type == TokenType.ReturnKW) nodes.Add(ParseReturn(ctx));
                 else
                 {
-                    ctx.Panic("Unknown statement!");
+                    ctx.Panic($"Unknown statement: {ctx.GetLine(ctx.Current.Ln)}!");
                     ctx.Sync(TokenType.Semicolon, TokenType.RBrace);
                 }
             }
@@ -67,14 +69,14 @@ namespace SkullLang.Compiler.Parsers
         internal static ASTReturn ParseReturn(ParserContext ctx)
         {
             ulong ln = ctx.Current.Ln, col = ctx.Current.Col;
-
             //consume return keyword
             ctx.Next();
-            ctx.Next(); //const
-            ctx.Next(); //;
 
-            //TODO: Expression parsing
-            return new ASTReturn(new ASTConstantInt(0, ln, col), ln, col);
+            var expr = ParseExpression(ctx);
+
+            ctx.SkipIfSemicolon();
+
+            return new ASTReturn(expr, ln, col);
         }
     }
 }
