@@ -27,10 +27,14 @@
 
         internal static TypeKind GetKindBasedOnTypeName(string typeName, Context ctx = null) => typeName switch
         {
-            "i32" => TypeKind.Integer,
+            "bool" => TypeKind.Integer,
 
-            "f32" => TypeKind.Float,
-            "f64" => TypeKind.Float,
+            "byte" => TypeKind.Integer,
+            "short" => TypeKind.Integer,
+            "int" => TypeKind.Integer,
+            "long" => TypeKind.Integer,
+
+            "float" => TypeKind.Float,
 
             "void" => TypeKind.None,
 

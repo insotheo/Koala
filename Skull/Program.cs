@@ -3,10 +3,13 @@ using System.Collections.Generic;
 using System.IO;
 using SkullLang.Compiler.Analyzers;
 using SkullLang.Compiler.Parsers;
+using SkullLang.Compiler.CodeGenerating;
 using SkullLang.Compiler.Parsers.ASTNodes;
 
 namespace Skull
 {
+
+    //libLLVM = LLVM-C
     internal class Program
     {
         static void Main(string[] args)
@@ -54,6 +57,17 @@ namespace Skull
 
             Analyzer analyzer = new(trees);
             analyzer.Analyze();
+
+            if (!analyzer.IsSuccess)
+            {
+                Console.Error.WriteLine("Analyzing failed!");
+                return;
+            }
+
+            CodeGenerator gen = new(analyzer);
+            gen.Generate("bin");
+
+            Console.WriteLine("Done!");
         }
     }
 }

@@ -8,6 +8,9 @@ namespace SkullLang.Compiler.Analyzers
     public sealed class Analyzer
     {
         AnalyzerContext _ctx;
+        public bool IsSuccess => _ctx.IsAnalizingSuccess;
+
+        internal Context Output { get; private set; }
 
         public Analyzer(Dictionary<string, IReadOnlyList<ASTNode>> trees)
         {
@@ -35,6 +38,8 @@ namespace SkullLang.Compiler.Analyzers
                 var tree = ctx.Analyzer.Modules[fileName];
                 AnalyzeTree(ctx, fileName, tree);
             }
+
+            Output = ctx;
         }
     }
 }
