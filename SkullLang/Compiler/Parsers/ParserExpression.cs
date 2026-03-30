@@ -52,7 +52,7 @@ namespace SkullLang.Compiler.Parsers
             if (ctx.Current.Type == TokenType.Identifier)
             {
                 string identifier = ctx.Current.Value;
-                if (ctx.Peek(1).Type == TokenType.RParen) return ParseFunctionCall(ctx, identifier);
+                if (ctx.Peek(1).Type == TokenType.LParen) return ParseFunctionCall(ctx, identifier);
 
                 return new ASTIdentifier(identifier, ln, col);
             }

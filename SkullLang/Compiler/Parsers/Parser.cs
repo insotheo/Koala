@@ -29,6 +29,7 @@ namespace SkullLang.Compiler.Parsers
             {
                 _ctx.Panic($"Unknown declaration: {_ctx.GetLine(_ctx.Current.Ln)}");
                 _ctx.Sync(TokenType.FuncKW);
+                _ctx.StepBack();
             }
         }
     }

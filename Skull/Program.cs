@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using SkullLang.Compiler.Analyzers;
 using SkullLang.Compiler.Parsers;
 using SkullLang.Compiler.Parsers.ASTNodes;
 
@@ -50,6 +51,9 @@ namespace Skull
                 Console.Error.WriteLine("Parsing failed!");
                 return;
             }
+
+            Analyzer analyzer = new(trees);
+            analyzer.Analyze();
         }
     }
 }

@@ -79,5 +79,7 @@ namespace SkullLang.Compiler.Parsers
             if (idx >= (ulong)_src.Length) return "";
             return _src.Split('\n')[idx];
         }
+
+        internal void StepBack() => _idx--;
     }
 }
