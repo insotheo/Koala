@@ -15,6 +15,11 @@ namespace SkullLang.CodeGenerator
                     EmitExpression(code, retNode.Ret);
                     code.Append(";\n");
                 }
+                else if(node is ASTFunctionCall funcCall)
+                {
+                    EmitExpression(code, funcCall);
+                    code.Append(";\n");
+                }
             }
         }
 
@@ -47,6 +52,11 @@ namespace SkullLang.CodeGenerator
                     _ => " "
                 });
                 EmitExpression(code, unOp.HS);
+            }
+
+            if(expr is ASTFunctionCall funcCall)
+            {
+                code.Append($"{funcCall.FunctionName}()");
             }
         }
     }

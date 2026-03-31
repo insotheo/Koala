@@ -10,6 +10,17 @@ namespace SkullLang.Compiler.Analyzers
             if (node is ASTConstantInt) return new(null, TypeKind.Integer);
             if (node is ASTConstantFloat) return new(null, TypeKind.Float);
 
+            if(node is ASTFunctionCall funcCall)
+            {
+                if (!ctx.IsFunctionInCurrentContext(funcCall.FunctionName))
+                {
+                    ctx.Panic($"Function {funcCall.FunctionName} is used, but never declared", funcCall.Ln, funcCall.Col);
+                    return new(null, TypeKind.None);
+                }
+                string retTypeName = ctx.GetFunction(ctx.CurrentFileName, funcCall.FunctionName).ReturnType;
+                return new(retTypeName, TypeInfo.GetKindBasedOnTypeName(retTypeName, ctx));
+            }
+
             if (node is ASTBinaryOp binOp)
             {
                 var lhsType = RecognizeType(ctx, binOp.LHS);

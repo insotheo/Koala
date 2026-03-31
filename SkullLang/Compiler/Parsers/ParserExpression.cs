@@ -77,11 +77,14 @@ namespace SkullLang.Compiler.Parsers
         internal static ASTNode ParseFunctionCall(ParserContext ctx, string fname)
         {
             ulong ln = ctx.Current.Ln, col = ctx.Current.Col;
-            //consume (
-            ctx.Next();
+            //consume identifier and (
+            ctx.Next(); ctx.Next();
 
-            //TODO: FUNCTION CALL
-            return new ASTIdentifier(fname, ln, col);
+            //TODO: arguments parsing
+
+            if (!ctx.Expect(TokenType.RParen)) { ctx.Sync(TokenType.RParen, TokenType.Semicolon); }
+
+            return new ASTFunctionCall(fname, ln, col);
         }
     }
 }

@@ -1,3 +1,7 @@
-func main(): ubyte{
-	return 0;
+func get_int() : int{
+	return 5;
+}
+
+func main(): int{
+	return 2 * get_int() * get_int();
 }
