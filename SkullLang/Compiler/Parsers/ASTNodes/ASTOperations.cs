@@ -19,7 +19,6 @@ namespace SkullLang.Compiler.Parsers.ASTNodes
         internal ASTNode LHS { get; private set; }
         internal ASTNode RHS { get; private set; }
         internal BinaryOpType Op { get; private set; }
-        internal TypeInfo OpType;
 
         internal ASTBinaryOp(ASTNode lhs, ASTNode rhs, BinaryOpType op, ulong ln, ulong col) : base(ln, col)
         {
@@ -33,7 +32,6 @@ namespace SkullLang.Compiler.Parsers.ASTNodes
     {
         internal ASTNode HS { get; private set; }
         internal UnaryOpType Op { get; private set; }
-        internal TypeInfo OpType;
 
         internal ASTUnaryOp(ASTNode hS, UnaryOpType op, ulong ln, ulong col) : base(ln, col)
         {

@@ -27,14 +27,12 @@ namespace SkullLang.Compiler.Analyzers
                 var rhsType = RecognizeType(ctx, binOp.RHS);
 
                 if (lhsType.Kind != rhsType.Kind) ctx.Panic("Cannot operate on different types!", node.Ln, node.Col);
-                binOp.OpType = lhsType;
 
                 return lhsType;
             }
             if (node is ASTUnaryOp unOp)
             {
                 var hsType = RecognizeType(ctx, unOp.HS);
-                unOp.OpType = hsType;
 
                 return hsType;
             }
