@@ -13,7 +13,7 @@
 
         internal TypeInfo(string typeName, TypeKind kind)
         {
-            TypeName = typeName;
+            TypeName = GetBaseCTypeName(typeName);
             Kind = kind;
         }
 
@@ -27,15 +27,44 @@
 
         internal static TypeKind GetKindBasedOnTypeName(string typeName, Context ctx = null) => typeName switch
         {
-            "bool" => TypeKind.Integer,
+            "byte" => TypeKind.Integer,
+            "ubyte" => TypeKind.Integer,
+            "short" => TypeKind.Integer,
+            "ushort" => TypeKind.Integer,
             "int" => TypeKind.Integer,
+            "uint" => TypeKind.Integer,
+            "long" => TypeKind.Integer,
+            "ulong" => TypeKind.Integer,
 
             "float" => TypeKind.Float,
+            "double" => TypeKind.Float,
+
+            "bool" => TypeKind.Integer,
 
             "void" => TypeKind.None,
 
-            //TODO: explicit type recognizion
-            _ => TypeKind.None,
+            _ => TypeKind.None
+        };
+
+        internal static string GetBaseCTypeName(string typeName) => typeName switch
+        {
+            "byte" => "char",
+            "ubyte" => "unsigned char",
+            "short" => "short int",
+            "ushort" => "unsigned short int",
+            "int" => "int",
+            "uint" => "unsigned int",
+            "long" => "long int",
+            "ulong" => "unsigned long int",
+
+            "float" => "float",
+            "double" => "double",
+
+            "bool" => "bool",
+
+            "void" => "void",
+
+            _ => typeName
         };
     }
 

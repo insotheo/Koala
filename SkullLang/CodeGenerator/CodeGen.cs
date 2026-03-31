@@ -40,7 +40,8 @@ namespace SkullLang.CodeGenerator
                 {
                     if(node is ASTFunction funcNode)
                     {
-                        code.AppendLine($"{funcNode.RetType} {funcNode.FuncName}(){{");
+                        FunctionInfo info = _ctx.GetFunction(fileName, funcNode.FuncName);
+                        code.AppendLine($"{info.ReturnType} {funcNode.FuncName}(){{");
                         EmitCodeBlock(code, funcNode.Body);
                         code.AppendLine("}");
                     }
