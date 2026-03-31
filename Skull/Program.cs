@@ -3,8 +3,8 @@ using System.Collections.Generic;
 using System.IO;
 using SkullLang.Compiler.Analyzers;
 using SkullLang.Compiler.Parsers;
-using SkullLang.Compiler.CodeGenerating;
 using SkullLang.Compiler.Parsers.ASTNodes;
+using SkullLang.CodeGenerator;
 
 namespace Skull
 {
@@ -64,7 +64,7 @@ namespace Skull
                 return;
             }
 
-            CodeGenerator gen = new(analyzer);
+            CodeGen gen = new(analyzer);
             gen.Generate("bin");
 
             Console.WriteLine("Done!");

@@ -28,11 +28,7 @@
         internal static TypeKind GetKindBasedOnTypeName(string typeName, Context ctx = null) => typeName switch
         {
             "bool" => TypeKind.Integer,
-
-            "byte" => TypeKind.Integer,
-            "short" => TypeKind.Integer,
             "int" => TypeKind.Integer,
-            "long" => TypeKind.Integer,
 
             "float" => TypeKind.Float,
 
