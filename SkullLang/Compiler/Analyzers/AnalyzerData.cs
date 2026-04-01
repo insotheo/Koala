@@ -1,4 +1,6 @@
-﻿namespace SkullLang.Compiler.Analyzers
+﻿using System.Collections.Generic;
+
+namespace SkullLang.Compiler.Analyzers
 {
     internal enum TypeKind
     {
@@ -8,11 +10,13 @@
 
     internal struct TypeInfo
     {
+        internal string OriginalTypeName;
         internal string TypeName;
         internal TypeKind Kind;
 
         internal TypeInfo(string typeName, TypeKind kind)
         {
+            OriginalTypeName = typeName;
             TypeName = GetBaseCTypeName(typeName);
             Kind = kind;
         }
@@ -68,13 +72,26 @@
         };
     }
 
+    internal struct VariableInfo
+    {
+        internal string Name;
+        internal TypeInfo Type;
+        internal bool IsConst = false;
+
+        internal VariableInfo(string name, TypeInfo type)
+        {
+            Name = name;
+            Type = type;
+        }
+    }
+
     internal struct FunctionInfo
     {
         internal string FuncName;
         internal string ReturnType;
-        internal string[] Args;
+        internal List<VariableInfo> Args;
 
-        internal FunctionInfo(string funcName, string returnType, string[] args)
+        internal FunctionInfo(string funcName, string returnType, List<VariableInfo> args)
         {
             FuncName = funcName;
             ReturnType = returnType;

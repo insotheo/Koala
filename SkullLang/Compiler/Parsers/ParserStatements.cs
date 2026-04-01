@@ -21,9 +21,26 @@ namespace SkullLang.Compiler.Parsers
             if(!ctx.Expect(TokenType.LParen)) { ctx.Sync(TokenType.LBrace, TokenType.Semicolon); return; }
             ctx.Next();
 
-            //TODO: ADD ARGUMENTS PARSING
+            List<(string typeName, string argName)> args = new();
+            while (ctx.NotEOF && ctx.Current.Type != TokenType.RParen)
+            {
+                if (!ctx.Expect(TokenType.Identifier)) { ctx.Sync(TokenType.RParen); }
+                string argName = ctx.Current.Value;
+                ctx.Next();
 
-            if(!ctx.Expect(TokenType.RParen)) { ctx.Sync(TokenType.LBrace, TokenType.Semicolon); return; }
+                if (!ctx.Expect(TokenType.Colon)) { ctx.Sync(TokenType.RParen); }
+                ctx.Next();
+
+                if (!ctx.Expect(TokenType.Identifier)) { ctx.Sync(TokenType.RParen); }
+                string typeName = ctx.Current.Value;
+                ctx.Next();
+
+                args.Add((typeName, argName));
+
+                if (ctx.Current.Type == TokenType.Comma) ctx.Next();
+            }
+
+            if (!ctx.Expect(TokenType.RParen)) { ctx.Sync(TokenType.LBrace, TokenType.Semicolon); return; }
             ctx.Next();
 
             string returnType = "void";
@@ -40,7 +57,7 @@ namespace SkullLang.Compiler.Parsers
             if(!ctx.Expect(TokenType.LBrace)) { ctx.Sync(TokenType.RBrace, TokenType.Semicolon); return; }
             var body = ParseCodeBlock(ctx);
 
-            ctx.PushNode(new ASTFunction(fname, returnType, body, ln, col));
+            ctx.PushNode(new ASTFunction(fname, returnType, args, body, ln, col));
         }
 
         internal static ASTCodeBlock ParseCodeBlock(ParserContext ctx)

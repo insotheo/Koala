@@ -27,8 +27,23 @@ namespace SkullLang.Compiler.Analyzers
 
                 foreach(var node in tree)
                 {
-                    if(node is ASTFunction funcNode)
-                        ctx.DeclareFunction(fileName, new FunctionInfo(funcNode.FuncName, TypeInfo.GetBaseCTypeName(funcNode.RetType), []));
+
+                    if (node is ASTFunction funcNode)
+                    {
+                        List<VariableInfo> args = new();
+
+                        foreach((string typeName, string argName) in funcNode.Args)
+                        {
+                            VariableInfo argInfo = new();
+
+                            argInfo.Name = argName;
+                            argInfo.Type = new TypeInfo(typeName, TypeInfo.GetKindBasedOnTypeName(typeName, ctx));
+
+                            args.Add(argInfo);
+                        }
+
+                        ctx.DeclareFunction(fileName, new FunctionInfo(funcNode.FuncName, TypeInfo.GetBaseCTypeName(funcNode.RetType), args));
+                    }
                 }
             }
 

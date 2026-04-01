@@ -11,7 +11,7 @@
         Plus, Minus, Asterisk, Slash, Percent,
         Ampersand, Pipe, Caret, Tilde, LeftShift, RightShift,
 
-        LParen, RParen, LBrace, RBrace, Semicolon, Colon,
+        LParen, RParen, LBrace, RBrace, Semicolon, Colon, Comma,
     }
 
     internal struct Token

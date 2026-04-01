@@ -89,6 +89,8 @@ namespace SkullLang.Compiler.Parsers
                     case ';': AddToken(TokenType.Semicolon); Next(); continue;
                     case ':': AddToken(TokenType.Colon); Next(); continue;
 
+                    case ',': AddToken(TokenType.Comma); Next(); continue;
+
                     case '(': AddToken(TokenType.LParen); Next(); continue;
                     case ')': AddToken(TokenType.RParen); Next(); continue;
                     case '{': AddToken(TokenType.LBrace); Next(); continue;

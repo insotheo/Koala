@@ -1,4 +1,5 @@
 ﻿using SkullLang.Compiler.Parsers.ASTNodes;
+using System.Collections.Generic;
 
 namespace SkullLang.Compiler.Parsers
 {
@@ -128,11 +129,20 @@ namespace SkullLang.Compiler.Parsers
             //consume identifier and (
             ctx.Next(); ctx.Next();
 
-            //TODO: arguments parsing
+            List<ASTNode> args = new();
+            while(ctx.NotEOF && ctx.Current.Type != TokenType.RParen)
+            {
+                ASTNode expr = ParseExpression(ctx);
+
+                args.Add(expr);
+
+                if (ctx.Current.Type == TokenType.Comma) ctx.Next();
+            }
 
             if (!ctx.Expect(TokenType.RParen)) { ctx.Sync(TokenType.RParen, TokenType.Semicolon); }
+            ctx.Next(); //consume )
 
-            return new ASTFunctionCall(fname, ln, col);
+            return new ASTFunctionCall(fname, args, ln, col);
         }
     }
 }

@@ -13,6 +13,36 @@
         Neg, BitwiseNot
     }
 
+    
+    internal static class OperationsToStringStaticClass
+    {
+        internal static string BinaryOpToString(BinaryOpType op) => op switch
+        {
+            BinaryOpType.Add => "+",
+            BinaryOpType.Sub => "-",
+            BinaryOpType.Mul => "*",
+            BinaryOpType.Div => "/",
+            BinaryOpType.Mod => "%",
+
+            BinaryOpType.BitwiseAnd => "&",
+            BinaryOpType.BitwiseOr => "|",
+            BinaryOpType.BitwiseXor => "^",
+            BinaryOpType.BitwiseLShift => "<<",
+            BinaryOpType.BitwiseRShift => ">>",
+
+            _ => " "
+        };
+
+        internal static string UnaryOpToStirng(UnaryOpType op) => op switch
+        {
+            UnaryOpType.Neg => "-",
+            UnaryOpType.BitwiseNot => "~",
+
+            _ => " ",
+        };
+    }
+
+
     internal class ASTBinaryOp : ASTNode
     {
         internal ASTNode LHS { get; private set; }

@@ -1,6 +1,8 @@
 ﻿using SkullLang.Compiler.Parsers.ASTNodes;
 using System.Text;
 
+using static SkullLang.Compiler.Parsers.ASTNodes.OperationsToStringStaticClass;
+
 namespace SkullLang.CodeGenerator
 {
     internal static class NodesEmitting
@@ -27,27 +29,13 @@ namespace SkullLang.CodeGenerator
         {
             if (expr is ASTConstantInt cInt) code.Append(cInt.Value);
             if (expr is ASTConstantFloat cFloat) code.Append(cFloat.Value);
+            if (expr is ASTIdentifier identifier) code.Append(identifier.Identifier); 
 
             if(expr is ASTBinaryOp binOp)
             {
                 code.Append("(");
                 EmitExpression(code, binOp.LHS);
-                code.Append(binOp.Op switch
-                {
-                    BinaryOpType.Add => "+",
-                    BinaryOpType.Sub => "-",
-                    BinaryOpType.Mul => "*",
-                    BinaryOpType.Div => "/",
-                    BinaryOpType.Mod => "%",
-
-                    BinaryOpType.BitwiseAnd => "&",
-                    BinaryOpType.BitwiseOr => "|",
-                    BinaryOpType.BitwiseXor => "^",
-                    BinaryOpType.BitwiseLShift => "<<",
-                    BinaryOpType.BitwiseRShift => ">>",
-
-                    _ => " "
-                });
+                code.Append(BinaryOpToString(binOp.Op));
                 EmitExpression(code, binOp.RHS);
                 code.Append(")");
             }
@@ -55,19 +43,22 @@ namespace SkullLang.CodeGenerator
             if(expr is ASTUnaryOp unOp)
             {
                 code.Append("(");
-                code.Append(unOp.Op switch
-                {
-                    UnaryOpType.Neg => "-",
-                    UnaryOpType.BitwiseNot => "~",
-                    _ => " "
-                });
+                code.Append(UnaryOpToStirng(unOp.Op));
                 EmitExpression(code, unOp.HS);
                 code.Append(")");
             }
 
             if(expr is ASTFunctionCall funcCall)
             {
-                code.Append($"{funcCall.FunctionName}()");
+                code.Append($"{funcCall.FunctionName}(");
+
+                for(int i = 0; i < funcCall.Args.Count; i++)
+                {
+                    EmitExpression(code, funcCall.Args[i]);
+                    if (i + 1 < funcCall.Args.Count) code.Append(", ");
+                }
+
+                code.Append(")");
             }
         }
     }

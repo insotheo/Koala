@@ -33,7 +33,19 @@ namespace SkullLang.CodeGenerator
 
                 foreach(FunctionInfo funcInfo in _ctx.Functions[fileName].Values)
                 {
-                    code.AppendLine($"{funcInfo.ReturnType} {funcInfo.FuncName}();");
+                    string argsLine = "";
+                    if (funcInfo.Args.Count > 0)
+                    {
+                        StringBuilder argsString = new();
+                        foreach (VariableInfo arg in funcInfo.Args)
+                        {
+                            argsString.Append($"{arg.Type.TypeName},");
+                        }
+                        argsLine = argsString.ToString().TrimEnd(',').Trim();
+                    }
+                    else argsLine = "void";
+
+                    code.AppendLine($"{funcInfo.ReturnType} {funcInfo.FuncName}({argsLine});");
                 }
 
                 foreach(ASTNode node in _ctx.Analyzer.Modules[fileName])
@@ -41,7 +53,20 @@ namespace SkullLang.CodeGenerator
                     if(node is ASTFunction funcNode)
                     {
                         FunctionInfo info = _ctx.GetFunction(fileName, funcNode.FuncName);
-                        code.AppendLine($"{info.ReturnType} {funcNode.FuncName}(){{");
+
+                        string argsLine = "";
+                        if (info.Args.Count > 0)
+                        {
+                            StringBuilder argsString = new();
+                            foreach (VariableInfo arg in info.Args)
+                            {
+                                argsString.Append($"{arg.Type.TypeName} {arg.Name},");
+                            }
+                            argsLine = argsString.ToString().TrimEnd(',').Trim();
+                        }
+                        else argsLine = "void";
+
+                        code.AppendLine($"{info.ReturnType} {funcNode.FuncName}({argsLine}){{");
                         EmitCodeBlock(code, funcNode.Body);
                         code.AppendLine("}");
                     }

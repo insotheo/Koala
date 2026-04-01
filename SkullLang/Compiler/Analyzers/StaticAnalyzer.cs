@@ -1,5 +1,8 @@
 ﻿using SkullLang.Compiler.Parsers.ASTNodes;
+using System;
 using System.Collections.Generic;
+
+using static SkullLang.Compiler.Parsers.ASTNodes.OperationsToStringStaticClass;
 
 namespace SkullLang.Compiler.Analyzers
 {
@@ -9,15 +12,50 @@ namespace SkullLang.Compiler.Analyzers
         {
             if (node is ASTConstantInt) return new(null, TypeKind.Integer);
             if (node is ASTConstantFloat) return new(null, TypeKind.Float);
+            
+            if(node is ASTIdentifier identifier)
+            {
+                string varName = identifier.Identifier;
+
+                if (!ctx.IsVariableInScope(varName))
+                {
+                    ctx.Panic($"Use of undeclared variable '{varName}'", node.Ln, node.Col);
+                    return new(null, TypeKind.None);
+                }
+
+                return ctx.GetVariableType(varName);
+            }
 
             if(node is ASTFunctionCall funcCall)
             {
                 if (!ctx.IsFunctionInCurrentContext(funcCall.FunctionName))
                 {
-                    ctx.Panic($"Function {funcCall.FunctionName} is used, but never declared", funcCall.Ln, funcCall.Col);
+                    ctx.Panic($"Call to undeclared function {funcCall.FunctionName}", funcCall.Ln, funcCall.Col);
                     return new(null, TypeKind.None);
                 }
-                string retTypeName = ctx.GetFunction(ctx.CurrentFileName, funcCall.FunctionName).ReturnType;
+
+                FunctionInfo func = ctx.GetFunction(ctx.CurrentFileName, funcCall.FunctionName);
+
+                if (funcCall.Args.Count > 0)
+                {
+                    if (funcCall.Args.Count != func.Args.Count) ctx.Panic($"Function '{func.FuncName}' expects {func.Args.Count} {(func.Args.Count == 1 ? "argument" : "arguments")}, but {funcCall.Args.Count} {(funcCall.Args.Count == 1 ? "was" : "were")} provided", funcCall.Ln, funcCall.Col);
+                    else
+                    {
+                        for(int i = 0; i < funcCall.Args.Count; i++)
+                        {
+                            TypeInfo requiredType = func.Args[i].Type;
+                            TypeInfo providedType = RecognizeType(ctx, funcCall.Args[i]);
+
+                            if (!requiredType.CmpKinds(providedType))
+                            {
+                                string providedTypeName = !String.IsNullOrEmpty(providedType.OriginalTypeName) ? providedType.OriginalTypeName : providedType.Kind.ToString().ToLower();
+                                ctx.Panic($"Argument at index {i} of function '{func.FuncName}' has incorrect type. Expected: '{func.Args[i].Type.OriginalTypeName}', but got '{providedTypeName}'", funcCall.Args[i].Ln, funcCall.Args[i].Col);
+                            }
+                        }
+                    }
+                }
+
+                string retTypeName = func.ReturnType;
                 return new(retTypeName, TypeInfo.GetKindBasedOnTypeName(retTypeName, ctx));
             }
 
@@ -26,7 +64,7 @@ namespace SkullLang.Compiler.Analyzers
                 var lhsType = RecognizeType(ctx, binOp.LHS);
                 var rhsType = RecognizeType(ctx, binOp.RHS);
 
-                if (lhsType.Kind != rhsType.Kind) ctx.Panic("Cannot operate on different types!", node.Ln, node.Col);
+                if (lhsType.Kind != rhsType.Kind) ctx.Panic($"Operator '{BinaryOpToString(binOp.Op)}' cannot be applied to types '{lhsType.OriginalTypeName}' and '{rhsType.OriginalTypeName}'", node.Ln, node.Col);
                 
                 if (binOp.Op == BinaryOpType.BitwiseAnd ||
                     binOp.Op == BinaryOpType.BitwiseOr ||
@@ -35,7 +73,7 @@ namespace SkullLang.Compiler.Analyzers
                     binOp.Op == BinaryOpType.BitwiseXor)
                 {
                     if (lhsType.Kind != TypeKind.Integer || rhsType.Kind != TypeKind.Integer)
-                        ctx.Panic("Cannot do bitwise operations on not integer types", node.Ln, node.Col);
+                        ctx.Panic($"Operator '{BinaryOpToString(binOp.Op)}' requires integer operands", node.Ln, node.Col);
                 }
 
                 return lhsType;
@@ -44,7 +82,7 @@ namespace SkullLang.Compiler.Analyzers
             {
                 var hsType = RecognizeType(ctx, unOp.HS);
 
-                if(unOp.Op == UnaryOpType.BitwiseNot && hsType.Kind != TypeKind.Integer) ctx.Panic("Cannot do bitwise operations on not integer types", node.Ln, node.Col);
+                if(unOp.Op == UnaryOpType.BitwiseNot && hsType.Kind != TypeKind.Integer) ctx.Panic($"Operator '{UnaryOpToStirng(unOp.Op)}' requires integer operands", node.Ln, node.Col);
 
                 return hsType;
             }
