@@ -1,7 +1,3 @@
-func get_int() : int{
-	return 5;
-}
-
 func main(): int{
-	return 2 * get_int() * get_int();
+	return (2 + 2) * 2;
 }

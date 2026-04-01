@@ -1,17 +1,16 @@
-﻿using SkullLang.Compiler.Analyzers;
-
-namespace SkullLang.Compiler.Parsers.ASTNodes
+﻿namespace SkullLang.Compiler.Parsers.ASTNodes
 {
 
     internal enum BinaryOpType
     {
         None,
-        Add, Sub, Mul, Div, Mod
+        Add, Sub, Mul, Div, Mod,
+        BitwiseAnd, BitwiseOr, BitwiseXor, BitwiseLShift, BitwiseRShift,
     }
 
     internal enum UnaryOpType
     {
-        Neg,
+        Neg, BitwiseNot
     }
 
     internal class ASTBinaryOp : ASTNode

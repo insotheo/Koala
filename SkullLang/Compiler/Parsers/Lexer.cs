@@ -98,7 +98,21 @@ namespace SkullLang.Compiler.Parsers
                     case '-': AddToken(TokenType.Minus); Next(); continue;
                     case '*': AddToken(TokenType.Asterisk); Next(); continue;
                     case '/': AddToken(TokenType.Slash); Next(); continue;
-                    case '%': AddToken(TokenType.Persent); Next(); continue;
+                    case '%': AddToken(TokenType.Percent); Next(); continue;
+
+                    case '&': AddToken(TokenType.Ampersand); Next(); continue;
+                    case '|': AddToken(TokenType.Pipe); Next(); continue;
+                    case '^': AddToken(TokenType.Caret); Next(); continue;
+                    case '~': AddToken(TokenType.Tilde); Next(); continue;
+                    case '<':
+                        {
+                            if (Peek() == '<') AddToken(TokenType.LeftShift); Next(); Next(); continue;
+                        }
+                    case '>':
+                        {
+                            if (Peek() == '>') AddToken(TokenType.RightShift); Next(); Next(); continue;
+                        }
+
                 }
 
                 AddToken(TokenType.Unknown, _cur.ToString());

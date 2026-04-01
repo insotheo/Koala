@@ -30,6 +30,7 @@ namespace SkullLang.CodeGenerator
 
             if(expr is ASTBinaryOp binOp)
             {
+                code.Append("(");
                 EmitExpression(code, binOp.LHS);
                 code.Append(binOp.Op switch
                 {
@@ -42,16 +43,19 @@ namespace SkullLang.CodeGenerator
                     _ => " "
                 });
                 EmitExpression(code, binOp.RHS);
+                code.Append(")");
             }
 
             if(expr is ASTUnaryOp unOp)
             {
+                code.Append("(");
                 code.Append(unOp.Op switch
                 {
                     UnaryOpType.Neg => "-",
                     _ => " "
                 });
                 EmitExpression(code, unOp.HS);
+                code.Append(")");
             }
 
             if(expr is ASTFunctionCall funcCall)
