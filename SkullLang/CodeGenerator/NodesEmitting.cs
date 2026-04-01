@@ -40,6 +40,12 @@ namespace SkullLang.CodeGenerator
                     BinaryOpType.Div => "/",
                     BinaryOpType.Mod => "%",
 
+                    BinaryOpType.BitwiseAnd => "&",
+                    BinaryOpType.BitwiseOr => "|",
+                    BinaryOpType.BitwiseXor => "^",
+                    BinaryOpType.BitwiseLShift => "<<",
+                    BinaryOpType.BitwiseRShift => ">>",
+
                     _ => " "
                 });
                 EmitExpression(code, binOp.RHS);
@@ -52,6 +58,7 @@ namespace SkullLang.CodeGenerator
                 code.Append(unOp.Op switch
                 {
                     UnaryOpType.Neg => "-",
+                    UnaryOpType.BitwiseNot => "~",
                     _ => " "
                 });
                 EmitExpression(code, unOp.HS);

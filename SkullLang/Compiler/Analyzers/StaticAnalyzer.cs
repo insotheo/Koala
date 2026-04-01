@@ -27,12 +27,24 @@ namespace SkullLang.Compiler.Analyzers
                 var rhsType = RecognizeType(ctx, binOp.RHS);
 
                 if (lhsType.Kind != rhsType.Kind) ctx.Panic("Cannot operate on different types!", node.Ln, node.Col);
+                
+                if (binOp.Op == BinaryOpType.BitwiseAnd ||
+                    binOp.Op == BinaryOpType.BitwiseOr ||
+                    binOp.Op == BinaryOpType.BitwiseLShift ||
+                    binOp.Op == BinaryOpType.BitwiseRShift || 
+                    binOp.Op == BinaryOpType.BitwiseXor)
+                {
+                    if (lhsType.Kind != TypeKind.Integer || rhsType.Kind != TypeKind.Integer)
+                        ctx.Panic("Cannot do bitwise operations on not integer types", node.Ln, node.Col);
+                }
 
                 return lhsType;
             }
             if (node is ASTUnaryOp unOp)
             {
                 var hsType = RecognizeType(ctx, unOp.HS);
+
+                if(unOp.Op == UnaryOpType.BitwiseNot && hsType.Kind != TypeKind.Integer) ctx.Panic("Cannot do bitwise operations on not integer types", node.Ln, node.Col);
 
                 return hsType;
             }
