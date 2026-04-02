@@ -19,6 +19,8 @@ namespace Skull
                 Console.Error.WriteLine("No files provided!");
             }
 
+            DateTime t1 = DateTime.Now;
+
             bool isParsingSuccess = true;
             var trees = new Dictionary<string, IReadOnlyList<ASTNode>>();
 
@@ -66,8 +68,11 @@ namespace Skull
 
             CodeGen gen = new(analyzer);
             gen.Generate("bin");
+            
+            DateTime t2 = DateTime.Now;
+            TimeSpan t = (t2 - t1);
 
-            Console.WriteLine("Done!");
+            Console.WriteLine($"Done!\nCompilation completed in {t.ToString()}");
         }
     }
 }

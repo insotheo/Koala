@@ -6,12 +6,12 @@
         Identifier, NumberI, NumberF,
 
         //KW means keyword
-        ReturnKW, FuncKW,
+        ReturnKW, FuncKW, LetKW,
 
         Plus, Minus, Asterisk, Slash, Percent,
         Ampersand, Pipe, Caret, Tilde, LeftShift, RightShift,
 
-        LParen, RParen, LBrace, RBrace, Semicolon, Colon, Comma,
+        LParen, RParen, LBrace, RBrace, Semicolon, Colon, Comma, Assignment,
     }
 
     internal struct Token

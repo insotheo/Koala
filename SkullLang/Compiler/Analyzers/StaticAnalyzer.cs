@@ -1,5 +1,4 @@
 ﻿using SkullLang.Compiler.Parsers.ASTNodes;
-using System;
 using System.Collections.Generic;
 
 using static SkullLang.Compiler.Parsers.ASTNodes.OperationsToStringStaticClass;
@@ -12,7 +11,14 @@ namespace SkullLang.Compiler.Analyzers
         {
             if (node is ASTConstantInt) return new(null, TypeKind.Integer);
             if (node is ASTConstantFloat) return new(null, TypeKind.Float);
-            
+
+            if (node is ASTVariableDecl varDeclNode)
+            {
+                TypeInfo varDeclType = ctx.GetVariableType((node as ASTVariableDecl).VarName);
+                varDeclNode.VarType = varDeclType;
+                return varDeclType;
+            }
+
             if(node is ASTIdentifier identifier)
             {
                 string varName = identifier.Identifier;
@@ -48,8 +54,7 @@ namespace SkullLang.Compiler.Analyzers
 
                             if (!requiredType.CmpKinds(providedType))
                             {
-                                string providedTypeName = !String.IsNullOrEmpty(providedType.OriginalTypeName) ? providedType.OriginalTypeName : providedType.Kind.ToString().ToLower();
-                                ctx.Panic($"Argument at index {i} of function '{func.FuncName}' has incorrect type. Expected: '{func.Args[i].Type.OriginalTypeName}', but got '{providedTypeName}'", funcCall.Args[i].Ln, funcCall.Args[i].Col);
+                                ctx.Panic($"Argument at index {i} of function '{func.FuncName}' has incorrect type. Expected: '{func.Args[i].Type.ToStringOriginal()}', but got '{providedType.ToStringOriginal()}'", funcCall.Args[i].Ln, funcCall.Args[i].Col);
                             }
                         }
                     }
@@ -64,7 +69,7 @@ namespace SkullLang.Compiler.Analyzers
                 var lhsType = RecognizeType(ctx, binOp.LHS);
                 var rhsType = RecognizeType(ctx, binOp.RHS);
 
-                if (lhsType.Kind != rhsType.Kind) ctx.Panic($"Operator '{BinaryOpToString(binOp.Op)}' cannot be applied to types '{lhsType.OriginalTypeName}' and '{rhsType.OriginalTypeName}'", node.Ln, node.Col);
+                if (lhsType.Kind != rhsType.Kind) ctx.Panic($"Operator '{BinaryOpToString(binOp.Op)}' cannot be applied to types '{lhsType.ToStringOriginal()}' and '{rhsType.ToStringOriginal()}'", node.Ln, node.Col);
                 
                 if (binOp.Op == BinaryOpType.BitwiseAnd ||
                     binOp.Op == BinaryOpType.BitwiseOr ||
@@ -106,29 +111,49 @@ namespace SkullLang.Compiler.Analyzers
             return new(null, TypeKind.None);
         }
 
-        internal static void AnalyzeTree(Context ctx, string fileName, IReadOnlyList<ASTNode> tree)
+        static void AnalyzeVariableDeclaration(Context ctx, ASTVariableDecl varDeclNode)
         {
-            foreach(ASTNode node in tree)
+            ctx.DeclareVariable(varDeclNode.TypeName, varDeclNode.VarName, varDeclNode.Ln, varDeclNode.Col);
+            RecognizeType(ctx, varDeclNode);
+        }
+
+        static void AnalyzeNode(Context ctx, ASTNode node)
+        {
+            if (node is ASTReturn retNode)
             {
-                if (node is ASTFunction funcNode)
-                {
-                    ctx.SetContext(fileName, ctx.GetFunction(fileName, funcNode.FuncName));
-                    AnalyzeFunction(ctx, funcNode);
-                }
+                TypeInfo retType = RecognizeType(ctx, retNode);
+                TypeInfo expectedType = new TypeInfo(ctx.CurrentFunction.ReturnType, TypeInfo.GetKindBasedOnTypeName(ctx.CurrentFunction.ReturnType, ctx));
+                if (!retType.CmpKinds(expectedType))
+                    ctx.Panic($"Return type mismatch in function '{ctx.CurrentFunction.FuncName}': expected '{expectedType.ToStringOriginal()}', got '{retType.ToStringOriginal()}'", retNode.Ln);
+            }
+
+            else if (node is ASTVariableDecl) AnalyzeVariableDeclaration(ctx, node as ASTVariableDecl);
+
+            else if (node is ASTAssignment assignNode)
+            {
+                AnalyzeNode(ctx, assignNode.LHS);
+
+                TypeInfo alhsType = RecognizeType(ctx, assignNode.LHS);
+                TypeInfo arhsType = RecognizeType(ctx, assignNode.RHS);
+
+                if (!alhsType.CmpKinds(arhsType)) ctx.Panic($"Type mismatch in assignment: cannot assign '{arhsType.ToStringOriginal()}' to '{alhsType.ToStringOriginal()}'");
             }
         }
 
         static void AnalyzeFunction(Context ctx, ASTFunction funcNode)
         {
-            //TODO: arguments to locals(with ctx copy)
+            foreach (ASTNode node in funcNode.Body.Nodes)
+                AnalyzeNode(ctx, node);
+        }
 
-            foreach(ASTNode node in funcNode.Body.Nodes)
+        internal static void AnalyzeTree(Context ctx, string fileName, IReadOnlyList<ASTNode> tree)
+        {
+            foreach (ASTNode node in tree)
             {
-                if(node is ASTReturn retNode)
+                if (node is ASTFunction funcNode)
                 {
-                    TypeInfo retType = RecognizeType(ctx, retNode);
-                    if (!retType.CmpKinds(RecognizeType(ctx, funcNode)))
-                        ctx.Panic($"Function('{funcNode.FuncName}') return type doesn't match with it's return value", retNode.Ln);
+                    ctx.SetContext(fileName, ctx.GetFunction(fileName, funcNode.FuncName));
+                    AnalyzeFunction(ctx, funcNode);
                 }
             }
         }

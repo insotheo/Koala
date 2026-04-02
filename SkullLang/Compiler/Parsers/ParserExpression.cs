@@ -5,27 +5,29 @@ namespace SkullLang.Compiler.Parsers
 {
     internal static class ParserExpression
     {
-        const int UNARY_PRECEDENCE = 7;
+        const int UNARY_PRECEDENCE = 8;
 
-        internal static ASTNode ParseExpression(ParserContext ctx, int precedence = 0)
+        internal static ASTNode ParseExpression(ParserContext ctx, int precedence = 0, ASTNode lhs = null)
         {
             int GetOpPrecedence(TokenType type) => type switch
             {
-                TokenType.Pipe => 1,
+                TokenType.Assignment => 1,
 
-                TokenType.Caret => 2,
+                TokenType.Pipe => 2,
 
-                TokenType.Ampersand => 3,
+                TokenType.Caret => 3,
 
-                TokenType.LeftShift => 4,
-                TokenType.RightShift => 4,
+                TokenType.Ampersand => 4,
 
-                TokenType.Plus => 5,
-                TokenType.Minus => 5,
+                TokenType.LeftShift => 5,
+                TokenType.RightShift => 5,
 
-                TokenType.Asterisk => 6,
-                TokenType.Slash => 6,
-                TokenType.Percent => 6,
+                TokenType.Plus => 6,
+                TokenType.Minus => 6,
+
+                TokenType.Asterisk => 7,
+                TokenType.Slash => 7,
+                TokenType.Percent => 7,
 
                 _ => -1,
             };
@@ -45,7 +47,7 @@ namespace SkullLang.Compiler.Parsers
                 _ => BinaryOpType.None,
             };
 
-            var left = ParsePrimary(ctx);
+            var left = lhs == null ? ParsePrimary(ctx) : lhs;
 
             while (ctx.NotEOF)
             {
@@ -55,6 +57,14 @@ namespace SkullLang.Compiler.Parsers
 
                 var opToken = ctx.Current;
                 ctx.Next();
+
+                if(opToken.Type == TokenType.Assignment)
+                {
+                    var rhsAssignment = ParseExpression(ctx, precedence - 1); //right associative 
+
+                    left = new ASTAssignment(left, rhsAssignment, opToken.Ln, opToken.Col);
+                    continue;
+                }
 
                 var right = ParseExpression(ctx, currentPrecedence);
 

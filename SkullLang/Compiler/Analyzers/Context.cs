@@ -18,6 +18,19 @@ namespace SkullLang.Compiler.Analyzers
             CurrentVars = new();
         }
 
+        private Context(Context oldCtx)
+        {
+            Dictionary<string, VariableInfo> NewCurrentVars = new();
+            foreach ((string typeName, VariableInfo varInfo) in oldCtx.CurrentVars)
+                NewCurrentVars.Add(typeName, varInfo);
+
+            Functions = oldCtx.Functions;
+            Analyzer = oldCtx.Analyzer;
+            CurrentFileName = oldCtx.CurrentFileName;
+            CurrentFunction = oldCtx.CurrentFunction;
+            CurrentVars = NewCurrentVars;
+        }
+
         internal void SetContext(string fileName, FunctionInfo funcInfo)
         {
             CurrentFileName = fileName;
@@ -30,10 +43,24 @@ namespace SkullLang.Compiler.Analyzers
             }
         }
 
+        internal Context BeginScope() => new Context(this);
+        
 
         internal bool IsVariableInScope(string varName) => CurrentVars.ContainsKey(varName);
         internal VariableInfo GetVariable(string varName) => CurrentVars[varName];
         internal TypeInfo GetVariableType(string varName) => CurrentVars[varName].Type;
+        
+        internal void DeclareVariable(string typeName, string varName, ulong ln, ulong col)
+        {
+            if (IsVariableInScope(varName))
+            {
+                Panic($"Variable '{varName}' is already declared in current scope", ln, col);
+                return;
+            }
+
+            TypeInfo type = new TypeInfo(typeName, TypeInfo.GetKindBasedOnTypeName(typeName, this));
+            CurrentVars.Add(varName, new VariableInfo(varName, type));
+        }
 
 
         internal void DeclareFunction(string @namespace, FunctionInfo info)

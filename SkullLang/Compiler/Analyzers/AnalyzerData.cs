@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 namespace SkullLang.Compiler.Analyzers
 {
@@ -70,6 +71,8 @@ namespace SkullLang.Compiler.Analyzers
 
             _ => typeName
         };
+
+        internal string ToStringOriginal() => String.IsNullOrEmpty(OriginalTypeName) ? Kind.ToString().ToLower() : OriginalTypeName;
     }
 
     internal struct VariableInfo

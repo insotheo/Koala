@@ -1,11 +1,11 @@
+func square(x: int): int{
+return x * x
+}
+
 func main(): int{
-	return sumOfSquares(1, 2);
-}
 
-func sumOfSquares(a: int, b: int): int{
-	return square(a) + square(b);
-}
+let a: int = 2
+let b: int = 8
 
-func square(a: int): int{
-	return a * a;
+return square(a) + 2 * a * b + square(b)
 }

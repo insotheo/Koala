@@ -62,6 +62,12 @@ namespace SkullLang.Compiler.Parsers
 
         internal static ASTCodeBlock ParseCodeBlock(ParserContext ctx)
         {
+            void UnknownStatementPanic()
+            {
+                ctx.Panic($"Unknown statement: {ctx.GetLine(ctx.Current.Ln)}!");
+                ctx.Sync(TokenType.Semicolon, TokenType.RBrace);
+            }
+
             ulong ln = ctx.Current.Ln, col = ctx.Current.Col;
 
             //consume {
@@ -70,17 +76,46 @@ namespace SkullLang.Compiler.Parsers
             List<ASTNode> nodes = new();
             while(ctx.NotEOF && ctx.Current.Type != TokenType.RBrace)
             {
-                if(ctx.Current.Type == TokenType.ReturnKW) nodes.Add(ParseReturn(ctx));
-                else
+                if (ctx.Current.Type == TokenType.ReturnKW) nodes.Add(ParseReturn(ctx));
+                else if (ctx.Current.Type == TokenType.LetKW) nodes.Add(ParseVarDecl(ctx));
+                else if (ctx.Current.Type == TokenType.Identifier)
                 {
-                    ctx.Panic($"Unknown statement: {ctx.GetLine(ctx.Current.Ln)}!");
-                    ctx.Sync(TokenType.Semicolon, TokenType.RBrace);
+                    var expr = ParseExpression(ctx);
+                    if (expr != null) nodes.Add(expr);
+                    else UnknownStatementPanic();
                 }
+                else UnknownStatementPanic();
             }
 
             if(ctx.Current.Type == TokenType.RBrace) ctx.Next();
 
             return new ASTCodeBlock(nodes, ln, col);
+        }
+
+        internal static ASTNode ParseVarDecl(ParserContext ctx)
+        {
+            ulong ln = ctx.Current.Ln, col = ctx.Current.Col;
+
+            ctx.Next(); //consume let keyword
+
+            if (!ctx.Expect(TokenType.Identifier)) ctx.Sync(TokenType.Semicolon);
+            string varName = ctx.Current.Value;
+            ctx.Next();
+
+            if (!ctx.Expect(TokenType.Colon)) ctx.Sync(TokenType.Semicolon);
+            ctx.Next();
+
+            if (!ctx.Expect(TokenType.Identifier)) ctx.Sync(TokenType.Semicolon);
+            string typeName = ctx.Current.Value;
+            ctx.Next();
+
+            ASTNode varDecl = new ASTVariableDecl(typeName, varName, ln, col);
+
+            if(ctx.Current.Type == TokenType.Assignment) varDecl = ParseExpression(ctx, lhs: varDecl);
+
+            ctx.SkipIfSemicolon();
+
+            return varDecl;
         }
 
         internal static ASTReturn ParseReturn(ParserContext ctx)

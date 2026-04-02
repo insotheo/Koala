@@ -77,6 +77,7 @@ namespace SkullLang.Compiler.Parsers
                     {
                         case "func": AddToken(TokenType.FuncKW, col:startCol); break;
                         case "return": AddToken(TokenType.ReturnKW, col:startCol); break;
+                        case "let": AddToken(TokenType.LetKW, col:startCol); break;
                         
                         default: AddToken(TokenType.Identifier, id, startCol); break;
                     }
@@ -90,6 +91,14 @@ namespace SkullLang.Compiler.Parsers
                     case ':': AddToken(TokenType.Colon); Next(); continue;
 
                     case ',': AddToken(TokenType.Comma); Next(); continue;
+
+                    case '=':
+                        {
+                            if (Peek(1) == '=') { AddToken(TokenType.Unknown); Next(); }
+                            else AddToken(TokenType.Assignment);
+                            
+                            Next(); continue;
+                        }
 
                     case '(': AddToken(TokenType.LParen); Next(); continue;
                     case ')': AddToken(TokenType.RParen); Next(); continue;
@@ -108,11 +117,17 @@ namespace SkullLang.Compiler.Parsers
                     case '~': AddToken(TokenType.Tilde); Next(); continue;
                     case '<':
                         {
-                            if (Peek() == '<') AddToken(TokenType.LeftShift); Next(); Next(); continue;
+                            if (Peek() == '<') { AddToken(TokenType.LeftShift); Next(); }
+                            else AddToken(TokenType.Unknown); //<
+
+                            Next(); continue;
                         }
                     case '>':
                         {
-                            if (Peek() == '>') AddToken(TokenType.RightShift); Next(); Next(); continue;
+                            if (Peek() == '>') { AddToken(TokenType.RightShift); Next(); }
+                            else AddToken(TokenType.Unknown); //>
+
+                            Next(); continue;
                         }
 
                 }

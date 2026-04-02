@@ -11,21 +11,26 @@ namespace SkullLang.CodeGenerator
         {
             foreach(ASTNode node in codeBlock.Nodes)
             {
-                if(node is ASTReturn retNode)
+                if (node is ASTReturn retNode)
                 {
                     code.Append("return ");
                     EmitExpression(code, retNode.Ret);
                     code.Append(";\n");
                 }
-                else if(node is ASTFunctionCall funcCall)
+                else if (node is ASTFunctionCall funcCall)
                 {
                     EmitExpression(code, funcCall);
+                    code.Append(";\n");
+                }
+                else
+                {
+                    EmitExpression(code, node, insertParens: false);
                     code.Append(";\n");
                 }
             }
         }
 
-        static void EmitExpression(StringBuilder code, ASTNode expr)
+        static void EmitExpression(StringBuilder code, ASTNode expr, bool insertParens = true)
         {
             if (expr is ASTConstantInt cInt) code.Append(cInt.Value);
             if (expr is ASTConstantFloat cFloat) code.Append(cFloat.Value);
@@ -33,19 +38,19 @@ namespace SkullLang.CodeGenerator
 
             if(expr is ASTBinaryOp binOp)
             {
-                code.Append("(");
+                if(insertParens) code.Append("(");
                 EmitExpression(code, binOp.LHS);
                 code.Append(BinaryOpToString(binOp.Op));
                 EmitExpression(code, binOp.RHS);
-                code.Append(")");
+                if (insertParens) code.Append(")");
             }
 
             if(expr is ASTUnaryOp unOp)
             {
-                code.Append("(");
+                if (insertParens) code.Append("(");
                 code.Append(UnaryOpToStirng(unOp.Op));
                 EmitExpression(code, unOp.HS);
-                code.Append(")");
+                if (insertParens) code.Append(")");
             }
 
             if(expr is ASTFunctionCall funcCall)
@@ -59,6 +64,18 @@ namespace SkullLang.CodeGenerator
                 }
 
                 code.Append(")");
+            }
+
+            if(expr is ASTVariableDecl varDecl)
+            {
+                code.Append($"{varDecl.VarType.TypeName} {varDecl.VarName}");
+            }
+
+            if(expr is ASTAssignment assignNode)
+            {
+                EmitExpression(code, assignNode.LHS, insertParens: false);
+                code.Append("=");
+                EmitExpression(code, assignNode.RHS);
             }
         }
     }
