@@ -115,6 +115,20 @@ namespace SkullLang.Compiler.Parsers
                 return new ASTUnaryOp(expr, UnaryOpType.Neg, ln, col);
             }
 
+            if(ctx.Current.Type == TokenType.Ampersand)
+            {
+                ctx.Next();
+                var expr = ParseExpression(ctx, UNARY_PRECEDENCE);
+                return new ASTUnaryOp(expr, UnaryOpType.Reference, ln, col);
+            }
+
+            if (ctx.Current.Type == TokenType.Asterisk)
+            {
+                ctx.Next();
+                var expr = ParseExpression(ctx, UNARY_PRECEDENCE);
+                return new ASTUnaryOp(expr, UnaryOpType.DeferencingPtr, ln, col);
+            }
+
             if (ctx.Current.Type == TokenType.LParen)
             {
                 //consume (
@@ -153,6 +167,30 @@ namespace SkullLang.Compiler.Parsers
             ctx.Next(); //consume )
 
             return new ASTFunctionCall(fname, args, ln, col);
+        }
+
+        internal static string ParseType(ParserContext ctx)
+        {
+            if(!ctx.Expect(TokenType.Identifier))
+            {
+                ctx.Sync(TokenType.Semicolon, TokenType.RParen, TokenType.LBrace);
+                return null;
+            }
+
+            string typeName = ctx.Current.Value;
+            ctx.Next();
+
+            while (ctx.NotEOF &&
+                (ctx.Current.Type == TokenType.Asterisk ||
+                ctx.Current.Type == TokenType.Ampersand
+                ))
+            {
+                if (ctx.Current.Type == TokenType.Asterisk) typeName += "*";
+
+                ctx.Next();
+            }
+
+            return typeName;
         }
     }
 }

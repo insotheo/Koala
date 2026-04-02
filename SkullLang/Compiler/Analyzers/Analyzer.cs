@@ -37,12 +37,12 @@ namespace SkullLang.Compiler.Analyzers
                             VariableInfo argInfo = new();
 
                             argInfo.Name = argName;
-                            argInfo.Type = new TypeInfo(typeName, TypeInfo.GetKindBasedOnTypeName(typeName, ctx));
+                            argInfo.Type = new TypeInfo(typeName, TypeInfo.GetKind(typeName, ctx));
 
                             args.Add(argInfo);
                         }
 
-                        ctx.DeclareFunction(fileName, new FunctionInfo(funcNode.FuncName, TypeInfo.GetBaseCTypeName(funcNode.RetType), args));
+                        ctx.DeclareFunction(fileName, new FunctionInfo(funcNode.FuncName, TypeInfo.GetCTypeName(funcNode.RetType), args));
                     }
                 }
             }

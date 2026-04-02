@@ -58,7 +58,7 @@ namespace SkullLang.Compiler.Analyzers
                 return;
             }
 
-            TypeInfo type = new TypeInfo(typeName, TypeInfo.GetKindBasedOnTypeName(typeName, this));
+            TypeInfo type = new TypeInfo(typeName, TypeInfo.GetKind(typeName, this));
             CurrentVars.Add(varName, new VariableInfo(varName, type));
         }
 

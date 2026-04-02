@@ -9,8 +9,8 @@ namespace SkullLang.Compiler.Analyzers
     {
         static TypeInfo RecognizeType(Context ctx, ASTNode node)
         {
-            if (node is ASTConstantInt) return new(null, TypeKind.Integer);
-            if (node is ASTConstantFloat) return new(null, TypeKind.Float);
+            if (node is ASTConstantInt) return new(null, TypeKind.Integer, isLiteral: true);
+            if (node is ASTConstantFloat) return new(null, TypeKind.Float, isLiteral: true);
 
             if (node is ASTVariableDecl varDeclNode)
             {
@@ -61,7 +61,7 @@ namespace SkullLang.Compiler.Analyzers
                 }
 
                 string retTypeName = func.ReturnType;
-                return new(retTypeName, TypeInfo.GetKindBasedOnTypeName(retTypeName, ctx));
+                return new(retTypeName, TypeInfo.GetKind(retTypeName, ctx));
             }
 
             if (node is ASTBinaryOp binOp)
@@ -89,6 +89,24 @@ namespace SkullLang.Compiler.Analyzers
 
                 if(unOp.Op == UnaryOpType.BitwiseNot && hsType.Kind != TypeKind.Integer) ctx.Panic($"Operator '{UnaryOpToStirng(unOp.Op)}' requires integer operands", node.Ln, node.Col);
 
+                if (unOp.Op == UnaryOpType.DeferencingPtr)
+                {
+                    if (hsType.Kind != TypeKind.Pointer) ctx.Panic($"Operator '{UnaryOpToStirng(unOp.Op)}' requires pointer operand", node.Ln, node.Col);
+                    else
+                    {
+                        string deferencedTypeName = hsType.TypeName.Substring(0, hsType.TypeName.Length - 1);
+                        return new(deferencedTypeName, TypeInfo.GetKind(deferencedTypeName), isLiteral: true);
+                    }
+                }
+
+                if (unOp.Op == UnaryOpType.Reference)
+                {
+                    if(hsType.IsLiteral) ctx.Panic("Cannot take reference of literal", node.Ln, node.Col);
+                    if(unOp.HS is ASTFunctionCall && hsType.Kind != TypeKind.Pointer) ctx.Panic("Cannot take reference of a function return value", node.Ln, node.Col);
+
+                    hsType.Kind = TypeKind.Pointer;
+                    return hsType;
+                }
                 return hsType;
             }
 
@@ -99,7 +117,7 @@ namespace SkullLang.Compiler.Analyzers
 
                 TypeInfo funcType = new();
                 funcType.TypeName = funcNode.RetType;
-                funcType.Kind = TypeInfo.GetKindBasedOnTypeName(funcType.TypeName, ctx);
+                funcType.Kind = TypeInfo.GetKind(funcType.TypeName, ctx);
 
                 funcNode.FuncType = funcType;
 
@@ -122,7 +140,7 @@ namespace SkullLang.Compiler.Analyzers
             if (node is ASTReturn retNode)
             {
                 TypeInfo retType = RecognizeType(ctx, retNode);
-                TypeInfo expectedType = new TypeInfo(ctx.CurrentFunction.ReturnType, TypeInfo.GetKindBasedOnTypeName(ctx.CurrentFunction.ReturnType, ctx));
+                TypeInfo expectedType = new TypeInfo(ctx.CurrentFunction.ReturnType, TypeInfo.GetKind(ctx.CurrentFunction.ReturnType, ctx));
                 if (!retType.CmpKinds(expectedType))
                     ctx.Panic($"Return type mismatch in function '{ctx.CurrentFunction.FuncName}': expected '{expectedType.ToStringOriginal()}', got '{retType.ToStringOriginal()}'", retNode.Ln);
             }
@@ -136,8 +154,10 @@ namespace SkullLang.Compiler.Analyzers
                 TypeInfo alhsType = RecognizeType(ctx, assignNode.LHS);
                 TypeInfo arhsType = RecognizeType(ctx, assignNode.RHS);
 
-                if (!alhsType.CmpKinds(arhsType)) ctx.Panic($"Type mismatch in assignment: cannot assign '{arhsType.ToStringOriginal()}' to '{alhsType.ToStringOriginal()}'");
+                if (!alhsType.CmpKinds(arhsType)) ctx.Panic($"Type mismatch in assignment: cannot assign '{arhsType.ToStringOriginal()}' to '{alhsType.ToStringOriginal()}'", node.Ln, node.Col);
             }
+
+            else RecognizeType(ctx, node);
         }
 
         static void AnalyzeFunction(Context ctx, ASTFunction funcNode)

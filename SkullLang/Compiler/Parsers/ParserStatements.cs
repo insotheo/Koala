@@ -31,9 +31,7 @@ namespace SkullLang.Compiler.Parsers
                 if (!ctx.Expect(TokenType.Colon)) { ctx.Sync(TokenType.RParen); }
                 ctx.Next();
 
-                if (!ctx.Expect(TokenType.Identifier)) { ctx.Sync(TokenType.RParen); }
-                string typeName = ctx.Current.Value;
-                ctx.Next();
+                string typeName = ParseType(ctx);
 
                 args.Add((typeName, argName));
 
@@ -47,11 +45,7 @@ namespace SkullLang.Compiler.Parsers
             if(ctx.Current.Type == TokenType.Colon)
             {
                 ctx.Next(); //consume colon
-
-                if(!ctx.Expect(TokenType.Identifier)) { ctx.Sync(TokenType.LBrace, TokenType.Semicolon); return; }
-                returnType = ctx.Current.Value; //TODO: ADD NORMAL TYPE PARSER
-                
-                ctx.Next();
+                returnType = ParseType(ctx);
             }
 
             if(!ctx.Expect(TokenType.LBrace)) { ctx.Sync(TokenType.RBrace, TokenType.Semicolon); return; }
@@ -78,7 +72,8 @@ namespace SkullLang.Compiler.Parsers
             {
                 if (ctx.Current.Type == TokenType.ReturnKW) nodes.Add(ParseReturn(ctx));
                 else if (ctx.Current.Type == TokenType.LetKW) nodes.Add(ParseVarDecl(ctx));
-                else if (ctx.Current.Type == TokenType.Identifier)
+                else if (ctx.Current.Type == TokenType.Identifier ||
+                    (ctx.Current.Type == TokenType.Asterisk && ctx.Peek().Type == TokenType.Identifier))
                 {
                     var expr = ParseExpression(ctx);
                     if (expr != null) nodes.Add(expr);
@@ -105,9 +100,7 @@ namespace SkullLang.Compiler.Parsers
             if (!ctx.Expect(TokenType.Colon)) ctx.Sync(TokenType.Semicolon);
             ctx.Next();
 
-            if (!ctx.Expect(TokenType.Identifier)) ctx.Sync(TokenType.Semicolon);
-            string typeName = ctx.Current.Value;
-            ctx.Next();
+            string typeName = ParseType(ctx);
 
             ASTNode varDecl = new ASTVariableDecl(typeName, varName, ln, col);
 

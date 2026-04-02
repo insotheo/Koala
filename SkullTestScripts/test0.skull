@@ -1,18 +1,9 @@
-func square(x: int): int{
-return x * x//This is one-line comment
+func inc(a: int*){
+*a = *a + 1
 }
 
-/*
-This
-is
-multi
-line
-comment
-:)
-*/func main(): int{
-
-let a: int = 2
-let b: int = 8
-
-return square(a) + 2 * a * b + square(b)
+func main(): int{
+let x: int = 5
+inc(&x)
+return x
 }

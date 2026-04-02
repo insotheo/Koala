@@ -6,20 +6,23 @@ namespace SkullLang.Compiler.Analyzers
     internal enum TypeKind
     {
         None, 
-        Integer, Float
+        Integer, Float,
+        Pointer
     }
 
     internal struct TypeInfo
     {
         internal string OriginalTypeName;
         internal string TypeName;
+        internal bool IsLiteral;
         internal TypeKind Kind;
 
-        internal TypeInfo(string typeName, TypeKind kind)
+        internal TypeInfo(string typeName, TypeKind kind, bool isLiteral = false)
         {
             OriginalTypeName = typeName;
-            TypeName = GetBaseCTypeName(typeName);
+            TypeName = GetCTypeName(typeName);
             Kind = kind;
+            IsLiteral = isLiteral;
         }
 
         internal bool CmpKinds(TypeInfo other) => Kind == other.Kind;
@@ -30,7 +33,13 @@ namespace SkullLang.Compiler.Analyzers
             return TypeName == other.TypeName && kinds;
         }
 
-        internal static TypeKind GetKindBasedOnTypeName(string typeName, Context ctx = null) => typeName switch
+        internal static TypeKind GetKind(string typeName, Context ctx = null)
+        {
+            if (typeName.EndsWith("*")) return TypeKind.Pointer;
+            return GetKindBasedOnTypeName(typeName, ctx);
+        }
+
+        internal static TypeKind GetKindBasedOnTypeName(string typeName, Context ctc = null) => typeName switch
         {
             "byte" => TypeKind.Integer,
             "ubyte" => TypeKind.Integer,
@@ -51,26 +60,45 @@ namespace SkullLang.Compiler.Analyzers
             _ => TypeKind.None
         };
 
-        internal static string GetBaseCTypeName(string typeName) => typeName switch
+
+        internal static string GetBaseTypeName(string typeName)
         {
-            "byte" => "char",
-            "ubyte" => "unsigned char",
-            "short" => "short int",
-            "ushort" => "unsigned short int",
-            "int" => "int",
-            "uint" => "unsigned int",
-            "long" => "long int",
-            "ulong" => "unsigned long int",
+            string baseName = typeName?.TrimEnd('*');
+            return baseName;
+        }
 
-            "float" => "float",
-            "double" => "double",
 
-            "bool" => "bool",
+        internal static string GetCTypeName(string typeName)
+        {
+            if (typeName == null) return null;
 
-            "void" => "void",
+            string baseType = GetBaseTypeName(typeName);
 
-            _ => typeName
-        };
+            string cBase = baseType switch
+            {
+                "byte" => "char",
+                "ubyte" => "unsigned char",
+                "short" => "short int",
+                "ushort" => "unsigned short int",
+                "int" => "int",
+                "uint" => "unsigned int",
+                "long" => "long int",
+                "ulong" => "unsigned long int",
+
+                "float" => "float",
+                "double" => "double",
+
+                "bool" => "bool",
+
+                "void" => "void",
+
+                _ => baseType
+            };
+
+            string suffix = typeName.Substring(baseType.Length);
+
+            return cBase + suffix;
+        }
 
         internal string ToStringOriginal() => String.IsNullOrEmpty(OriginalTypeName) ? Kind.ToString().ToLower() : OriginalTypeName;
     }
