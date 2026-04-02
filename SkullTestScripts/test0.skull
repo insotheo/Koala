@@ -1,8 +1,15 @@
 func square(x: int): int{
-return x * x
+return x * x//This is one-line comment
 }
 
-func main(): int{
+/*
+This
+is
+multi
+line
+comment
+:)
+*/func main(): int{
 
 let a: int = 2
 let b: int = 8

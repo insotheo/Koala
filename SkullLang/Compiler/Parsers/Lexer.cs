@@ -108,7 +108,30 @@ namespace SkullLang.Compiler.Parsers
                     case '+': AddToken(TokenType.Plus); Next(); continue;
                     case '-': AddToken(TokenType.Minus); Next(); continue;
                     case '*': AddToken(TokenType.Asterisk); Next(); continue;
-                    case '/': AddToken(TokenType.Slash); Next(); continue;
+                    case '/':
+                        {
+                            if (Peek() == '/') //comment
+                            {
+                                while (_cur != '\n') Next();
+                                Next();
+                            }
+                            else if(Peek() == '*') //multi-line comment
+                            {
+                                while (true)
+                                {
+                                    Next();
+                                    if (_cur == '*' && Peek() == '/') break;
+                                }
+                                Next(); //consume *
+                                Next(); //consume /
+                            }
+                            else
+                            {
+                                AddToken(TokenType.Slash);
+                                Next();
+                            }
+                            continue;
+                        }
                     case '%': AddToken(TokenType.Percent); Next(); continue;
 
                     case '&': AddToken(TokenType.Ampersand); Next(); continue;
