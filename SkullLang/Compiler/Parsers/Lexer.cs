@@ -81,6 +81,8 @@ namespace SkullLang.Compiler.Parsers
                         case "func": AddToken(TokenType.FuncKW, col:startCol); break;
                         case "return": AddToken(TokenType.ReturnKW, col:startCol); break;
                         case "let": AddToken(TokenType.LetKW, col:startCol); break;
+                        case "if": AddToken(TokenType.IfKW, col:startCol); break;
+                        case "else": AddToken(TokenType.ElseKW, col:startCol); break;
                          
                         default: AddToken(TokenType.Identifier, id, startCol); break;
                     }

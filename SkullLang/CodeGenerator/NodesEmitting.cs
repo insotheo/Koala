@@ -22,6 +22,30 @@ namespace SkullLang.CodeGenerator
                     EmitExpression(code, funcCall);
                     code.Append(";\n");
                 }
+                else if(node is ASTBranch branch)
+                {
+                    code.Append("if(");
+                    EmitExpression(code, branch.If.Cond);
+                    code.Append("){\n");
+                    EmitCodeBlock(code, branch.If.Body);
+                    code.Append("}\n");
+
+                    foreach(ASTIf elseIf in branch.ElseIfs)
+                    {
+                        code.Append("else if(");
+                        EmitExpression(code, elseIf.Cond);
+                        code.Append("){\n");
+                        EmitCodeBlock(code, elseIf.Body);
+                        code.Append("}\n");
+                    }
+
+                    if(branch.Else != null)
+                    {
+                        code.Append("else{\n");
+                        EmitCodeBlock(code, branch.Else);
+                        code.Append("}\n");
+                    }
+                }
                 else
                 {
                     EmitExpression(code, node, insertParens: false);

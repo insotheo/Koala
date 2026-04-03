@@ -72,6 +72,7 @@ namespace SkullLang.Compiler.Parsers
             {
                 if (ctx.Current.Type == TokenType.ReturnKW) nodes.Add(ParseReturn(ctx));
                 else if (ctx.Current.Type == TokenType.LetKW) nodes.Add(ParseVarDecl(ctx));
+                else if (ctx.Current.Type == TokenType.IfKW) nodes.Add(ParseBranch(ctx));
                 else if (ctx.Current.Type == TokenType.Identifier ||
                     (ctx.Current.Type == TokenType.Asterisk && ctx.Peek().Type == TokenType.Identifier))
                 {
@@ -109,6 +110,50 @@ namespace SkullLang.Compiler.Parsers
             ctx.SkipIfSemicolon();
 
             return varDecl;
+        }
+
+        internal static ASTBranch ParseBranch(ParserContext ctx)
+        {
+            ulong ln = ctx.Current.Ln, col = ctx.Current.Col;
+
+            //consume if keyword
+            ctx.Next();
+
+            var ifCond = ParseExpression(ctx);
+
+            if(!ctx.Expect(TokenType.LBrace)) { ctx.Sync(TokenType.RBrace); return null; }
+
+            var ifBody = ParseCodeBlock(ctx);
+
+            List<ASTIf> elseIfs = new();
+            ASTCodeBlock elseBlock = null;
+
+            while(ctx.NotEOF && ctx.Current.Type == TokenType.ElseKW)
+            {
+                ctx.Next();
+                if(ctx.Current.Type == TokenType.IfKW)
+                {
+                    ulong elseIfLn = ctx.Current.Ln, elseIfCol = ctx.Current.Col;
+
+                    //consume if keyword
+                    ctx.Next();
+
+                    var elseIfCond = ParseExpression(ctx);
+
+                    if (!ctx.Expect(TokenType.LBrace)) { ctx.Sync(TokenType.RBrace); return null; }
+
+                    var elseIfBody = ParseCodeBlock(ctx);
+
+                    elseIfs.Add(new ASTIf(elseIfCond, elseIfBody, elseIfLn, elseIfCol));
+                }
+                else if(ctx.Current.Type == TokenType.LBrace)
+                {
+                    elseBlock = ParseCodeBlock(ctx);
+                    break;
+                }
+            }
+
+            return new ASTBranch(new ASTIf(ifCond, ifBody, ln, col), elseIfs, elseBlock, ln, col);
         }
 
         internal static ASTReturn ParseReturn(ParserContext ctx)

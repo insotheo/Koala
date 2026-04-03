@@ -34,7 +34,8 @@ namespace SkullLang.Compiler.Analyzers
 
                 if(varTypeInfo.Kind == TypeKind.Reference)
                 {
-                    var lowerNode = new ASTUnaryOp(identifier, UnaryOpType.DeferencingPtr, node.Ln, node.Col);
+                    ASTNode lowerNode = identifier.WasDefered ? identifier : new ASTUnaryOp(identifier, UnaryOpType.DeferencingPtr, node.Ln, node.Col);
+                    identifier.WasDefered = true;
 
                     string deferencedTypeName = varTypeInfo.TypeName.Substring(0, varTypeInfo.TypeName.Length - 1);
                     return (lowerNode, new TypeInfo(deferencedTypeName, TypeInfo.GetKind(deferencedTypeName, ctx), refInPast: true));
@@ -204,23 +205,46 @@ namespace SkullLang.Compiler.Analyzers
                 return assignNode;
             }
 
+            else if(node is ASTBranch branchNode)
+            {
+                (var ifCondNode, var ifCondType) = RecognizeType(ctx, branchNode.If.Cond);
+                branchNode.If.Cond = ifCondNode;
+
+                if (ifCondType.Kind != TypeKind.Integer) ctx.Panic($"Type mismatch in condition: expected int, but got {ifCondType.ToStringOriginal()}", ifCondNode.Ln, ifCondNode.Col);
+                AnalyzeCodeBlock(ctx, branchNode.If.Body);
+                
+                foreach(ASTIf elseIf in branchNode.ElseIfs)
+                {
+                    (var elseIfCondNode, var elseIfCondType) = RecognizeType(ctx, elseIf.Cond);
+                    elseIf.Cond = elseIfCondNode;
+
+                    if (elseIfCondType.Kind != TypeKind.Integer) ctx.Panic($"Type mismatch in condition: expected int, but got {ifCondType.ToStringOriginal()}", elseIfCondNode.Ln, elseIfCondNode.Col);
+                    AnalyzeCodeBlock(ctx, elseIf.Body);
+                }
+
+                if (branchNode.Else != null) AnalyzeCodeBlock(ctx, branchNode.Else);
+
+                return branchNode;
+            }
+
             return newNode;
         }
-
-        static void AnalyzeFunction(Context ctx, ASTFunction funcNode)
+        
+        static void AnalyzeCodeBlock(Context ctx, ASTCodeBlock codeBlock)
         {
-            for (int i = 0; i < funcNode.Body.Nodes.Count; i++)
-                funcNode.Body.Nodes[i] = AnalyzeNode(ctx, funcNode.Body.Nodes[i]);
+            Context curBlockContext = ctx.BeginScope();
+            for (int i = 0; i < codeBlock.Nodes.Count; i++)
+                codeBlock.Nodes[i] = AnalyzeNode(curBlockContext, codeBlock.Nodes[i]);
         }
 
-        internal static void AnalyzeTree(Context ctx, string fileName, IReadOnlyList<ASTNode> tree)
+        internal static void AnalyzeTree(Context ctx, string fileName, List<ASTNode> tree)
         {
             foreach (ASTNode node in tree)
             {
                 if (node is ASTFunction funcNode)
                 {
                     ctx.SetContext(fileName, ctx.GetFunction(fileName, funcNode.FuncName));
-                    AnalyzeFunction(ctx, funcNode);
+                    AnalyzeCodeBlock(ctx, funcNode.Body);
                 }
             }
         }

@@ -18,6 +18,8 @@ namespace SkullLang.Compiler.Parsers.ASTNodes
     {
         internal string Identifier { get; private set; }
 
+        internal bool WasDefered { get; set; } = false;
+
         internal ASTIdentifier(string identifier, ulong ln, ulong col) : base(ln, col) => Identifier = identifier;
     }
 }

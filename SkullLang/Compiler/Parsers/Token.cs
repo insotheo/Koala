@@ -6,7 +6,7 @@
         Identifier, NumberI, NumberF,
 
         //KW means keyword
-        ReturnKW, FuncKW, LetKW,
+        ReturnKW, FuncKW, LetKW, IfKW, ElseKW,
 
         Plus, Minus, Asterisk, Slash, Percent,
         GreaterThan, GreaterOrEqual, LessThan, LessOrEqual, Equal, Inequal, Not, LogicalOr, LogicalAnd,

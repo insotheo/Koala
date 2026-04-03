@@ -49,6 +49,7 @@ namespace SkullLang.Compiler.Parsers
                 TokenType.Minus => BinaryOpType.Sub,
                 TokenType.Asterisk => BinaryOpType.Mul,
                 TokenType.Slash => BinaryOpType.Div,
+                TokenType.Percent => BinaryOpType.Mod,
                 TokenType.Ampersand => BinaryOpType.BitwiseAnd,
                 TokenType.Pipe => BinaryOpType.BitwiseOr,
                 TokenType.Caret => BinaryOpType.BitwiseXor,

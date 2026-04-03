@@ -1,9 +1,22 @@
-func F(x: bool, y: bool, out: bool&){
-out = x && y
+func f(x: int&, out: int&){
+	if x < 0{
+		x = -x
+	}
+
+	if x % 2 == 0{
+		out = x / 2
+	}
+	else if x % 3 == 0{
+		out = x / 3
+	}
+	else{
+		out = x % 10
+	}
 }
 
 func main(): bool{
-let f: bool
-F(true, true, &f)
-return f
+	let x: int = 99
+	let out: int
+	f(&x, &out)
+	return out
 }
