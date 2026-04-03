@@ -6,11 +6,14 @@
         None,
         Add, Sub, Mul, Div, Mod,
         BitwiseAnd, BitwiseOr, BitwiseXor, BitwiseLShift, BitwiseRShift,
+        GreaterThan, GreaterOrEqual, LessThan, LessOrEqual, Equal, Inequal,
+        LogicalOr, LogicalAnd,
     }
 
     internal enum UnaryOpType
     {
-        Neg, BitwiseNot, Reference, DeferencingPtr,
+        None,
+        Neg, BitwiseNot, Reference, DeferencingPtr, Not,
     }
 
     
@@ -30,6 +33,16 @@
             BinaryOpType.BitwiseLShift => "<<",
             BinaryOpType.BitwiseRShift => ">>",
 
+            BinaryOpType.GreaterThan => ">",
+            BinaryOpType.GreaterOrEqual => ">=",
+            BinaryOpType.LessThan => "<",
+            BinaryOpType.LessOrEqual => "<=",
+            BinaryOpType.Equal => "==",
+            BinaryOpType.Inequal => "!=",
+
+            BinaryOpType.LogicalOr => "||",
+            BinaryOpType.LogicalAnd => "&&",
+
             _ => " "
         };
 
@@ -37,6 +50,7 @@
         {
             UnaryOpType.Neg => "-",
             UnaryOpType.BitwiseNot => "~",
+            UnaryOpType.Not => "!",
             UnaryOpType.Reference => "&",
             UnaryOpType.DeferencingPtr => "*",
 

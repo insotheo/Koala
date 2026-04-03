@@ -1,9 +1,9 @@
-func inc(a: int&){
-a = a + 1
+func F(x: bool, y: bool, out: bool&){
+out = x && y
 }
 
-func main(): int{
-let x: int = 5
-inc(&x)
-return x
+func main(): bool{
+let f: bool
+F(true, true, &f)
+return f
 }

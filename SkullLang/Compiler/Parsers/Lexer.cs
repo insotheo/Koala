@@ -75,10 +75,13 @@ namespace SkullLang.Compiler.Parsers
 
                     switch (id)
                     {
+                        case "true": AddToken(TokenType.NumberI, "1", col:startCol); break;
+                        case "false": AddToken(TokenType.NumberI, "0", col:startCol); break;
+
                         case "func": AddToken(TokenType.FuncKW, col:startCol); break;
                         case "return": AddToken(TokenType.ReturnKW, col:startCol); break;
                         case "let": AddToken(TokenType.LetKW, col:startCol); break;
-                        
+                         
                         default: AddToken(TokenType.Identifier, id, startCol); break;
                     }
 
@@ -92,9 +95,16 @@ namespace SkullLang.Compiler.Parsers
 
                     case ',': AddToken(TokenType.Comma); Next(); continue;
 
+                    case '!':
+                        {
+                            if (Peek() == '=') { AddToken(TokenType.Inequal); Next(); }
+                            else AddToken(TokenType.Not);
+
+                            Next(); continue;
+                        }
                     case '=':
                         {
-                            if (Peek(1) == '=') { AddToken(TokenType.Unknown); Next(); }
+                            if (Peek() == '=') { AddToken(TokenType.Equal); Next(); }
                             else AddToken(TokenType.Assignment);
                             
                             Next(); continue;
@@ -134,21 +144,35 @@ namespace SkullLang.Compiler.Parsers
                         }
                     case '%': AddToken(TokenType.Percent); Next(); continue;
 
-                    case '&': AddToken(TokenType.Ampersand); Next(); continue;
-                    case '|': AddToken(TokenType.Pipe); Next(); continue;
+                    case '&':
+                        {
+                            if(Peek() == '&') { AddToken(TokenType.LogicalAnd); Next(); }
+                            else AddToken(TokenType.Ampersand); 
+                            
+                            Next(); continue;
+                        }
+                    case '|':
+                        {
+                            if(Peek() == '|') { AddToken(TokenType.LogicalOr); Next(); }
+                            else AddToken(TokenType.Pipe);
+                            
+                            Next(); continue;
+                        }
                     case '^': AddToken(TokenType.Caret); Next(); continue;
                     case '~': AddToken(TokenType.Tilde); Next(); continue;
                     case '<':
                         {
                             if (Peek() == '<') { AddToken(TokenType.LeftShift); Next(); }
-                            else AddToken(TokenType.Unknown); //<
+                            if (Peek() == '=') { AddToken(TokenType.LessOrEqual); Next(); }
+                            else AddToken(TokenType.LessThan); //<
 
                             Next(); continue;
                         }
                     case '>':
                         {
                             if (Peek() == '>') { AddToken(TokenType.RightShift); Next(); }
-                            else AddToken(TokenType.Unknown); //>
+                            if (Peek() == '=') { AddToken(TokenType.GreaterOrEqual); Next(); }
+                            else AddToken(TokenType.GreaterThan); //>
 
                             Next(); continue;
                         }

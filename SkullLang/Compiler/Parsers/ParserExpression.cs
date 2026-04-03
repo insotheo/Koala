@@ -5,7 +5,7 @@ namespace SkullLang.Compiler.Parsers
 {
     internal static class ParserExpression
     {
-        const int UNARY_PRECEDENCE = 8;
+        const int UNARY_PRECEDENCE = 11;
 
         internal static ASTNode ParseExpression(ParserContext ctx, int precedence = 0, ASTNode lhs = null)
         {
@@ -13,21 +13,32 @@ namespace SkullLang.Compiler.Parsers
             {
                 TokenType.Assignment => 1,
 
-                TokenType.Pipe => 2,
+                TokenType.LogicalOr => 2,
 
-                TokenType.Caret => 3,
+                TokenType.LogicalAnd => 3,
 
-                TokenType.Ampersand => 4,
+                TokenType.GreaterThan => 4,
+                TokenType.GreaterOrEqual => 4,
+                TokenType.LessThan => 4,
+                TokenType.LessOrEqual => 4,
+                TokenType.Equal => 4,
+                TokenType.Inequal => 4,
 
-                TokenType.LeftShift => 5,
-                TokenType.RightShift => 5,
+                TokenType.Pipe => 5,
 
-                TokenType.Plus => 6,
-                TokenType.Minus => 6,
+                TokenType.Caret => 6,
 
-                TokenType.Asterisk => 7,
-                TokenType.Slash => 7,
-                TokenType.Percent => 7,
+                TokenType.Ampersand => 7,
+
+                TokenType.LeftShift => 8,
+                TokenType.RightShift => 8,
+
+                TokenType.Plus => 9,
+                TokenType.Minus => 9,
+
+                TokenType.Asterisk => 10,
+                TokenType.Slash => 10,
+                TokenType.Percent => 10,
 
                 _ => -1,
             };
@@ -43,6 +54,14 @@ namespace SkullLang.Compiler.Parsers
                 TokenType.Caret => BinaryOpType.BitwiseXor,
                 TokenType.LeftShift => BinaryOpType.BitwiseLShift,
                 TokenType.RightShift => BinaryOpType.BitwiseRShift,
+                TokenType.GreaterThan => BinaryOpType.GreaterThan,
+                TokenType.GreaterOrEqual => BinaryOpType.GreaterOrEqual,
+                TokenType.LessThan => BinaryOpType.LessThan,
+                TokenType.LessOrEqual => BinaryOpType.LessOrEqual,
+                TokenType.Equal => BinaryOpType.Equal,
+                TokenType.Inequal => BinaryOpType.Inequal,
+                TokenType.LogicalOr => BinaryOpType.LogicalOr,
+                TokenType.LogicalAnd => BinaryOpType.LogicalAnd,
 
                 _ => BinaryOpType.None,
             };
@@ -76,6 +95,17 @@ namespace SkullLang.Compiler.Parsers
 
         internal static ASTNode ParsePrimary(ParserContext ctx)
         {
+            UnaryOpType MapUnaryOp(TokenType type) => type switch
+            {
+                TokenType.Tilde => UnaryOpType.BitwiseNot,
+                TokenType.Minus => UnaryOpType.Neg,
+                TokenType.Ampersand => UnaryOpType.Reference,
+                TokenType.Asterisk => UnaryOpType.DeferencingPtr,
+                TokenType.Not => UnaryOpType.Not,
+
+                _ => UnaryOpType.None,
+            };
+
             ulong ln = ctx.Current.Ln, col = ctx.Current.Col;
 
             if (ctx.Current.Type == TokenType.NumberI)
@@ -101,32 +131,16 @@ namespace SkullLang.Compiler.Parsers
                 return new ASTIdentifier(identifier, ln, col);
             }
 
-            if (ctx.Current.Type == TokenType.Tilde)
+            if (ctx.Current.Type == TokenType.Tilde ||
+                ctx.Current.Type == TokenType.Minus ||
+                ctx.Current.Type == TokenType.Ampersand ||
+                ctx.Current.Type == TokenType.Asterisk ||
+                ctx.Current.Type == TokenType.Not)
             {
+                UnaryOpType op = MapUnaryOp(ctx.Current.Type);
                 ctx.Next();
                 var expr = ParseExpression(ctx, UNARY_PRECEDENCE);
-                return new ASTUnaryOp(expr, UnaryOpType.BitwiseNot, ln, col);
-            }
-
-            if(ctx.Current.Type == TokenType.Minus)
-            {
-                ctx.Next();
-                var expr = ParseExpression(ctx, UNARY_PRECEDENCE);
-                return new ASTUnaryOp(expr, UnaryOpType.Neg, ln, col);
-            }
-
-            if(ctx.Current.Type == TokenType.Ampersand)
-            {
-                ctx.Next();
-                var expr = ParseExpression(ctx, UNARY_PRECEDENCE);
-                return new ASTUnaryOp(expr, UnaryOpType.Reference, ln, col);
-            }
-
-            if (ctx.Current.Type == TokenType.Asterisk)
-            {
-                ctx.Next();
-                var expr = ParseExpression(ctx, UNARY_PRECEDENCE);
-                return new ASTUnaryOp(expr, UnaryOpType.DeferencingPtr, ln, col);
+                return new ASTUnaryOp(expr, op, ln, col);
             }
 
             if (ctx.Current.Type == TokenType.LParen)

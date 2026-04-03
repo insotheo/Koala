@@ -80,9 +80,13 @@ namespace SkullLang.Compiler.Analyzers
                 (var lhsNode,var lhsType) = RecognizeType(ctx, binOp.LHS);
                 (var rhsNode, var rhsType) = RecognizeType(ctx, binOp.RHS);
 
+                var newBinOp = new ASTBinaryOp(lhsNode, rhsNode, binOp.Op, node.Ln, node.Col);
+
                 if (lhsType.Kind != rhsType.Kind) ctx.Panic($"Operator '{BinaryOpToString(binOp.Op)}' cannot be applied to types '{lhsType.ToStringOriginal()}' and '{rhsType.ToStringOriginal()}'", node.Ln, node.Col);
                 
-                if (binOp.Op == BinaryOpType.BitwiseAnd ||
+                if (binOp.Op == BinaryOpType.LogicalOr ||
+                    binOp.Op == BinaryOpType.LogicalAnd ||
+                    binOp.Op == BinaryOpType.BitwiseAnd ||
                     binOp.Op == BinaryOpType.BitwiseOr ||
                     binOp.Op == BinaryOpType.BitwiseLShift ||
                     binOp.Op == BinaryOpType.BitwiseRShift || 
@@ -92,14 +96,27 @@ namespace SkullLang.Compiler.Analyzers
                         ctx.Panic($"Operator '{BinaryOpToString(binOp.Op)}' requires integer operands", node.Ln, node.Col);
                 }
 
-                return (new ASTBinaryOp(lhsNode, rhsNode, binOp.Op, node.Ln, node.Col), lhsType);
+                if (binOp.Op == BinaryOpType.GreaterThan ||
+                   binOp.Op == BinaryOpType.GreaterOrEqual ||
+                   binOp.Op == BinaryOpType.LessThan ||
+                   binOp.Op == BinaryOpType.LessOrEqual ||
+                   binOp.Op == BinaryOpType.Equal ||
+                   binOp.Op == BinaryOpType.Inequal ||
+                   binOp.Op == BinaryOpType.LogicalOr ||
+                   binOp.Op == BinaryOpType.LogicalAnd
+                    ) return (newBinOp, new(null, TypeKind.Integer));
+
+                return (newBinOp, lhsType);
             }
             if (node is ASTUnaryOp unOp)
             {
                 (var hsNode, var hsType) = RecognizeType(ctx, unOp.HS);
                 var unaryNode = new ASTUnaryOp(hsNode, unOp.Op, node.Ln, node.Col);
 
-                if(unOp.Op == UnaryOpType.BitwiseNot && hsType.Kind != TypeKind.Integer) ctx.Panic($"Operator '{UnaryOpToStirng(unOp.Op)}' requires integer operands", node.Ln, node.Col);
+                if((unOp.Op == UnaryOpType.BitwiseNot ||
+                    unOp.Op == UnaryOpType.Not)
+                    && hsType.Kind != TypeKind.Integer)
+                    ctx.Panic($"Operator '{UnaryOpToStirng(unOp.Op)}' requires integer operands", node.Ln, node.Col);
 
                 if (unOp.Op == UnaryOpType.DeferencingPtr)
                 {

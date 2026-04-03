@@ -91,7 +91,7 @@ namespace SkullLang.Compiler.Analyzers
                 "float" => "float",
                 "double" => "double",
 
-                "bool" => "bool",
+                "bool" => "int",
 
                 "void" => "void",
 
