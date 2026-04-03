@@ -7,11 +7,11 @@ namespace SkullLang.Compiler.Analyzers
 {
     internal sealed class AnalyzerContext
     {
-        internal IReadOnlyDictionary<string, IReadOnlyList<ASTNode>> Modules { get; private set; }
+        internal Dictionary<string, List<ASTNode>> Modules { get; private set; }
         internal bool IsAnalizingSuccess { get; private set; } = true;
 
 
-        internal AnalyzerContext(Dictionary<string, IReadOnlyList<ASTNode>> modules) => Modules = modules;
+        internal AnalyzerContext(Dictionary<string, List<ASTNode>> modules) => Modules = modules;
 
         internal void Panic(string fileName, string msg, ulong ln = 0, ulong col = 0)
         {

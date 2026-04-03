@@ -12,7 +12,7 @@ namespace SkullLang.Compiler.Analyzers
 
         internal Context Output { get; private set; }
 
-        public Analyzer(Dictionary<string, IReadOnlyList<ASTNode>> trees)
+        public Analyzer(Dictionary<string, List<ASTNode>> trees)
         {
             _ctx = new(trees);
         }

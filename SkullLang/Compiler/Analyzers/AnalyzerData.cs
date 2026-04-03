@@ -7,7 +7,7 @@ namespace SkullLang.Compiler.Analyzers
     {
         None, 
         Integer, Float,
-        Pointer
+        Pointer, Reference
     }
 
     internal struct TypeInfo
@@ -15,14 +15,16 @@ namespace SkullLang.Compiler.Analyzers
         internal string OriginalTypeName;
         internal string TypeName;
         internal bool IsLiteral;
+        internal bool IsRefInPast;
         internal TypeKind Kind;
 
-        internal TypeInfo(string typeName, TypeKind kind, bool isLiteral = false)
+        internal TypeInfo(string typeName, TypeKind kind, bool isLiteral = false, bool refInPast = false)
         {
             OriginalTypeName = typeName;
             TypeName = GetCTypeName(typeName);
             Kind = kind;
             IsLiteral = isLiteral;
+            IsRefInPast = refInPast;
         }
 
         internal bool CmpKinds(TypeInfo other) => Kind == other.Kind;
@@ -36,6 +38,7 @@ namespace SkullLang.Compiler.Analyzers
         internal static TypeKind GetKind(string typeName, Context ctx = null)
         {
             if (typeName.EndsWith("*")) return TypeKind.Pointer;
+            if (typeName.EndsWith("&")) return TypeKind.Reference;
             return GetKindBasedOnTypeName(typeName, ctx);
         }
 
@@ -63,7 +66,7 @@ namespace SkullLang.Compiler.Analyzers
 
         internal static string GetBaseTypeName(string typeName)
         {
-            string baseName = typeName?.TrimEnd('*');
+            string baseName = typeName?.TrimEnd('*', '&');
             return baseName;
         }
 
@@ -96,6 +99,7 @@ namespace SkullLang.Compiler.Analyzers
             };
 
             string suffix = typeName.Substring(baseType.Length);
+            suffix = suffix.Replace('&', '*');
 
             return cBase + suffix;
         }

@@ -1,5 +1,5 @@
-func inc(a: int*){
-*a = *a + 1
+func inc(a: int&){
+a = a + 1
 }
 
 func main(): int{

@@ -186,6 +186,7 @@ namespace SkullLang.Compiler.Parsers
                 ))
             {
                 if (ctx.Current.Type == TokenType.Asterisk) typeName += "*";
+                if (ctx.Current.Type == TokenType.Ampersand) typeName += "&";
 
                 ctx.Next();
             }

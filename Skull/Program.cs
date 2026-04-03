@@ -5,6 +5,7 @@ using SkullLang.Compiler.Analyzers;
 using SkullLang.Compiler.Parsers;
 using SkullLang.Compiler.Parsers.ASTNodes;
 using SkullLang.CodeGenerator;
+using System.Linq;
 
 namespace Skull
 {
@@ -22,7 +23,7 @@ namespace Skull
             DateTime t1 = DateTime.Now;
 
             bool isParsingSuccess = true;
-            var trees = new Dictionary<string, IReadOnlyList<ASTNode>>();
+            var trees = new Dictionary<string, List<ASTNode>>();
 
             foreach (string filePath in args)
             {
@@ -47,7 +48,7 @@ namespace Skull
                     parser.Parse();
 
                     isParsingSuccess = isParsingSuccess && parser.IsSuccess;
-                    trees.Add(path, parser.AST);
+                    trees.Add(path, parser.AST.ToList());
                 }
             }
 
