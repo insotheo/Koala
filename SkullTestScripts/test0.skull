@@ -1,15 +1,6 @@
-func Pow(a: ullong, n: uint): ullong{
-	if n == 0 { return 1 }
-	else if n == 1 { return a }
-	
-	while n > 1{
-		a = a * a
-		n = n - 1
-	}
-	
-	return a
-}
-
-func main(): ullong{
-return Pow(2, 2)
+func main(){
+	let x: int
+	printf("Hi!\nEnter x: ")
+	scanf("%i", &x)
+	printf("You entered x = %i\n", x)
 }

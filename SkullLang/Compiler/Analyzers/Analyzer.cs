@@ -21,9 +21,14 @@ namespace SkullLang.Compiler.Analyzers
         {
             //go through all declarations
             Context ctx = new Context(_ctx);
+
             foreach(string fileName in ctx.Analyzer.Modules.Keys)
             {
                 var tree = ctx.Analyzer.Modules[fileName];
+
+                //DEFAULT FUNCTIONS
+                ctx.DeclareFunction(fileName, new FunctionInfo("printf", "int", []) { IsExtern = true });
+                ctx.DeclareFunction(fileName, new FunctionInfo("scanf", "int", []) { IsExtern = true });
 
                 foreach(var node in tree)
                 {

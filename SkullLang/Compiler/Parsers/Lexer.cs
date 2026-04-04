@@ -180,6 +180,21 @@ namespace SkullLang.Compiler.Parsers
                             Next(); continue;
                         }
 
+                    case '"':
+                        {
+                            Next();
+                            StringBuilder stringLiteral = new();
+
+                            while(_isIdxValid && _cur != '"')
+                            {
+                                stringLiteral.Append(_cur);
+                                Next();
+                            }
+                            Next();
+
+                            AddToken(TokenType.StringLiteral, stringLiteral.ToString(), _col); continue;
+                        }
+
                 }
 
                 AddToken(TokenType.Unknown, _cur.ToString());

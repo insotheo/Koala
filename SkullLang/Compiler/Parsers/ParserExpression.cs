@@ -121,6 +121,12 @@ namespace SkullLang.Compiler.Parsers
                 ctx.Next();
                 return node;
             }
+            if(ctx.Current.Type == TokenType.StringLiteral)
+            {
+                var node = new ASTConstantString(ctx.Current.Value, ln, col);
+                ctx.Next();
+                return node;
+            }
 
             if (ctx.Current.Type == TokenType.Identifier)
             {

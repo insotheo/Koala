@@ -10,6 +10,7 @@ namespace SkullLang.Compiler.Analyzers
         {
             if (node is ASTConstantInt) return (node, new(null, TypeKind.Integer, isLiteral: true));
             if (node is ASTConstantFloat) return (node, new(null, TypeKind.Float, isLiteral: true));
+            if (node is ASTConstantString) return (node, new(null, TypeKind.String, isLiteral: true));
 
             if (node is ASTVariableDecl varDeclNode)
             {
@@ -54,7 +55,7 @@ namespace SkullLang.Compiler.Analyzers
 
                 FunctionInfo func = ctx.GetFunction(ctx.CurrentFileName, funcCall.FunctionName);
 
-                if (funcCall.Args.Count > 0)
+                if (funcCall.Args.Count > 0 && !func.IsExtern) //extern functions are unsafe
                 {
                     if (funcCall.Args.Count != func.Args.Count) ctx.Panic($"Function '{func.FuncName}' expects {func.Args.Count} {(func.Args.Count == 1 ? "argument" : "arguments")}, but {funcCall.Args.Count} {(funcCall.Args.Count == 1 ? "was" : "were")} provided", funcCall.Ln, funcCall.Col);
                     else

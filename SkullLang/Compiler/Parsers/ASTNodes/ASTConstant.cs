@@ -14,6 +14,13 @@ namespace SkullLang.Compiler.Parsers.ASTNodes
         internal ASTConstantFloat(double val, ulong ln, ulong col) : base(ln, col) => Value = val;
     }
 
+    internal class ASTConstantString : ASTNode
+    {
+        internal string Value { get; private set; }
+
+        internal ASTConstantString(string val, ulong ln, ulong col) : base(ln, col) => Value = val;
+    }
+
     internal class ASTIdentifier : ASTNode
     {
         internal string Identifier { get; private set; }

@@ -3,7 +3,7 @@
     internal enum TokenType
     {
         EOF, Unknown,
-        Identifier, NumberI, NumberF,
+        Identifier, NumberI, NumberF, StringLiteral,
 
         //KW means keyword
         ReturnKW, FuncKW, LetKW, IfKW, ElseKW, WhileKW,

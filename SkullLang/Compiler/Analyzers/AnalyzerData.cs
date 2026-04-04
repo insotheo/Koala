@@ -6,7 +6,7 @@ namespace SkullLang.Compiler.Analyzers
     internal enum TypeKind
     {
         None, 
-        Integer, Float,
+        Integer, Float, String,
         Pointer, Reference
     }
 
@@ -129,6 +129,7 @@ namespace SkullLang.Compiler.Analyzers
         internal string FuncName;
         internal TypeInfo ReturnType;
         internal List<VariableInfo> Args;
+        internal bool IsExtern = false;
 
         internal FunctionInfo(string funcName, string returnTypeName, List<VariableInfo> args)
         {

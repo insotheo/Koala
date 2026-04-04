@@ -31,8 +31,14 @@ namespace SkullLang.CodeGenerator
 
                 StringBuilder code = new();
 
+                code.Append("extern int printf(const char*, ...);\n");
+                code.Append("extern int scanf(const char*, ...);\n");
+                code.Append("\n");
+
                 foreach(FunctionInfo funcInfo in _ctx.Functions[fileName].Values)
                 {
+                    if (funcInfo.IsExtern) continue;
+
                     string argsLine = "";
                     if (funcInfo.Args.Count > 0)
                     {
