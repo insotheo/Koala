@@ -199,7 +199,7 @@ namespace SkullLang.Compiler.Analyzers
                 TypeInfo alhsType = RecognizeType(ctx, assignNode.LHS).typeInfo;
                 TypeInfo arhsType = RecognizeType(ctx, assignNode.RHS).typeInfo;
 
-                if (alhsType.IsReadonly)
+                if (alhsType.IsReadonly && assignNode.LHS is not ASTVariableDecl)
                     ctx.Panic("read-only variable is not assignable", node.Ln, node.Col);
 
                 if (!alhsType.CmpStrict(arhsType))

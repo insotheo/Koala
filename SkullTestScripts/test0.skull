@@ -1,19 +1,6 @@
-func sum(a: int& readonly, b: int& readonly, sum: int&){
-	sum = a + b
-}
-
 func main(){
-	let a: int
-	let b: int
-	let sum: int
-	
-	printf("a = ")
-	scanf("%i", &a)
-	
-	printf("b = ")
-	scanf("%i", &b)
-	
-	sum(&a, &b, &sum)
-	
-	printf("a + b = %i", sum)
+	let PI: float readonly = 3.14
+	let E: float readonly = 2.72
+	printf("pi is around %.2f\n", PI)
+	printf("e is around %.2f\n", E)
 }
