@@ -83,6 +83,7 @@ namespace SkullLang.Compiler.Parsers
                         case "let": AddToken(TokenType.LetKW, col:startCol); break;
                         case "if": AddToken(TokenType.IfKW, col:startCol); break;
                         case "else": AddToken(TokenType.ElseKW, col:startCol); break;
+                        case "while": AddToken(TokenType.WhileKW, col:startCol); break;
                          
                         default: AddToken(TokenType.Identifier, id, startCol); break;
                     }
@@ -165,7 +166,7 @@ namespace SkullLang.Compiler.Parsers
                     case '<':
                         {
                             if (Peek() == '<') { AddToken(TokenType.LeftShift); Next(); }
-                            if (Peek() == '=') { AddToken(TokenType.LessOrEqual); Next(); }
+                            else if (Peek() == '=') { AddToken(TokenType.LessOrEqual); Next(); }
                             else AddToken(TokenType.LessThan); //<
 
                             Next(); continue;
@@ -173,7 +174,7 @@ namespace SkullLang.Compiler.Parsers
                     case '>':
                         {
                             if (Peek() == '>') { AddToken(TokenType.RightShift); Next(); }
-                            if (Peek() == '=') { AddToken(TokenType.GreaterOrEqual); Next(); }
+                            else if (Peek() == '=') { AddToken(TokenType.GreaterOrEqual); Next(); }
                             else AddToken(TokenType.GreaterThan); //>
 
                             Next(); continue;

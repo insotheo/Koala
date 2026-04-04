@@ -73,6 +73,7 @@ namespace SkullLang.Compiler.Parsers
                 if (ctx.Current.Type == TokenType.ReturnKW) nodes.Add(ParseReturn(ctx));
                 else if (ctx.Current.Type == TokenType.LetKW) nodes.Add(ParseVarDecl(ctx));
                 else if (ctx.Current.Type == TokenType.IfKW) nodes.Add(ParseBranch(ctx));
+                else if (ctx.Current.Type == TokenType.WhileKW) nodes.Add(ParseWhileLoop(ctx));
                 else if (ctx.Current.Type == TokenType.Identifier ||
                     (ctx.Current.Type == TokenType.Asterisk && ctx.Peek().Type == TokenType.Identifier))
                 {
@@ -154,6 +155,22 @@ namespace SkullLang.Compiler.Parsers
             }
 
             return new ASTBranch(new ASTIf(ifCond, ifBody, ln, col), elseIfs, elseBlock, ln, col);
+        }
+
+        internal static ASTWhileLoop ParseWhileLoop(ParserContext ctx)
+        {
+            ulong ln = ctx.Current.Ln, col = ctx.Current.Col;
+
+            //consume while keyword
+            ctx.Next();
+
+            var loopCond = ParseExpression(ctx);
+
+            if (!ctx.Expect(TokenType.LBrace)) { ctx.Sync(TokenType.RBrace); return null; }
+
+            var body = ParseCodeBlock(ctx);
+
+            return new ASTWhileLoop(loopCond, body, ln, col);
         }
 
         internal static ASTReturn ParseReturn(ParserContext ctx)

@@ -46,6 +46,14 @@ namespace SkullLang.CodeGenerator
                         code.Append("}\n");
                     }
                 }
+                else if(node is ASTWhileLoop whileLoop)
+                {
+                    code.Append("while(");
+                    EmitExpression(code, whileLoop.LoopCond);
+                    code.Append("){\n");
+                    EmitCodeBlock(code, whileLoop.Body);
+                    code.Append("}\n");
+                }
                 else
                 {
                     EmitExpression(code, node, insertParens: false);

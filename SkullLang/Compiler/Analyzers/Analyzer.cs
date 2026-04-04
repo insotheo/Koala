@@ -42,7 +42,7 @@ namespace SkullLang.Compiler.Analyzers
                             args.Add(argInfo);
                         }
 
-                        ctx.DeclareFunction(fileName, new FunctionInfo(funcNode.FuncName, TypeInfo.GetCTypeName(funcNode.RetType), args));
+                        ctx.DeclareFunction(fileName, new FunctionInfo(funcNode.FuncName, TypeInfo.GetCTypeName(funcNode.RetType), args) { ReturnType=new TypeInfo(funcNode.RetType, TypeInfo.GetKind(funcNode.RetType, ctx)) });
                     }
                 }
             }

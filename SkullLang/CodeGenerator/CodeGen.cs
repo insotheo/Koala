@@ -45,7 +45,7 @@ namespace SkullLang.CodeGenerator
                     }
                     else argsLine = "void";
 
-                    code.AppendLine($"{funcInfo.ReturnType} {funcInfo.FuncName}({argsLine});");
+                    code.AppendLine($"{funcInfo.ReturnType.TypeName} {funcInfo.FuncName}({argsLine});");
                 }
 
                 foreach(ASTNode node in _ctx.Analyzer.Modules[fileName])
@@ -66,7 +66,7 @@ namespace SkullLang.CodeGenerator
                         }
                         else argsLine = "void";
 
-                        code.AppendLine($"{info.ReturnType} {funcNode.FuncName}({argsLine}){{");
+                        code.AppendLine($"{info.ReturnType.TypeName} {funcNode.FuncName}({argsLine}){{");
                         EmitCodeBlock(code, funcNode.Body);
                         code.AppendLine("}");
                     }

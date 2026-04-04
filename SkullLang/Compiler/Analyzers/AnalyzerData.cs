@@ -31,7 +31,7 @@ namespace SkullLang.Compiler.Analyzers
         internal bool CmpStrict(TypeInfo other)
         {
             bool kinds = CmpKinds(other);
-            if (TypeName == null || other.TypeName == null) return kinds;
+            if (TypeName == null || other.TypeName == null || this.IsLiteral || other.IsLiteral) return kinds;
             return TypeName == other.TypeName && kinds;
         }
 
@@ -52,6 +52,8 @@ namespace SkullLang.Compiler.Analyzers
             "uint" => TypeKind.Integer,
             "long" => TypeKind.Integer,
             "ulong" => TypeKind.Integer,
+            "llong" => TypeKind.Integer,
+            "ullong" => TypeKind.Integer,
 
             "float" => TypeKind.Float,
             "double" => TypeKind.Float,
@@ -87,6 +89,8 @@ namespace SkullLang.Compiler.Analyzers
                 "uint" => "unsigned int",
                 "long" => "long int",
                 "ulong" => "unsigned long int",
+                "llong" => "long long int",
+                "ullong" => "unsigned long long int",
 
                 "float" => "float",
                 "double" => "double",
@@ -123,13 +127,13 @@ namespace SkullLang.Compiler.Analyzers
     internal struct FunctionInfo
     {
         internal string FuncName;
-        internal string ReturnType;
+        internal TypeInfo ReturnType;
         internal List<VariableInfo> Args;
 
-        internal FunctionInfo(string funcName, string returnType, List<VariableInfo> args)
+        internal FunctionInfo(string funcName, string returnTypeName, List<VariableInfo> args)
         {
             FuncName = funcName;
-            ReturnType = returnType;
+            ReturnType = new TypeInfo(returnTypeName, TypeInfo.GetKind(returnTypeName));
             Args = args;
         }
     }

@@ -72,8 +72,7 @@ namespace SkullLang.Compiler.Analyzers
                     }
                 }
 
-                string retTypeName = func.ReturnType;
-                return (node, new(retTypeName, TypeInfo.GetKind(retTypeName, ctx)));
+                return (node, func.ReturnType);
             }
 
             if (node is ASTBinaryOp binOp)
@@ -179,8 +178,8 @@ namespace SkullLang.Compiler.Analyzers
                 (ASTNode retExpr, TypeInfo retType) = RecognizeType(ctx, retNode.Ret);
                 retNode.Ret = retExpr;
 
-                TypeInfo expectedType = new TypeInfo(ctx.CurrentFunction.ReturnType, TypeInfo.GetKind(ctx.CurrentFunction.ReturnType, ctx));
-                if (!retType.CmpKinds(expectedType))
+                ref TypeInfo expectedType = ref ctx.CurrentFunction.ReturnType;
+                if (!retType.CmpStrict(expectedType))
                     ctx.Panic($"Return type mismatch in function '{ctx.CurrentFunction.FuncName}': expected '{expectedType.ToStringOriginal()}', got '{retType.ToStringOriginal()}'", retNode.Ln);
 
                 return retNode;
@@ -200,7 +199,7 @@ namespace SkullLang.Compiler.Analyzers
                 TypeInfo alhsType = RecognizeType(ctx, assignNode.LHS).typeInfo;
                 TypeInfo arhsType = RecognizeType(ctx, assignNode.RHS).typeInfo;
 
-                if (!alhsType.CmpKinds(arhsType)) ctx.Panic($"Type mismatch in assignment: cannot assign '{arhsType.ToStringOriginal()}' to '{alhsType.ToStringOriginal()}'", node.Ln, node.Col);
+                if (!alhsType.CmpStrict(arhsType)) ctx.Panic($"Type mismatch in assignment: cannot assign '{arhsType.ToStringOriginal()}' to '{alhsType.ToStringOriginal()}'", node.Ln, node.Col);
 
                 return assignNode;
             }
@@ -210,7 +209,7 @@ namespace SkullLang.Compiler.Analyzers
                 (var ifCondNode, var ifCondType) = RecognizeType(ctx, branchNode.If.Cond);
                 branchNode.If.Cond = ifCondNode;
 
-                if (ifCondType.Kind != TypeKind.Integer) ctx.Panic($"Type mismatch in condition: expected int, but got {ifCondType.ToStringOriginal()}", ifCondNode.Ln, ifCondNode.Col);
+                if (ifCondType.Kind != TypeKind.Integer) ctx.Panic($"Type mismatch in condition: expected 'integer', but got {ifCondType.ToStringOriginal()}", ifCondNode.Ln, ifCondNode.Col);
                 AnalyzeCodeBlock(ctx, branchNode.If.Body);
                 
                 foreach(ASTIf elseIf in branchNode.ElseIfs)
@@ -218,13 +217,22 @@ namespace SkullLang.Compiler.Analyzers
                     (var elseIfCondNode, var elseIfCondType) = RecognizeType(ctx, elseIf.Cond);
                     elseIf.Cond = elseIfCondNode;
 
-                    if (elseIfCondType.Kind != TypeKind.Integer) ctx.Panic($"Type mismatch in condition: expected int, but got {ifCondType.ToStringOriginal()}", elseIfCondNode.Ln, elseIfCondNode.Col);
+                    if (elseIfCondType.Kind != TypeKind.Integer) ctx.Panic($"Type mismatch in condition: expected 'integer', but got {ifCondType.ToStringOriginal()}", elseIfCondNode.Ln, elseIfCondNode.Col);
                     AnalyzeCodeBlock(ctx, elseIf.Body);
                 }
 
                 if (branchNode.Else != null) AnalyzeCodeBlock(ctx, branchNode.Else);
 
                 return branchNode;
+            }
+
+            else if(node is ASTWhileLoop whileLoopNode)
+            {
+                (var whileCond, var whileCondType) = RecognizeType(ctx, whileLoopNode.LoopCond);
+                whileLoopNode.LoopCond = whileCond;
+
+                if (whileCondType.Kind != TypeKind.Integer) ctx.Panic($"Type mismatch in condition: expected 'integer', but got {whileCondType.ToStringOriginal()}", whileCond.Ln, whileCond.Col);
+                AnalyzeCodeBlock(ctx, whileLoopNode.Body);
             }
 
             return newNode;
