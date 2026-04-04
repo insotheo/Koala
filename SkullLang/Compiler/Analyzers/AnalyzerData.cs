@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Text;
 
 namespace SkullLang.Compiler.Analyzers
 {
@@ -126,16 +127,44 @@ namespace SkullLang.Compiler.Analyzers
 
     internal struct FunctionInfo
     {
+        private static ulong _id = 0;
+
         internal string FuncName;
+        internal string FuncUName;
         internal TypeInfo ReturnType;
         internal List<VariableInfo> Args;
-        internal bool IsExtern = false;
+        internal bool IsExtern;
 
-        internal FunctionInfo(string funcName, string returnTypeName, List<VariableInfo> args)
+        internal FunctionInfo(string funcName, string returnTypeName, List<VariableInfo> args, bool isExtern = false)
         {
             FuncName = funcName;
             ReturnType = new TypeInfo(returnTypeName, TypeInfo.GetKind(returnTypeName));
             Args = args;
+            IsExtern = isExtern;
+            GenUName();
+        }
+
+        private void GenUName()
+        {
+            if(FuncName == "main" || IsExtern)
+            {
+                FuncUName = FuncName;
+                return;
+            }
+            _id += 1;
+
+            StringBuilder uname = new();
+            uname.Append("_f");
+            uname.Append(_id);
+            uname.Append(FuncName);
+            uname.Append("_");
+
+            foreach(var arg in Args)
+            {
+                uname.Append(arg.Type.TypeName[0].ToString());
+            }
+
+            FuncUName = uname.ToString();
         }
     }
 }

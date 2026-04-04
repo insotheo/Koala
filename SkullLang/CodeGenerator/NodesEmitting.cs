@@ -88,7 +88,7 @@ namespace SkullLang.CodeGenerator
 
             if(expr is ASTFunctionCall funcCall)
             {
-                code.Append($"{funcCall.FunctionName}(");
+                code.Append($"{funcCall.FunctionUName}(");
 
                 for(int i = 0; i < funcCall.Args.Count; i++)
                 {

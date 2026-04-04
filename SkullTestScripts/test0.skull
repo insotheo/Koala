@@ -1,6 +1,10 @@
+func f(x: int&){
+	x = x + 1
+}
+
 func main(){
-	let x: int
-	printf("Hi!\nEnter x: ")
-	scanf("%i", &x)
-	printf("You entered x = %i\n", x)
+	let f: int = 5
+	printf("f = %i\n", f)
+	f(&f)
+	printf("f = %i\n", f)
 }

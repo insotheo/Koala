@@ -54,6 +54,7 @@ namespace SkullLang.Compiler.Analyzers
                 }
 
                 FunctionInfo func = ctx.GetFunction(ctx.CurrentFileName, funcCall.FunctionName);
+                funcCall.FunctionUName = func.FuncUName;
 
                 if (funcCall.Args.Count > 0 && !func.IsExtern) //extern functions are unsafe
                 {
@@ -73,7 +74,7 @@ namespace SkullLang.Compiler.Analyzers
                     }
                 }
 
-                return (node, func.ReturnType);
+                return (funcCall, func.ReturnType);
             }
 
             if (node is ASTBinaryOp binOp)
