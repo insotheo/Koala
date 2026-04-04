@@ -38,8 +38,8 @@ namespace SkullLang.Compiler.Analyzers
                     ASTNode lowerNode = identifier.WasDefered ? identifier : new ASTUnaryOp(identifier, UnaryOpType.DeferencingPtr, node.Ln, node.Col);
                     identifier.WasDefered = true;
 
-                    string deferencedTypeName = varTypeInfo.TypeName.Substring(0, varTypeInfo.TypeName.Length - 1);
-                    return (lowerNode, new TypeInfo(deferencedTypeName, TypeInfo.GetKind(deferencedTypeName, ctx), refInPast: true));
+                    string deferencedTypeName = varTypeInfo.OriginalTypeName.Substring(0, varTypeInfo.OriginalTypeName.Length - 1);
+                    return (lowerNode, new TypeInfo(deferencedTypeName, TypeInfo.GetKind(deferencedTypeName, ctx), refInPast: true, isReadonly: varTypeInfo.IsReadonly));
                 }
 
                 return (node, varTypeInfo);
@@ -49,7 +49,7 @@ namespace SkullLang.Compiler.Analyzers
             {
                 if (!ctx.IsFunctionInCurrentContext(funcCall.FunctionName))
                 {
-                    ctx.Panic($"Call to undeclared function {funcCall.FunctionName}", funcCall.Ln, funcCall.Col);
+                    ctx.Panic($"Call to undeclared function '{funcCall.FunctionName}'", funcCall.Ln, funcCall.Col);
                     return (node, new(null, TypeKind.None));
                 }
 
@@ -127,10 +127,10 @@ namespace SkullLang.Compiler.Analyzers
                     {
                         string deferencedTypeName;
                         if (!hsType.IsRefInPast)
-                            deferencedTypeName = hsType.TypeName.Substring(0, hsType.TypeName.Length - 1);
-                        else deferencedTypeName = hsType.TypeName;
+                            deferencedTypeName = hsType.OriginalTypeName.Substring(0, hsType.TypeName.Length - 1);
+                        else deferencedTypeName = hsType.OriginalTypeName;
 
-                        return (unaryNode, new(deferencedTypeName, TypeInfo.GetKind(deferencedTypeName), isLiteral: true));
+                        return (unaryNode, new(deferencedTypeName, TypeInfo.GetKind(deferencedTypeName), isLiteral: true, isReadonly: hsType.IsReadonly));
                     }
                 }
 
@@ -151,9 +151,7 @@ namespace SkullLang.Compiler.Analyzers
                 if (funcNode.FuncType != null)
                     return (node, (TypeInfo)funcNode.FuncType);
 
-                TypeInfo funcType = new();
-                funcType.TypeName = funcNode.RetType;
-                funcType.Kind = TypeInfo.GetKind(funcType.TypeName, ctx);
+                TypeInfo funcType = new(funcNode.RetType, TypeInfo.GetKind(funcNode.RetType, ctx));
 
                 funcNode.FuncType = funcType;
 
@@ -201,7 +199,11 @@ namespace SkullLang.Compiler.Analyzers
                 TypeInfo alhsType = RecognizeType(ctx, assignNode.LHS).typeInfo;
                 TypeInfo arhsType = RecognizeType(ctx, assignNode.RHS).typeInfo;
 
-                if (!alhsType.CmpStrict(arhsType)) ctx.Panic($"Type mismatch in assignment: cannot assign '{arhsType.ToStringOriginal()}' to '{alhsType.ToStringOriginal()}'", node.Ln, node.Col);
+                if (alhsType.IsReadonly)
+                    ctx.Panic("read-only variable is not assignable", node.Ln, node.Col);
+
+                if (!alhsType.CmpStrict(arhsType))
+                    ctx.Panic($"Type mismatch in assignment: cannot assign '{arhsType.ToStringOriginal()}' to '{alhsType.ToStringOriginal()}'", node.Ln, node.Col);
 
                 return assignNode;
             }

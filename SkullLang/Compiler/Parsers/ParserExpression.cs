@@ -203,11 +203,19 @@ namespace SkullLang.Compiler.Parsers
 
             while (ctx.NotEOF &&
                 (ctx.Current.Type == TokenType.Asterisk ||
-                ctx.Current.Type == TokenType.Ampersand
+                ctx.Current.Type == TokenType.Ampersand ||
+                ctx.Current.Type == TokenType.ReadonlyKW
                 ))
             {
                 if (ctx.Current.Type == TokenType.Asterisk) typeName += "*";
                 if (ctx.Current.Type == TokenType.Ampersand) typeName += "&";
+
+                if(ctx.Current.Type == TokenType.ReadonlyKW)
+                {
+                    typeName += " __readonly";
+                    ctx.Next();
+                    break;
+                }
 
                 ctx.Next();
             }

@@ -17,12 +17,16 @@ namespace SkullLang.Compiler.Analyzers
         internal string TypeName;
         internal bool IsLiteral;
         internal bool IsRefInPast;
+        internal bool IsReadonly;
         internal TypeKind Kind;
 
-        internal TypeInfo(string typeName, TypeKind kind, bool isLiteral = false, bool refInPast = false)
+        internal TypeInfo(string typeName, TypeKind kind, bool isLiteral = false, bool refInPast = false, bool isReadonly = false)
         {
-            OriginalTypeName = typeName;
-            TypeName = GetCTypeName(typeName);
+            IsReadonly = isReadonly;
+            if (typeName != null && typeName.EndsWith(" __readonly")) IsReadonly = true;
+
+            OriginalTypeName = typeName != null ? typeName.Replace(" __readonly", "").Trim() : null;
+            TypeName = (IsReadonly ? "const " : "") + GetCTypeName(OriginalTypeName);
             Kind = kind;
             IsLiteral = isLiteral;
             IsRefInPast = refInPast;
@@ -33,11 +37,12 @@ namespace SkullLang.Compiler.Analyzers
         {
             bool kinds = CmpKinds(other);
             if (TypeName == null || other.TypeName == null || this.IsLiteral || other.IsLiteral) return kinds;
-            return TypeName == other.TypeName && kinds;
+            return TypeName.Replace("const ", "").Trim() == other.TypeName.Replace("const ", "").Trim() && kinds;
         }
 
         internal static TypeKind GetKind(string typeName, Context ctx = null)
         {
+            typeName = typeName.Replace(" __readonly", "").Trim();
             if (typeName.EndsWith("*")) return TypeKind.Pointer;
             if (typeName.EndsWith("&")) return TypeKind.Reference;
             return GetKindBasedOnTypeName(typeName, ctx);

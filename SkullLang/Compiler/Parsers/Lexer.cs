@@ -84,6 +84,7 @@ namespace SkullLang.Compiler.Parsers
                         case "if": AddToken(TokenType.IfKW, col:startCol); break;
                         case "else": AddToken(TokenType.ElseKW, col:startCol); break;
                         case "while": AddToken(TokenType.WhileKW, col:startCol); break;
+                        case "readonly": AddToken(TokenType.ReadonlyKW, col:startCol); break;
                          
                         default: AddToken(TokenType.Identifier, id, startCol); break;
                     }
