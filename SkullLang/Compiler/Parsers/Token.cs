@@ -6,7 +6,7 @@
         Identifier, NumberI, NumberF, StringLiteral,
 
         //KW means keyword
-        ReturnKW, FuncKW, LetKW, IfKW, ElseKW, WhileKW, ReadonlyKW,
+        ReturnKW, FuncKW, LetKW, IfKW, ElseKW, WhileKW, ReadonlyKW, AsKW,
 
         Plus, Minus, Asterisk, Slash, Percent,
         GreaterThan, GreaterOrEqual, LessThan, LessOrEqual, Equal, Inequal, Not, LogicalOr, LogicalAnd,

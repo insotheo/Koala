@@ -80,6 +80,8 @@ namespace SkullLang.Compiler.Parsers
                     var expr = ParseExpression(ctx);
                     if (expr != null) nodes.Add(expr);
                     else UnknownStatementPanic();
+
+                    ctx.SkipIfSemicolon();
                 }
                 else UnknownStatementPanic();
             }

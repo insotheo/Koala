@@ -56,19 +56,22 @@ namespace SkullLang.Compiler.Analyzers
                 FunctionInfo func = ctx.GetFunction(ctx.CurrentFileName, funcCall.FunctionName);
                 funcCall.FunctionUName = func.FuncUName;
 
-                if (funcCall.Args.Count > 0 && !func.IsExtern) //extern functions are unsafe
+                if (funcCall.Args.Count > 0)
                 {
-                    if (funcCall.Args.Count != func.Args.Count) ctx.Panic($"Function '{func.FuncName}' expects {func.Args.Count} {(func.Args.Count == 1 ? "argument" : "arguments")}, but {funcCall.Args.Count} {(funcCall.Args.Count == 1 ? "was" : "were")} provided", funcCall.Ln, funcCall.Col);
+                    if (funcCall.Args.Count != func.Args.Count && !func.IsExtern) ctx.Panic($"Function '{func.FuncName}' expects {func.Args.Count} {(func.Args.Count == 1 ? "argument" : "arguments")}, but {funcCall.Args.Count} {(funcCall.Args.Count == 1 ? "was" : "were")} provided", funcCall.Ln, funcCall.Col);
                     else
                     {
-                        for(int i = 0; i < funcCall.Args.Count; i++)
+                        for (int i = 0; i < funcCall.Args.Count; i++)
                         {
-                            TypeInfo requiredType = func.Args[i].Type;
                             TypeInfo providedType = RecognizeType(ctx, funcCall.Args[i]).typeInfo;
-
-                            if (!requiredType.CmpKinds(providedType))
+                            if (!func.IsExtern) //extern functions are unsafe
                             {
-                                ctx.Panic($"Argument at index {i} of function '{func.FuncName}' has incorrect type. Expected: '{func.Args[i].Type.ToStringOriginal()}', but got '{providedType.ToStringOriginal()}'", funcCall.Args[i].Ln, funcCall.Args[i].Col);
+                                TypeInfo requiredType = func.Args[i].Type;
+
+                                if (!requiredType.CmpKinds(providedType))
+                                {
+                                    ctx.Panic($"Argument at index {i} of function '{func.FuncName}' has incorrect type. Expected: '{func.Args[i].Type.ToStringOriginal()}', but got '{providedType.ToStringOriginal()}'", funcCall.Args[i].Ln, funcCall.Args[i].Col);
+                                }
                             }
                         }
                     }
@@ -156,6 +159,14 @@ namespace SkullLang.Compiler.Analyzers
                 funcNode.FuncType = funcType;
 
                 return (node, funcType);
+            }
+
+            if(node is ASTCast castNode)
+            {
+                TypeInfo castType = new TypeInfo(castNode.TypeName, TypeInfo.GetKind(castNode.TypeName, ctx));
+                castNode.ResultType = castType;
+
+                return (node, castType);
             }
 
             if (node is ASTReturn retNode) return RecognizeType(ctx, retNode.Ret);

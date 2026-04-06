@@ -110,6 +110,16 @@ namespace SkullLang.CodeGenerator
                 code.Append("=");
                 EmitExpression(code, assignNode.RHS);
             }
+
+            if(expr is ASTCast castNode)
+            {
+                code.Append("(");
+                code.Append(castNode.ResultType.TypeName);
+                code.Append(")");
+                code.Append("(");
+                EmitExpression(code, castNode.LHS);
+                code.Append(")");
+            }
         }
     }
 }

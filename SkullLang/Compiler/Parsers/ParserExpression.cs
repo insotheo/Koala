@@ -5,7 +5,7 @@ namespace SkullLang.Compiler.Parsers
 {
     internal static class ParserExpression
     {
-        const int UNARY_PRECEDENCE = 11;
+        const int UNARY_PRECEDENCE = 12;
 
         internal static ASTNode ParseExpression(ParserContext ctx, int precedence = 0, ASTNode lhs = null)
         {
@@ -13,32 +13,34 @@ namespace SkullLang.Compiler.Parsers
             {
                 TokenType.Assignment => 1,
 
-                TokenType.LogicalOr => 2,
+                TokenType.AsKW => 2,
 
-                TokenType.LogicalAnd => 3,
+                TokenType.LogicalOr => 3,
 
-                TokenType.GreaterThan => 4,
-                TokenType.GreaterOrEqual => 4,
-                TokenType.LessThan => 4,
-                TokenType.LessOrEqual => 4,
-                TokenType.Equal => 4,
-                TokenType.Inequal => 4,
+                TokenType.LogicalAnd => 4,
 
-                TokenType.Pipe => 5,
+                TokenType.GreaterThan => 5,
+                TokenType.GreaterOrEqual => 5,
+                TokenType.LessThan => 5,
+                TokenType.LessOrEqual => 5,
+                TokenType.Equal => 5,
+                TokenType.Inequal => 5,
 
-                TokenType.Caret => 6,
+                TokenType.Pipe => 6,
 
-                TokenType.Ampersand => 7,
+                TokenType.Caret => 7,
 
-                TokenType.LeftShift => 8,
-                TokenType.RightShift => 8,
+                TokenType.Ampersand => 8,
 
-                TokenType.Plus => 9,
-                TokenType.Minus => 9,
+                TokenType.LeftShift => 9,
+                TokenType.RightShift => 9,
 
-                TokenType.Asterisk => 10,
-                TokenType.Slash => 10,
-                TokenType.Percent => 10,
+                TokenType.Plus => 10,
+                TokenType.Minus => 10,
+
+                TokenType.Asterisk => 11,
+                TokenType.Slash => 11,
+                TokenType.Percent => 11,
 
                 _ => -1,
             };
@@ -83,6 +85,13 @@ namespace SkullLang.Compiler.Parsers
                     var rhsAssignment = ParseExpression(ctx, precedence - 1); //right associative 
 
                     left = new ASTAssignment(left, rhsAssignment, opToken.Ln, opToken.Col);
+                    continue;
+                }
+                else if(opToken.Type == TokenType.AsKW)
+                {
+                    string typeName = ParseType(ctx);
+
+                    left = new ASTCast(left, typeName, opToken.Ln, opToken.Col);
                     continue;
                 }
 

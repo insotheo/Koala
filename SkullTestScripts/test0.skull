@@ -1,6 +1,3 @@
 func main(){
-	let PI: float readonly = 3.14
-	let E: float readonly = 2.72
-	printf("pi is around %.2f\n", PI)
-	printf("e is around %.2f\n", E)
+	printf("%f", 5 as double);
 }
