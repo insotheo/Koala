@@ -114,7 +114,7 @@ namespace SkullLang.CodeGenerator
             if(expr is ASTCast castNode)
             {
                 code.Append("(");
-                code.Append(castNode.ResultType.TypeName);
+                code.Append(castNode.ResultType.HasValue ? castNode.ResultType.Value.TypeName : "");
                 code.Append(")");
                 code.Append("(");
                 EmitExpression(code, castNode.LHS);

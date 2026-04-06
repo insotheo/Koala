@@ -163,7 +163,10 @@ namespace SkullLang.Compiler.Analyzers
 
             if(node is ASTCast castNode)
             {
+                if (castNode.ResultType != null) return (node, castNode.ResultType.Value);
+
                 TypeInfo castType = new TypeInfo(castNode.TypeName, TypeInfo.GetKind(castNode.TypeName, ctx));
+                RecognizeType(ctx, castNode.LHS);
                 castNode.ResultType = castType;
 
                 return (node, castType);

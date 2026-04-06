@@ -7,7 +7,7 @@ namespace SkullLang.Compiler.Parsers.ASTNodes
         internal ASTNode LHS { get; set; }
         internal string TypeName { get; set; }
 
-        internal TypeInfo ResultType { get; set; }
+        internal TypeInfo? ResultType { get; set; }
 
         internal ASTCast(ASTNode lhs, string typeName, ulong ln, ulong col) : base(ln, col)
         {
