@@ -30,10 +30,12 @@ namespace SkullLang.CodeGenerator
             foreach(string fileName in _ctx.Functions.Keys)
             {
                 string name = Path.GetFileNameWithoutExtension(fileName);
+                StringBuilder header = new();
+                StringBuilder code = new();
+                code.Append($"#include \"{name}.skh\"\n");
 
                 //header
                 string headerName = "SKH_" + name.ToUpperSnakeCase() + "_H";
-                StringBuilder header = new();
                 header.Append($"#ifndef {headerName}\n");
                 header.Append($"#define {headerName}\n");
 
@@ -41,7 +43,7 @@ namespace SkullLang.CodeGenerator
 
                 foreach(string funcName in _ctx.Functions[fileName].Keys)
                 {
-                    foreach (FunctionInfo funcInfo in _ctx.Functions[fileName][funcName]) //TODO: private, public modifiers
+                    foreach (FunctionInfo funcInfo in _ctx.Functions[fileName][funcName]) //TODO: private, public modifiers; if private - move declaration to code
                     {
                         if (funcInfo.IsExtern) continue;
 
@@ -65,8 +67,6 @@ namespace SkullLang.CodeGenerator
                 ///
 
                 //code
-                StringBuilder code = new();
-                code.Append($"#include \"{name}.skh\"\n");
                 foreach(ASTNode node in _ctx.Analyzer.Modules[fileName])
                 {
                     if(node is ASTFunction funcNode)

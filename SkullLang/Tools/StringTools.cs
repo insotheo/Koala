@@ -15,6 +15,7 @@ namespace SkullLang.Tools
             string result = Regex.Replace(input, _toUpperSnakeCasePattern, "_$1$2");
 
             result = Regex.Replace(result, @"__+", "_");
+            result = Regex.Replace(result, @"\W", "_");
 
             return result.ToUpper();
         }
