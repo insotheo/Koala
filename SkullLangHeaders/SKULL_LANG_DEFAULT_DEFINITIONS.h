@@ -20,6 +20,10 @@ typedef int SKULL_BOOL;
 typedef void SKULL_VOID;
 ///
 
+//true, false definitions
+#define SKULL_TRUE 1
+#define SKULL_FALSE 0
+///
 
 //default functions
 #include <stdio.h>

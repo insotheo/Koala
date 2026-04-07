@@ -1,11 +1,13 @@
-func hello(){
-	printf("Hello, World!\n")
-}
-
 func main(){
-	let cnt: uint = 0
-	while cnt < 10{
-		hello()
-		cnt = cnt + 1
+	let x: int
+	scanf("%i", x)
+	
+	while (true == true) && !false{
+		if x >= 5{
+			printf("x is >= 5\n")
+		}
+		else{
+			printf("x is < 5\n")
+		}
 	}
 }

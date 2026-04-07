@@ -11,6 +11,7 @@ namespace SkullLang.Compiler.Analyzers
         {
             if (node is ASTConstantInt) return (node, new("int", isLiteral: true));
             if (node is ASTConstantFloat) return (node, new("float", isLiteral: true));
+            if (node is ASTConstantBoolean) return (node, new("bool", isLiteral: true));
             if (node is ASTConstantString) return (node, new("byte*", isLiteral: true)); //TODO: special type for strings
 
             if (node is ASTVariableDecl varDeclNode)

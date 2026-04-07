@@ -67,6 +67,7 @@ namespace SkullLang.CodeGenerator
             if (expr is ASTConstantInt cInt) code.Append(cInt.Value);
             else if (expr is ASTConstantFloat cFloat) code.Append(cFloat.Value);
             else if (expr is ASTConstantString cString) code.Append($"\"{cString.Value}\"");
+            else if (expr is ASTConstantBoolean cBool) code.Append(cBool.Value ? "SKULL_TRUE" : "SKULL_FALSE");
             else if (expr is ASTIdentifier identifier) code.Append(identifier.Identifier); 
 
             else if(expr is ASTBinaryOp binOp)

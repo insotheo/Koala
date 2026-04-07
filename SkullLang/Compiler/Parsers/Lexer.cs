@@ -75,8 +75,8 @@ namespace SkullLang.Compiler.Parsers
 
                     switch (id)
                     {
-                        case "true": AddToken(TokenType.NumberI, "1", col:startCol); break;
-                        case "false": AddToken(TokenType.NumberI, "0", col:startCol); break;
+                        case "true": AddToken(TokenType.True, col:startCol); break;
+                        case "false": AddToken(TokenType.False, col:startCol); break;
 
                         case "func": AddToken(TokenType.FuncKW, col:startCol); break;
                         case "return": AddToken(TokenType.ReturnKW, col:startCol); break;
