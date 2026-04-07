@@ -1,10 +1,11 @@
 ﻿using System.Collections.Generic;
+using System.Text;
 
 namespace SkullLang.Compiler.Analyzers
 {
     internal sealed class Context
     {
-        internal Dictionary<string, Dictionary<string, FunctionInfo>> Functions { get; private set; }
+        internal Dictionary<string, Dictionary<string, List<FunctionInfo>>> Functions { get; private set; }
         internal AnalyzerContext Analyzer { get; private set; }
 
         internal string CurrentFileName;
@@ -66,13 +67,53 @@ namespace SkullLang.Compiler.Analyzers
 
         internal void DeclareFunction(string @namespace, FunctionInfo info)
         {
-            if (!Functions.ContainsKey(@namespace)) Functions.Add(@namespace, new());
-            Functions[@namespace].Add(info.FuncName, info);
+            if (!Functions.ContainsKey(@namespace))
+                Functions.Add(@namespace, new());
+
+            if (!Functions[@namespace].ContainsKey(info.FuncName))
+                Functions[@namespace].Add(info.FuncName, new());
+
+            foreach(var existing in Functions[@namespace][info.FuncName])
+            {
+                if(IsSameSignature(existing.Args, info.Args))
+                {
+                    StringBuilder signatureStr = new();
+                    foreach (var arg in existing.Args)
+                        signatureStr.Append($"{arg.Type.ToStringOriginal()}, ");
+
+                    Panic($"Function '{info.FuncName}({signatureStr.ToString().TrimEnd().TrimEnd(',')})' with same signature already exists");
+                    return;
+                }
+            }
+
+            Functions[@namespace][info.FuncName].Add(info);
         }
-        internal FunctionInfo GetFunction(string fileName, string funcName) => Functions[fileName][funcName];
+        private bool IsSameSignature(List<VariableInfo> signA, List<VariableInfo> signB)
+        {
+            if (signA.Count != signB.Count)
+                return false;
+
+            for(int i = 0; i < signA.Count; i++)
+            {
+                if (!signA[i].Type.Cmp(signB[i].Type))
+                    return false;
+            }
+
+            return true;
+        }
+
+        internal List<FunctionInfo> GetFunctions(string fileName, string funcName) => Functions[fileName][funcName];
         internal bool IsFunctionInCurrentContext(string funcName) => Functions[CurrentFileName].ContainsKey(funcName);
 
-
+        internal FunctionInfo? GetFunctionBySignature(string fileName, string funcName, List<VariableInfo> signature)
+        {
+            foreach(FunctionInfo info in GetFunctions(fileName, funcName))
+            {
+                if (IsSameSignature(info.Args, signature))
+                    return info;
+            }
+            return null;
+        }
 
         internal void Panic(string msg, ulong ln = 0, ulong col = 0) => Analyzer.Panic(CurrentFileName, msg, ln, col);
     }

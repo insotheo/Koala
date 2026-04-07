@@ -1,5 +1,6 @@
 ﻿using SkullLang.Compiler.Analyzers;
 using SkullLang.Compiler.Parsers.ASTNodes;
+using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Text;
@@ -33,30 +34,37 @@ namespace SkullLang.CodeGenerator
 
                 code.Append("#include \"SKULL_LANG_DEFAULT_DEFINITIONS.h\"\n");
 
-                foreach(FunctionInfo funcInfo in _ctx.Functions[fileName].Values)
+                foreach(string funcName in _ctx.Functions[fileName].Keys)
                 {
-                    if (funcInfo.IsExtern) continue;
-
-                    string argsLine = "";
-                    if (funcInfo.Args.Count > 0)
+                    foreach (FunctionInfo funcInfo in _ctx.Functions[fileName][funcName])
                     {
-                        StringBuilder argsString = new();
-                        foreach (VariableInfo arg in funcInfo.Args)
-                        {
-                            argsString.Append($"{arg.Type.ToCType()},");
-                        }
-                        argsLine = argsString.ToString().TrimEnd(',').Trim();
-                    }
-                    else argsLine = "SKULL_VOID";
+                        if (funcInfo.IsExtern) continue;
 
-                    code.AppendLine($"{funcInfo.ReturnType.ToCType()} {funcInfo.FuncUName}({argsLine});");
+                        string argsLine = "";
+                        if (funcInfo.Args.Count > 0)
+                        {
+                            StringBuilder argsString = new();
+                            foreach (VariableInfo arg in funcInfo.Args)
+                            {
+                                argsString.Append($"{arg.Type.ToCType()},");
+                            }
+                            argsLine = argsString.ToString().TrimEnd(',').Trim();
+                        }
+                        else argsLine = "SKULL_VOID";
+
+                        code.AppendLine($"{funcInfo.ReturnType.ToCType()} {funcInfo.FuncUName}({argsLine});");
+                    }
                 }
 
                 foreach(ASTNode node in _ctx.Analyzer.Modules[fileName])
                 {
                     if(node is ASTFunction funcNode)
                     {
-                        FunctionInfo info = _ctx.GetFunction(fileName, funcNode.FuncName);
+                        List<VariableInfo> signature = new();
+                        foreach (var arg in funcNode.Args)
+                            signature.Add(new(arg.argName, new(arg.typeName)));
+
+                        FunctionInfo info = _ctx.GetFunctionBySignature(fileName, funcNode.FuncName, signature).Value;
 
                         string argsLine = "";
                         if (info.Args.Count > 0)

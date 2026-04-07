@@ -24,6 +24,8 @@ namespace SkullLang.Compiler.Analyzers
 
             foreach (string fileName in ctx.Analyzer.Modules.Keys)
             {
+                ctx.CurrentFileName = fileName;
+
                 var tree = ctx.Analyzer.Modules[fileName];
 
                 //DEFAULT FUNCTIONS
@@ -38,14 +40,7 @@ namespace SkullLang.Compiler.Analyzers
                         List<VariableInfo> args = new();
 
                         foreach ((string typeName, string argName) in funcNode.Args)
-                        {
-                            VariableInfo argInfo = new();
-
-                            argInfo.Name = argName;
-                            argInfo.Type = new TypeInfo(typeName, ctx: ctx, node: funcNode);
-
-                            args.Add(argInfo);
-                        }
+                            args.Add(new(argName, new TypeInfo(typeName, ctx: ctx, node: funcNode)));
 
                         ctx.DeclareFunction(fileName,
                             new FunctionInfo(funcNode.FuncName, funcNode.RetType, args)
@@ -53,9 +48,10 @@ namespace SkullLang.Compiler.Analyzers
                     }
                 }
             }
+            ctx.CurrentFileName = "";
 
             //go through each code block and verify
-            foreach(string fileName in ctx.Analyzer.Modules.Keys)
+            foreach (string fileName in ctx.Analyzer.Modules.Keys)
             {
                 var tree = ctx.Analyzer.Modules[fileName];
                 AnalyzeTree(ctx, fileName, tree);

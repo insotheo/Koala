@@ -1,13 +1,8 @@
+func f(x: int) { printf("x is int; x = %i\n", x) }
+func f(x: float) { printf("x is float; x = %f\n", x) }
+
 func main(){
-	let x: int
-	scanf("%i", x)
-	
-	while (true == true) && !false{
-		if x >= 5{
-			printf("x is >= 5\n")
-		}
-		else{
-			printf("x is < 5\n")
-		}
-	}
+	f(1)
+	f(1.0)
 }
+
