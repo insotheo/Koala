@@ -65,11 +65,11 @@ namespace SkullLang.CodeGenerator
         static void EmitExpression(StringBuilder code, ASTNode expr, bool insertParens = true)
         {
             if (expr is ASTConstantInt cInt) code.Append(cInt.Value);
-            if (expr is ASTConstantFloat cFloat) code.Append(cFloat.Value);
-            if (expr is ASTConstantString cString) code.Append($"\"{cString.Value}\"");
-            if (expr is ASTIdentifier identifier) code.Append(identifier.Identifier); 
+            else if (expr is ASTConstantFloat cFloat) code.Append(cFloat.Value);
+            else if (expr is ASTConstantString cString) code.Append($"\"{cString.Value}\"");
+            else if (expr is ASTIdentifier identifier) code.Append(identifier.Identifier); 
 
-            if(expr is ASTBinaryOp binOp)
+            else if(expr is ASTBinaryOp binOp)
             {
                 if(insertParens) code.Append("(");
                 EmitExpression(code, binOp.LHS);
@@ -78,7 +78,7 @@ namespace SkullLang.CodeGenerator
                 if (insertParens) code.Append(")");
             }
 
-            if(expr is ASTUnaryOp unOp)
+            else if (expr is ASTUnaryOp unOp)
             {
                 if (insertParens) code.Append("(");
                 code.Append(UnaryOpToStirng(unOp.Op));
@@ -86,7 +86,7 @@ namespace SkullLang.CodeGenerator
                 if (insertParens) code.Append(")");
             }
 
-            if(expr is ASTFunctionCall funcCall)
+            else if (expr is ASTFunctionCall funcCall)
             {
                 code.Append($"{funcCall.FunctionUName}(");
 
@@ -99,22 +99,22 @@ namespace SkullLang.CodeGenerator
                 code.Append(")");
             }
 
-            if(expr is ASTVariableDecl varDecl)
+            else if (expr is ASTVariableDecl varDecl)
             {
-                code.Append($"{varDecl.VarType.TypeName} {varDecl.VarName}");
+                code.Append($"{varDecl.VarType.ToCType()} {varDecl.VarName}");
             }
 
-            if(expr is ASTAssignment assignNode)
+            else if (expr is ASTAssignment assignNode)
             {
                 EmitExpression(code, assignNode.LHS, insertParens: false);
                 code.Append("=");
                 EmitExpression(code, assignNode.RHS);
             }
 
-            if(expr is ASTCast castNode)
+            else if (expr is ASTCast castNode)
             {
                 code.Append("(");
-                code.Append(castNode.ResultType.HasValue ? castNode.ResultType.Value.TypeName : "");
+                code.Append(castNode.ResultType.HasValue ? castNode.ResultType.Value.ToCType() : "");
                 code.Append(")");
                 code.Append("(");
                 EmitExpression(code, castNode.LHS);

@@ -1,3 +1,11 @@
+func hello(){
+	printf("Hello, World!\n")
+}
+
 func main(){
-	printf("%f", 5 as double);
+	let cnt: uint = 0
+	while cnt < 10{
+		hello()
+		cnt = cnt + 1
+	}
 }

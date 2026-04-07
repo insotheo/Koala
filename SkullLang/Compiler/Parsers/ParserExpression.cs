@@ -110,7 +110,7 @@ namespace SkullLang.Compiler.Parsers
                 TokenType.Tilde => UnaryOpType.BitwiseNot,
                 TokenType.Minus => UnaryOpType.Neg,
                 TokenType.Ampersand => UnaryOpType.Reference,
-                TokenType.Asterisk => UnaryOpType.DeferencingPtr,
+                TokenType.Asterisk => UnaryOpType.DereferencingPtr,
                 TokenType.Not => UnaryOpType.Not,
 
                 _ => UnaryOpType.None,

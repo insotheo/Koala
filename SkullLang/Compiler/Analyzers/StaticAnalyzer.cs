@@ -1,5 +1,6 @@
 ﻿using SkullLang.Compiler.Parsers.ASTNodes;
 using System.Collections.Generic;
+
 using static SkullLang.Compiler.Parsers.ASTNodes.OperationsToStringStaticClass;
 
 namespace SkullLang.Compiler.Analyzers
@@ -8,13 +9,14 @@ namespace SkullLang.Compiler.Analyzers
     {
         static (ASTNode newNode, TypeInfo typeInfo) RecognizeType(Context ctx, ASTNode node)
         {
-            if (node is ASTConstantInt) return (node, new(null, TypeKind.Integer, isLiteral: true));
-            if (node is ASTConstantFloat) return (node, new(null, TypeKind.Float, isLiteral: true));
-            if (node is ASTConstantString) return (node, new(null, TypeKind.String, isLiteral: true));
+            if (node is ASTConstantInt) return (node, new("int", isLiteral: true));
+            if (node is ASTConstantFloat) return (node, new("float", isLiteral: true));
+            if (node is ASTConstantString) return (node, new("byte*", isLiteral: true)); //TODO: special type for strings
 
             if (node is ASTVariableDecl varDeclNode)
             {
-                if (!ctx.IsVariableInScope(varDeclNode.VarName)) return (node, new(null, TypeKind.None));
+                if (!ctx.IsVariableInScope(varDeclNode.VarName))
+                    return (node, new(null));
 
                 TypeInfo varDeclType = ctx.GetVariableType((node as ASTVariableDecl).VarName);
                 varDeclNode.VarType = varDeclType;
@@ -28,18 +30,25 @@ namespace SkullLang.Compiler.Analyzers
                 if (!ctx.IsVariableInScope(varName))
                 {
                     ctx.Panic($"Use of undeclared variable '{varName}'", node.Ln, node.Col);
-                    return (node, new(null, TypeKind.None));
+                    return (node, new(null));
                 }
 
                 var varTypeInfo = ctx.GetVariableType(varName);
 
-                if(varTypeInfo.Kind == TypeKind.Reference)
+                //ref auto deref
+                if(varTypeInfo.IsReference)
                 {
-                    ASTNode lowerNode = identifier.WasDefered ? identifier : new ASTUnaryOp(identifier, UnaryOpType.DeferencingPtr, node.Ln, node.Col);
-                    identifier.WasDefered = true;
+                    if (!identifier.WasDerefered)
+                    {
+                        identifier.WasDerefered = true;
+                        ASTNode derefNode = new ASTUnaryOp(identifier, UnaryOpType.DereferencingPtr, node.Ln, node.Col);
 
-                    string deferencedTypeName = varTypeInfo.OriginalTypeName.Substring(0, varTypeInfo.OriginalTypeName.Length - 1);
-                    return (lowerNode, new TypeInfo(deferencedTypeName, TypeInfo.GetKind(deferencedTypeName, ctx), refInPast: true, isReadonly: varTypeInfo.IsReadonly));
+                        var newType = varTypeInfo.Clone();
+                        newType.Modifiers.RemoveAt(0);
+                        newType.Rebuild(ctx, identifier);
+
+                        return (derefNode, newType);
+                    }
                 }
 
                 return (node, varTypeInfo);
@@ -50,7 +59,7 @@ namespace SkullLang.Compiler.Analyzers
                 if (!ctx.IsFunctionInCurrentContext(funcCall.FunctionName))
                 {
                     ctx.Panic($"Call to undeclared function '{funcCall.FunctionName}'", funcCall.Ln, funcCall.Col);
-                    return (node, new(null, TypeKind.None));
+                    return (node, new(null));
                 }
 
                 FunctionInfo func = ctx.GetFunction(ctx.CurrentFileName, funcCall.FunctionName);
@@ -58,7 +67,8 @@ namespace SkullLang.Compiler.Analyzers
 
                 if (funcCall.Args.Count > 0)
                 {
-                    if (funcCall.Args.Count != func.Args.Count && !func.IsExtern) ctx.Panic($"Function '{func.FuncName}' expects {func.Args.Count} {(func.Args.Count == 1 ? "argument" : "arguments")}, but {funcCall.Args.Count} {(funcCall.Args.Count == 1 ? "was" : "were")} provided", funcCall.Ln, funcCall.Col);
+                    if (funcCall.Args.Count != func.Args.Count && !func.IsExtern)
+                        ctx.Panic($"Function '{func.FuncName}' expects {func.Args.Count} {(func.Args.Count == 1 ? "argument" : "arguments")}, but {funcCall.Args.Count} {(funcCall.Args.Count == 1 ? "was" : "were")} provided", funcCall.Ln, funcCall.Col);
                     else
                     {
                         for (int i = 0; i < funcCall.Args.Count; i++)
@@ -68,16 +78,14 @@ namespace SkullLang.Compiler.Analyzers
                             {
                                 TypeInfo requiredType = func.Args[i].Type;
 
-                                if (!requiredType.CmpKinds(providedType))
-                                {
+                                if (!requiredType.Cmp(providedType))
                                     ctx.Panic($"Argument at index {i} of function '{func.FuncName}' has incorrect type. Expected: '{func.Args[i].Type.ToStringOriginal()}', but got '{providedType.ToStringOriginal()}'", funcCall.Args[i].Ln, funcCall.Args[i].Col);
-                                }
                             }
                         }
                     }
                 }
 
-                return (funcCall, func.ReturnType);
+                return (funcCall, func.ReturnType.Clone());
             }
 
             if (node is ASTBinaryOp binOp)
@@ -87,7 +95,8 @@ namespace SkullLang.Compiler.Analyzers
 
                 var newBinOp = new ASTBinaryOp(lhsNode, rhsNode, binOp.Op, node.Ln, node.Col);
 
-                if (lhsType.Kind != rhsType.Kind) ctx.Panic($"Operator '{BinaryOpToString(binOp.Op)}' cannot be applied to types '{lhsType.ToStringOriginal()}' and '{rhsType.ToStringOriginal()}'", node.Ln, node.Col);
+                if (lhsType.Kind != rhsType.Kind)
+                    ctx.Panic($"Operator '{BinaryOpToString(binOp.Op)}' cannot be applied to types '{lhsType.ToStringOriginal()}' and '{rhsType.ToStringOriginal()}'", node.Ln, node.Col);
                 
                 if (binOp.Op == BinaryOpType.LogicalOr ||
                     binOp.Op == BinaryOpType.LogicalAnd ||
@@ -109,10 +118,11 @@ namespace SkullLang.Compiler.Analyzers
                    binOp.Op == BinaryOpType.Inequal ||
                    binOp.Op == BinaryOpType.LogicalOr ||
                    binOp.Op == BinaryOpType.LogicalAnd
-                    ) return (newBinOp, new(null, TypeKind.Integer));
+                    ) return (newBinOp, new("int"));
 
                 return (newBinOp, lhsType);
             }
+
             if (node is ASTUnaryOp unOp)
             {
                 (var hsNode, var hsType) = RecognizeType(ctx, unOp.HS);
@@ -123,27 +133,33 @@ namespace SkullLang.Compiler.Analyzers
                     && hsType.Kind != TypeKind.Integer)
                     ctx.Panic($"Operator '{UnaryOpToStirng(unOp.Op)}' requires integer operands", node.Ln, node.Col);
 
-                if (unOp.Op == UnaryOpType.DeferencingPtr)
+                if (unOp.Op == UnaryOpType.DereferencingPtr)
                 {
-                    if (hsType.Kind != TypeKind.Pointer && !hsType.IsRefInPast) ctx.Panic($"Operator '{UnaryOpToStirng(unOp.Op)}' requires pointer operand", node.Ln, node.Col);
+                    if (hsType.Modifiers.Count == 0 || (!hsType.IsPointer && !hsType.IsReference))
+                        ctx.Panic("Cannot dereference non-pointer", node.Ln, node.Col);
                     else
                     {
-                        string deferencedTypeName;
-                        if (!hsType.IsRefInPast)
-                            deferencedTypeName = hsType.OriginalTypeName.Substring(0, hsType.TypeName.Length - 1);
-                        else deferencedTypeName = hsType.OriginalTypeName;
+                        var newType = hsType.Clone();
+                        newType.Modifiers.RemoveAt(0); //deref by removing &
+                        newType.Rebuild();
 
-                        return (unaryNode, new(deferencedTypeName, TypeInfo.GetKind(deferencedTypeName), isLiteral: true, isReadonly: hsType.IsReadonly));
+                        return (unaryNode, newType);
                     }
                 }
 
                 if (unOp.Op == UnaryOpType.Reference)
                 {
-                    if(hsType.IsLiteral) ctx.Panic("Cannot take reference of literal", node.Ln, node.Col);
-                    if(unOp.HS is ASTFunctionCall && hsType.Kind != TypeKind.Pointer) ctx.Panic("Cannot take reference of a function return value", node.Ln, node.Col);
+                    if(hsType.IsLiteral)
+                        ctx.Panic("Cannot take reference of literal", node.Ln, node.Col);
 
-                    hsType.Kind = TypeKind.Reference;
-                    return (unaryNode, hsType);
+                    if(unOp.HS is ASTFunctionCall && !hsType.IsPointer)
+                        ctx.Panic("Cannot take reference of a function return value", node.Ln, node.Col);
+
+                    var newType = hsType.Clone();
+                    newType.Modifiers.Insert(0, TypeModifier.Reference);
+                    newType.Rebuild(ctx, unOp);
+
+                    return (unaryNode, newType);
                 }
 
                 return (unaryNode, hsType);
@@ -154,7 +170,7 @@ namespace SkullLang.Compiler.Analyzers
                 if (funcNode.FuncType != null)
                     return (node, (TypeInfo)funcNode.FuncType);
 
-                TypeInfo funcType = new(funcNode.RetType, TypeInfo.GetKind(funcNode.RetType, ctx));
+                TypeInfo funcType = new(funcNode.RetType, ctx: ctx, node: funcNode);
 
                 funcNode.FuncType = funcType;
 
@@ -163,18 +179,20 @@ namespace SkullLang.Compiler.Analyzers
 
             if(node is ASTCast castNode)
             {
-                if (castNode.ResultType != null) return (node, castNode.ResultType.Value);
+                if (castNode.ResultType != null)
+                    return (node, castNode.ResultType.Value);
 
-                TypeInfo castType = new TypeInfo(castNode.TypeName, TypeInfo.GetKind(castNode.TypeName, ctx));
+                TypeInfo castType = new TypeInfo(castNode.TypeName, ctx: ctx, node: castNode);
                 RecognizeType(ctx, castNode.LHS);
-                castNode.ResultType = castType;
 
+                castNode.ResultType = castType;
                 return (node, castType);
             }
 
-            if (node is ASTReturn retNode) return RecognizeType(ctx, retNode.Ret);
+            if (node is ASTReturn retNode)
+                return RecognizeType(ctx, retNode.Ret);
 
-            return (node, new(null, TypeKind.None));
+            return (node, new(null));
         }
 
         static void AnalyzeVariableDeclaration(Context ctx, ASTVariableDecl varDeclNode)
@@ -193,7 +211,7 @@ namespace SkullLang.Compiler.Analyzers
                 retNode.Ret = retExpr;
 
                 ref TypeInfo expectedType = ref ctx.CurrentFunction.ReturnType;
-                if (!retType.CmpStrict(expectedType))
+                if (!retType.Cmp(expectedType))
                     ctx.Panic($"Return type mismatch in function '{ctx.CurrentFunction.FuncName}': expected '{expectedType.ToStringOriginal()}', got '{retType.ToStringOriginal()}'", retNode.Ln);
 
                 return retNode;
@@ -216,7 +234,7 @@ namespace SkullLang.Compiler.Analyzers
                 if (alhsType.IsReadonly && assignNode.LHS is not ASTVariableDecl)
                     ctx.Panic("read-only variable is not assignable", node.Ln, node.Col);
 
-                if (!alhsType.CmpStrict(arhsType))
+                if (!alhsType.Cmp(arhsType))
                     ctx.Panic($"Type mismatch in assignment: cannot assign '{arhsType.ToStringOriginal()}' to '{alhsType.ToStringOriginal()}'", node.Ln, node.Col);
 
                 return assignNode;

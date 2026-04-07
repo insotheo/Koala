@@ -34,20 +34,37 @@ func sin(x: double, N: uint readonly): double{
 }
 
 func RiemannIntegral(a: double readonly, b: double readonly, N: uint readonly, Nsin: uint readonly): double{ //for sin(x)
-	let dx: double readonly = (((b - a + 1.0) as uint) / N) as double
+	let dx: double readonly = (b - a) / (N as double)
 	let res: double = 0.0
-	let x: double = a
+	let i: uint = 0
 	
-	while x <= b{
+	while i < N{
+		let x: double = a + (i as double) * dx
 		res = res + sin(x, Nsin) * dx
-		x = x + dx
+		i = i + 1
 	}
 	
 	return res
 }
 
 func main(){
-	let PI: double readonly = 3.1415926535
-
-	printf("%f", RiemannIntegral(0.0, PI, 50, 10))
+	let a: double
+	let b: double
+	let N: uint
+	let Nsin: uint
+	
+	printf("Enter a: ")
+	scanf("%lf", &a)
+	
+	printf("Enter b: ")
+	scanf("%lf", &b)
+	
+	printf("Enter sin's terms: ")
+	scanf("%i", &Nsin)
+	
+	printf("Enter rectangles amount: ")
+	scanf("%i", &N)
+	
+	printf("Answer: %.3f", RiemannIntegral(a, b, N, Nsin))
 }
+

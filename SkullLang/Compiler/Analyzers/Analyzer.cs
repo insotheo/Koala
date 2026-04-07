@@ -22,7 +22,7 @@ namespace SkullLang.Compiler.Analyzers
             //go through all declarations
             Context ctx = new Context(_ctx);
 
-            foreach(string fileName in ctx.Analyzer.Modules.Keys)
+            foreach (string fileName in ctx.Analyzer.Modules.Keys)
             {
                 var tree = ctx.Analyzer.Modules[fileName];
 
@@ -30,24 +30,26 @@ namespace SkullLang.Compiler.Analyzers
                 ctx.DeclareFunction(fileName, new FunctionInfo("printf", "int", [], isExtern: true));
                 ctx.DeclareFunction(fileName, new FunctionInfo("scanf", "int", [], isExtern: true));
 
-                foreach(var node in tree)
+                foreach (var node in tree)
                 {
 
                     if (node is ASTFunction funcNode)
                     {
                         List<VariableInfo> args = new();
 
-                        foreach((string typeName, string argName) in funcNode.Args)
+                        foreach ((string typeName, string argName) in funcNode.Args)
                         {
                             VariableInfo argInfo = new();
 
                             argInfo.Name = argName;
-                            argInfo.Type = new TypeInfo(typeName, TypeInfo.GetKind(typeName, ctx));
+                            argInfo.Type = new TypeInfo(typeName, ctx: ctx, node: funcNode);
 
                             args.Add(argInfo);
                         }
 
-                        ctx.DeclareFunction(fileName, new FunctionInfo(funcNode.FuncName, TypeInfo.GetCTypeName(funcNode.RetType), args) { ReturnType=new TypeInfo(funcNode.RetType, TypeInfo.GetKind(funcNode.RetType, ctx)) });
+                        ctx.DeclareFunction(fileName,
+                            new FunctionInfo(funcNode.FuncName, funcNode.RetType, args)
+                        );
                     }
                 }
             }

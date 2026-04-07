@@ -1,6 +1,6 @@
 ﻿namespace SkullLang.Compiler.Parsers.ASTNodes
 {
-    public abstract class ASTNode
+    public class ASTNode
     {
         internal ulong Ln { get; init; }
         internal ulong Col { get; init; }

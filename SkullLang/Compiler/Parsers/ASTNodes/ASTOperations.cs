@@ -13,7 +13,7 @@
     internal enum UnaryOpType
     {
         None,
-        Neg, BitwiseNot, Reference, DeferencingPtr, Not,
+        Neg, BitwiseNot, Reference, DereferencingPtr, Not,
     }
 
     
@@ -52,7 +52,7 @@
             UnaryOpType.BitwiseNot => "~",
             UnaryOpType.Not => "!",
             UnaryOpType.Reference => "&",
-            UnaryOpType.DeferencingPtr => "*",
+            UnaryOpType.DereferencingPtr => "*",
 
             _ => " ",
         };

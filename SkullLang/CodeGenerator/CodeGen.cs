@@ -31,9 +31,7 @@ namespace SkullLang.CodeGenerator
 
                 StringBuilder code = new();
 
-                code.Append("extern int printf(const char*, ...);\n");
-                code.Append("extern int scanf(const char*, ...);\n");
-                code.Append("\n");
+                code.Append("#include \"SKULL_LANG_DEFAULT_DEFINITIONS.h\"\n");
 
                 foreach(FunctionInfo funcInfo in _ctx.Functions[fileName].Values)
                 {
@@ -45,13 +43,13 @@ namespace SkullLang.CodeGenerator
                         StringBuilder argsString = new();
                         foreach (VariableInfo arg in funcInfo.Args)
                         {
-                            argsString.Append($"{arg.Type.TypeName},");
+                            argsString.Append($"{arg.Type.ToCType()},");
                         }
                         argsLine = argsString.ToString().TrimEnd(',').Trim();
                     }
-                    else argsLine = "void";
+                    else argsLine = "SKULL_VOID";
 
-                    code.AppendLine($"{funcInfo.ReturnType.TypeName} {funcInfo.FuncUName}({argsLine});");
+                    code.AppendLine($"{funcInfo.ReturnType.ToCType()} {funcInfo.FuncUName}({argsLine});");
                 }
 
                 foreach(ASTNode node in _ctx.Analyzer.Modules[fileName])
@@ -66,13 +64,13 @@ namespace SkullLang.CodeGenerator
                             StringBuilder argsString = new();
                             foreach (VariableInfo arg in info.Args)
                             {
-                                argsString.Append($"{arg.Type.TypeName} {arg.Name},");
+                                argsString.Append($"{arg.Type.ToCType()} {arg.Name},");
                             }
                             argsLine = argsString.ToString().TrimEnd(',').Trim();
                         }
-                        else argsLine = "void";
+                        else argsLine = "SKULL_VOID";
 
-                        code.AppendLine($"{info.ReturnType.TypeName} {info.FuncUName}({argsLine}){{");
+                        code.AppendLine($"{info.ReturnType.ToCType()} {info.FuncUName}({argsLine}){{");
                         EmitCodeBlock(code, funcNode.Body);
                         code.AppendLine("}");
                     }

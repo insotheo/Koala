@@ -1,4 +1,5 @@
-﻿using System;
+﻿using SkullLang.Compiler.Parsers.ASTNodes;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -11,110 +12,224 @@ namespace SkullLang.Compiler.Analyzers
         Pointer, Reference
     }
 
+    internal enum BuiltInType
+    {
+        None,
+        Byte, UByte,
+        Short, UShort,
+        Int, UInt,
+        Long, ULong,
+        Float, Double,
+        Bool,
+        Void
+    }
+
+    internal enum TypeModifier
+    {
+        Pointer, Reference
+    }
+
     internal struct TypeInfo
     {
-        internal string OriginalTypeName;
-        internal string TypeName;
-        internal bool IsLiteral;
-        internal bool IsRefInPast;
+        internal BuiltInType BuiltIn;
+        internal string CustomTypeName; //later for structs
+
+        internal List<TypeModifier> Modifiers;
+
         internal bool IsReadonly;
+        internal bool IsLiteral;
+
         internal TypeKind Kind;
 
-        internal TypeInfo(string typeName, TypeKind kind, bool isLiteral = false, bool refInPast = false, bool isReadonly = false)
+        internal string OriginalTypeName;
+
+        internal bool IsPointer => Modifiers.Count > 0 && Modifiers[0] == TypeModifier.Pointer;
+        internal bool IsReference => Modifiers.Count > 0 && Modifiers[0] == TypeModifier.Reference;
+
+        internal TypeInfo(string typeName, bool isLiteral = false, Context ctx = null, ASTNode node = null)
         {
-            IsReadonly = isReadonly;
-            if (typeName != null && typeName.EndsWith(" __readonly")) IsReadonly = true;
+            BuiltIn = BuiltInType.None;
+            CustomTypeName = null;
+            Modifiers = new();
 
             OriginalTypeName = typeName != null ? typeName.Replace(" __readonly", "").Trim() : null;
-            TypeName = (IsReadonly ? "const " : "") + GetCTypeName(OriginalTypeName);
-            Kind = kind;
+
+            IsReadonly = false;
             IsLiteral = isLiteral;
-            IsRefInPast = refInPast;
+
+            Kind = TypeKind.None;
+
+            if (typeName == null) return;
+
+            if(!String.IsNullOrEmpty(typeName)) Parse(ctx, node, typeName, ref this);
         }
 
-        internal bool CmpKinds(TypeInfo other) => Kind == other.Kind;
-        internal bool CmpStrict(TypeInfo other)
+        private static void Parse(Context ctx, ASTNode node, string typeName, ref TypeInfo info)
         {
-            bool kinds = CmpKinds(other);
-            if (TypeName == null || other.TypeName == null || this.IsLiteral || other.IsLiteral) return kinds;
-            return TypeName.Replace("const ", "").Trim() == other.TypeName.Replace("const ", "").Trim() && kinds;
-        }
+            typeName = typeName.Trim();
 
-        internal static TypeKind GetKind(string typeName, Context ctx = null)
-        {
-            typeName = typeName.Replace(" __readonly", "").Trim();
-            if (typeName.EndsWith("*")) return TypeKind.Pointer;
-            if (typeName.EndsWith("&")) return TypeKind.Reference;
-            return GetKindBasedOnTypeName(typeName, ctx);
-        }
-
-        internal static TypeKind GetKindBasedOnTypeName(string typeName, Context ctc = null) => typeName switch
-        {
-            "byte" => TypeKind.Integer,
-            "ubyte" => TypeKind.Integer,
-            "short" => TypeKind.Integer,
-            "ushort" => TypeKind.Integer,
-            "int" => TypeKind.Integer,
-            "uint" => TypeKind.Integer,
-            "long" => TypeKind.Integer,
-            "ulong" => TypeKind.Integer,
-            "llong" => TypeKind.Integer,
-            "ullong" => TypeKind.Integer,
-
-            "float" => TypeKind.Float,
-            "double" => TypeKind.Float,
-
-            "bool" => TypeKind.Integer,
-
-            "void" => TypeKind.None,
-
-            _ => TypeKind.None
-        };
-
-
-        internal static string GetBaseTypeName(string typeName)
-        {
-            string baseName = typeName?.TrimEnd('*', '&');
-            return baseName;
-        }
-
-
-        internal static string GetCTypeName(string typeName)
-        {
-            if (typeName == null) return null;
-
-            string baseType = GetBaseTypeName(typeName);
-
-            string cBase = baseType switch
+            //readonly
+            if (typeName.EndsWith(" __readonly"))
             {
-                "byte" => "char",
-                "ubyte" => "unsigned char",
-                "short" => "short int",
-                "ushort" => "unsigned short int",
-                "int" => "int",
-                "uint" => "unsigned int",
-                "long" => "long int",
-                "ulong" => "unsigned long int",
-                "llong" => "long long int",
-                "ullong" => "unsigned long long int",
+                info.IsReadonly = true;
+                typeName = typeName.Replace(" __readonly", "").Trim();
+            }
 
-                "float" => "float",
-                "double" => "double",
+            //ptr and ref
+            while (typeName.EndsWith('*') || typeName.EndsWith('&'))
+            {
+                if (typeName.EndsWith('*'))
+                    info.Modifiers.Add(TypeModifier.Pointer);
+                else if (typeName.EndsWith('&'))
+                    info.Modifiers.Add(TypeModifier.Reference);
 
-                "bool" => "int",
+                typeName = typeName.Substring(0, typeName.Length - 1).Trim();
+            }
 
-                "void" => "void",
+            info.BuiltIn = typeName switch
+            {
+                "byte" => BuiltInType.Byte,
+                "ubyte" => BuiltInType.UByte,
+                "short" => BuiltInType.Short,
+                "ushort" => BuiltInType.UShort,
+                "int" => BuiltInType.Int,
+                "uint" => BuiltInType.UInt,
+                "long" => BuiltInType.Long,
+                "ulong" => BuiltInType.ULong,
+                "float" => BuiltInType.Float,
+                "double" => BuiltInType.Double,
+                "bool" => BuiltInType.Bool,
+                "void" => BuiltInType.Void,
 
-                _ => baseType
+                _ => BuiltInType.None,
             };
 
-            string suffix = typeName.Substring(baseType.Length);
-            suffix = suffix.Replace('&', '*');
+            if (info.BuiltIn == BuiltInType.None)
+                info.CustomTypeName = typeName;
 
-            return cBase + suffix;
+            if (ctx != null && node != null) Validate(ctx, node, ref info);
+            DetermindKind(ctx, ref info);
+        }
+        
+        private static void Validate(Context ctx, ASTNode node, ref TypeInfo info)
+        {
+            int refCnt = 0;
+
+            for(int i = 0; i < info.Modifiers.Count; i++)
+            {
+                if (info.Modifiers[i] == TypeModifier.Reference)
+                {
+                    refCnt++;
+
+                    if (refCnt > 1)
+                        ctx.Panic("Multiple references are not allowed", node.Ln, node.Col);
+
+                    if (i != 0)
+                        ctx.Panic("Reference must be the outermost modifier", node.Ln, node.Col);
+                }
+            }
         }
 
-        internal string ToStringOriginal() => String.IsNullOrEmpty(OriginalTypeName) ? Kind.ToString().ToLower() : OriginalTypeName;
+        private static void DetermindKind(Context ctx, ref TypeInfo info)
+        {
+            if (info.Modifiers.Count > 0)
+            {
+                info.Kind = info.Modifiers[0] switch
+                {
+                    TypeModifier.Pointer => TypeKind.Pointer,
+                    TypeModifier.Reference => TypeKind.Reference,
+
+                    _ => TypeKind.None,
+                };
+                return;
+            }
+
+            if(info.BuiltIn == BuiltInType.Byte ||
+                info.BuiltIn == BuiltInType.UByte ||
+                info.BuiltIn == BuiltInType.Short ||
+                info.BuiltIn == BuiltInType.UShort ||
+                info.BuiltIn == BuiltInType.Int ||
+                info.BuiltIn == BuiltInType.UInt ||
+                info.BuiltIn == BuiltInType.Long ||
+                info.BuiltIn == BuiltInType.ULong ||
+                info.BuiltIn == BuiltInType.Bool
+                )
+                info.Kind = TypeKind.Integer;
+
+            else if (info.BuiltIn == BuiltInType.Float || info.BuiltIn == BuiltInType.Double)
+                info.Kind = TypeKind.Float;
+
+            else if(info.BuiltIn == BuiltInType.Void)
+                info.Kind = TypeKind.None;
+
+            //TODO: structs and classes
+        }
+
+        internal string ToCType()
+        {
+            string baseType = BuiltIn switch
+            {
+                BuiltInType.None => CustomTypeName,
+
+                _ => "SKULL_" + BuiltIn.ToString().ToUpper()
+            };
+
+            StringBuilder typeBuilder = new();
+
+            if (IsReadonly)
+                typeBuilder.Append("const ");
+
+            typeBuilder.Append(baseType);
+
+            foreach(TypeModifier mod in Modifiers)
+            {
+                if (mod == TypeModifier.Pointer)
+                    typeBuilder.Append("*");
+                else if(mod == TypeModifier.Reference)
+                    typeBuilder.Append("*"); //no references in C
+            }
+
+            return typeBuilder.ToString();
+        }
+
+        internal bool Cmp(TypeInfo other)
+        {
+            if (this.IsLiteral || other.IsLiteral)
+                return Kind == other.Kind;
+
+            if (this.BuiltIn != other.BuiltIn ||
+                this.CustomTypeName != other.CustomTypeName ||
+                Modifiers.Count != other.Modifiers.Count
+                )
+                return false;
+
+            for(int i = 0; i < Modifiers.Count; i++)
+            {
+                if (Modifiers[i] != other.Modifiers[i])
+                    return false;
+            }
+
+            return true;
+        }
+
+        internal void Rebuild(Context ctx = null, ASTNode node = null)
+        {
+            if (ctx != null && node != null) Validate(ctx, node, ref this);
+            DetermindKind(ctx, ref this);
+        }
+
+        internal TypeInfo Clone() => new TypeInfo()
+        {
+            BuiltIn = this.BuiltIn,
+            CustomTypeName = this.CustomTypeName,
+            Modifiers = new(this.Modifiers),
+            IsReadonly = this.IsReadonly,
+            IsLiteral = this.IsLiteral,
+            Kind = this.Kind,
+            OriginalTypeName = this.OriginalTypeName,
+        };
+
+        internal string ToStringOriginal() => !String.IsNullOrEmpty(OriginalTypeName) ? OriginalTypeName : Kind.ToString().ToLower();
     }
 
     internal struct VariableInfo
@@ -140,10 +255,10 @@ namespace SkullLang.Compiler.Analyzers
         internal List<VariableInfo> Args;
         internal bool IsExtern;
 
-        internal FunctionInfo(string funcName, string returnTypeName, List<VariableInfo> args, bool isExtern = false)
+        internal FunctionInfo(string funcName, string returnTypeName, List<VariableInfo> args, bool isExtern = false, Context ctx = null, ASTFunction funcNode = null)
         {
             FuncName = funcName;
-            ReturnType = new TypeInfo(returnTypeName, TypeInfo.GetKind(returnTypeName));
+            ReturnType = new TypeInfo(returnTypeName, ctx: ctx, node: funcNode);
             Args = args;
             IsExtern = isExtern;
             GenUName();
@@ -159,15 +274,16 @@ namespace SkullLang.Compiler.Analyzers
             _id += 1;
 
             StringBuilder uname = new();
-            uname.Append("_f");
+            uname.Append("_sk_f");
             uname.Append(_id);
+            uname.Append("_");
             uname.Append(FuncName);
+            uname.Append("_");
+            uname.Append(ReturnType.ToStringOriginal().ToLower());
             uname.Append("_");
 
             foreach(var arg in Args)
-            {
-                uname.Append(arg.Type.TypeName[0].ToString());
-            }
+                uname.Append(arg.Type.OriginalTypeName[0].ToString());
 
             FuncUName = uname.ToString();
         }
