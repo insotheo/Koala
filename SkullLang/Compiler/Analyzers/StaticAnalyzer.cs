@@ -102,6 +102,9 @@ namespace SkullLang.Compiler.Analyzers
 
                 funcCall.FunctionUName = funcInfo.Value.FuncUName;
 
+                foreach (ASTNode arg in funcCall.Args)
+                    RecognizeType(ctx, arg);
+
                 return (funcCall, funcInfo.Value.ReturnType.Clone());
             }
 

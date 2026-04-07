@@ -1,5 +1,6 @@
 ﻿using SkullLang.Compiler.Analyzers;
 using SkullLang.Compiler.Parsers.ASTNodes;
+using SkullLang.Tools;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -30,13 +31,17 @@ namespace SkullLang.CodeGenerator
             {
                 string name = Path.GetFileNameWithoutExtension(fileName);
 
-                StringBuilder code = new();
+                //header
+                string headerName = "SKH_" + name.ToUpperSnakeCase() + "_H";
+                StringBuilder header = new();
+                header.Append($"#ifndef {headerName}\n");
+                header.Append($"#define {headerName}\n");
 
-                code.Append("#include \"SKULL_LANG_DEFAULT_DEFINITIONS.h\"\n");
+                header.Append("#include \"SKULL_LANG_DEFAULT_DEFINITIONS.h\"\n");
 
                 foreach(string funcName in _ctx.Functions[fileName].Keys)
                 {
-                    foreach (FunctionInfo funcInfo in _ctx.Functions[fileName][funcName])
+                    foreach (FunctionInfo funcInfo in _ctx.Functions[fileName][funcName]) //TODO: private, public modifiers
                     {
                         if (funcInfo.IsExtern) continue;
 
@@ -52,10 +57,16 @@ namespace SkullLang.CodeGenerator
                         }
                         else argsLine = "SKULL_VOID";
 
-                        code.AppendLine($"{funcInfo.ReturnType.ToCType()} {funcInfo.FuncUName}({argsLine});");
+                        header.AppendLine($"{funcInfo.ReturnType.ToCType()} {funcInfo.FuncUName}({argsLine});");
                     }
                 }
 
+                header.Append("#endif");
+                ///
+
+                //code
+                StringBuilder code = new();
+                code.Append($"#include \"{name}.skh\"\n");
                 foreach(ASTNode node in _ctx.Analyzer.Modules[fileName])
                 {
                     if(node is ASTFunction funcNode)
@@ -83,7 +94,10 @@ namespace SkullLang.CodeGenerator
                         code.AppendLine("}");
                     }
                 }
+                ///
 
+                //saving files
+                File.WriteAllText(Path.Combine(outputDir, name + ".skh"), header.ToString());
                 File.WriteAllText(Path.Combine(outputDir, name + ".c"), code.ToString());
             }
         }
