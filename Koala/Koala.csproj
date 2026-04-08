@@ -1,0 +1,14 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+	<AssemblyName>koalac</AssemblyName>
+	<OutDir>..\Bin\KoalaCompiler</OutDir>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\KoalaLang\KoalaLang.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,63 @@
+﻿using KoalaLang.Compiler.Parsers.ASTNodes;
+using System.Collections.Generic;
+
+using static KoalaLang.Compiler.Analyzers.StaticAnalyzer;
+
+namespace KoalaLang.Compiler.Analyzers
+{
+    public sealed class Analyzer
+    {
+        AnalyzerContext _ctx;
+        public bool IsSuccess => _ctx.IsAnalizingSuccess;
+
+        internal Context Output { get; private set; }
+
+        public Analyzer(Dictionary<string, List<ASTNode>> trees)
+        {
+            _ctx = new(trees);
+        }
+
+        public void Analyze()
+        {
+            //go through all declarations
+            Context ctx = new Context(_ctx);
+
+            foreach (string fileName in ctx.Analyzer.Modules.Keys)
+            {
+                ctx.CurrentFileName = fileName;
+
+                var tree = ctx.Analyzer.Modules[fileName];
+
+                //DEFAULT FUNCTIONS
+                ctx.DeclareFunction(fileName, new FunctionInfo("printf", "int", [], isExtern: true));
+                ctx.DeclareFunction(fileName, new FunctionInfo("scanf", "int", [], isExtern: true));
+
+                foreach (var node in tree)
+                {
+
+                    if (node is ASTFunction funcNode)
+                    {
+                        List<VariableInfo> args = new();
+
+                        foreach ((string typeName, string argName) in funcNode.Args)
+                            args.Add(new(argName, new TypeInfo(typeName, ctx: ctx, node: funcNode)));
+
+                        ctx.DeclareFunction(fileName,
+                            new FunctionInfo(funcNode.FuncName, funcNode.RetType, args)
+                        );
+                    }
+                }
+            }
+            ctx.CurrentFileName = "";
+
+            //go through each code block and verify
+            foreach (string fileName in ctx.Analyzer.Modules.Keys)
+            {
+                var tree = ctx.Analyzer.Modules[fileName];
+                AnalyzeTree(ctx, fileName, tree);
+            }
+
+            Output = ctx;
+        }
+    }
+}
