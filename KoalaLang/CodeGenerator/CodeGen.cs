@@ -41,6 +41,19 @@ namespace KoalaLang.CodeGenerator
 
                 header.Append("#include \"KOALA_LANG_DEFAULT_DEFINITIONS.h\"\n");
 
+                foreach(StructInfo @struct in _ctx.Structs[fileName].Values)
+                {
+                    StringBuilder structBuilder = new();
+
+                    structBuilder.Append("typedef struct{\n");
+                    foreach (VariableInfo field in @struct.Fields.Values)
+                        structBuilder.Append($"{field.Type.ToCType()} {field.Name};\n");
+
+                    structBuilder.Append($"}} {@struct.Name};\n");
+
+                    header.Append(structBuilder.ToString());
+                }
+
                 foreach(string funcName in _ctx.Functions[fileName].Keys)
                 {
                     foreach (FunctionInfo funcInfo in _ctx.Functions[fileName][funcName]) //TODO: private, public modifiers; if private - move declaration to code

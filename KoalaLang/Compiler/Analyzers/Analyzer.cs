@@ -32,9 +32,14 @@ namespace KoalaLang.Compiler.Analyzers
                 ctx.DeclareFunction(fileName, new FunctionInfo("printf", "int", [], isExtern: true));
                 ctx.DeclareFunction(fileName, new FunctionInfo("scanf", "int", [], isExtern: true));
 
-                foreach (var node in tree)
+                foreach(var node in tree) //struct first
                 {
+                    if (node is ASTStructDecl structDecl)
+                        ctx.DeclareStruct(fileName, structDecl);
+                }
 
+                foreach (var node in tree) //functions
+                {
                     if (node is ASTFunction funcNode)
                     {
                         List<VariableInfo> args = new();

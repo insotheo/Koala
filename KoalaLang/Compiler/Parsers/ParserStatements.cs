@@ -7,6 +7,42 @@ namespace KoalaLang.Compiler.Parsers
 {
     internal static class ParserStatement
     {
+        internal static void ParseStruct(ParserContext ctx)
+        {
+            ulong ln = ctx.Current.Ln, col = ctx.Current.Col;
+            List<ASTVariableDecl> fields = new();
+            string structName;
+
+            //consume struct keyword
+            ctx.Next();
+
+            if(!ctx.Expect(TokenType.Identifier)) { ctx.Sync(TokenType.RBrace); return; }
+            structName = ctx.Current.Value;
+            ctx.Next();
+
+            if(!ctx.Expect(TokenType.LBrace)) { ctx.Sync(TokenType.RBrace); return; }
+            ctx.Next();
+
+            while(ctx.NotEOF && ctx.Current.Type != TokenType.RBrace)
+            {
+                if(ctx.Current.Type == TokenType.Identifier)
+                {
+                    ASTNode fieldDecl = ParseVarDecl(ctx, skipConsumingKW: true);
+                    if (fieldDecl is ASTAssignment)
+                        ctx.Panic("Unsupported expression: cannot assign inside struct declaration");
+                    else
+                        fields.Add(fieldDecl as ASTVariableDecl);
+                }
+                else
+                    ctx.Panic("Unsupported expression inside struct declaration");
+            }
+
+            if(!ctx.Expect(TokenType.RBrace)) { ctx.Sync(TokenType.FuncKW); return; }
+            ctx.Next();
+
+            ctx.PushNode(new ASTStructDecl(structName, fields, ln, col));
+        }
+
         internal static void ParseFunction(ParserContext ctx)
         {
             ulong ln = ctx.Current.Ln, col = ctx.Current.Col;
@@ -91,11 +127,11 @@ namespace KoalaLang.Compiler.Parsers
             return new ASTCodeBlock(nodes, ln, col);
         }
 
-        internal static ASTNode ParseVarDecl(ParserContext ctx)
+        internal static ASTNode ParseVarDecl(ParserContext ctx, bool skipConsumingKW = false)
         {
             ulong ln = ctx.Current.Ln, col = ctx.Current.Col;
 
-            ctx.Next(); //consume let keyword
+            if(!skipConsumingKW) ctx.Next(); //consume let keyword
 
             if (!ctx.Expect(TokenType.Identifier)) ctx.Sync(TokenType.Semicolon);
             string varName = ctx.Current.Value;

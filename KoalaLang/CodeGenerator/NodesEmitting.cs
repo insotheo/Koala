@@ -121,6 +121,15 @@ namespace KoalaLang.CodeGenerator
                 EmitExpression(code, castNode.LHS);
                 code.Append(")");
             }
+
+            else if(expr is ASTDotAccess dotNode)
+            {
+                if (insertParens) code.Append("(");
+                EmitExpression(code, dotNode.LHS);
+                code.Append(".");
+                EmitExpression(code, dotNode.RHS);
+                if (insertParens) code.Append(")");
+            }
         }
     }
 }

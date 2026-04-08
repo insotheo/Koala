@@ -86,6 +86,7 @@ namespace KoalaLang.Compiler.Parsers
                         case "while": AddToken(TokenType.WhileKW, col:startCol); break;
                         case "readonly": AddToken(TokenType.ReadonlyKW, col:startCol); break;
                         case "as": AddToken(TokenType.AsKW, col:startCol); break;
+                        case "struct": AddToken(TokenType.StructKW, col:startCol); break;
                          
                         default: AddToken(TokenType.Identifier, id, startCol); break;
                     }
@@ -98,6 +99,7 @@ namespace KoalaLang.Compiler.Parsers
                     case ';': AddToken(TokenType.Semicolon); Next(); continue;
                     case ':': AddToken(TokenType.Colon); Next(); continue;
 
+                    case '.': AddToken(TokenType.Dot); Next(); continue;
                     case ',': AddToken(TokenType.Comma); Next(); continue;
 
                     case '!':

@@ -25,6 +25,7 @@ namespace KoalaLang.Compiler.Parsers
         void ParseDeclaration()
         {
             if (_ctx.Current.Type == TokenType.FuncKW) ParseFunction(_ctx);
+            else if (_ctx.Current.Type == TokenType.StructKW) ParseStruct(_ctx);
             else
             {
                 _ctx.Panic($"Unknown declaration: {_ctx.GetLine(_ctx.Current.Ln)}");

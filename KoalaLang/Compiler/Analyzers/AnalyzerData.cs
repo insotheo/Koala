@@ -9,7 +9,8 @@ namespace KoalaLang.Compiler.Analyzers
     {
         None, 
         Integer, Float, String,
-        Pointer, Reference
+        Pointer, Reference,
+        Struct,
     }
 
     internal enum BuiltInType
@@ -115,6 +116,12 @@ namespace KoalaLang.Compiler.Analyzers
         {
             int refCnt = 0;
 
+            if(info.BuiltIn == BuiltInType.None)
+            {
+                if(!ctx.IsStuctDefinedInCurrentContext(info.CustomTypeName))
+                    ctx.Panic($"Unknown type '{info.CustomTypeName}'", node.Ln, node.Col);
+            }
+
             for(int i = 0; i < info.Modifiers.Count; i++)
             {
                 if (info.Modifiers[i] == TypeModifier.Reference)
@@ -144,7 +151,7 @@ namespace KoalaLang.Compiler.Analyzers
                 return;
             }
 
-            if(info.BuiltIn == BuiltInType.Byte ||
+            if (info.BuiltIn == BuiltInType.Byte ||
                 info.BuiltIn == BuiltInType.UByte ||
                 info.BuiltIn == BuiltInType.Short ||
                 info.BuiltIn == BuiltInType.UShort ||
@@ -159,10 +166,11 @@ namespace KoalaLang.Compiler.Analyzers
             else if (info.BuiltIn == BuiltInType.Float || info.BuiltIn == BuiltInType.Double)
                 info.Kind = TypeKind.Float;
 
-            else if(info.BuiltIn == BuiltInType.Void)
+            else if (info.BuiltIn == BuiltInType.Void)
                 info.Kind = TypeKind.None;
 
-            //TODO: structs and classes
+            else if (info.BuiltIn == BuiltInType.None && !String.IsNullOrEmpty(info.CustomTypeName))
+                info.Kind = TypeKind.Struct;
         }
 
         internal string ToCType()
@@ -236,13 +244,26 @@ namespace KoalaLang.Compiler.Analyzers
     {
         internal string Name;
         internal TypeInfo Type;
-        internal bool IsConst = false;
 
         internal VariableInfo(string name, TypeInfo type)
         {
             Name = name;
             Type = type;
         }
+    }
+
+    internal struct StructInfo
+    {
+        internal string Name;
+        internal Dictionary<string, VariableInfo> Fields;
+
+        internal StructInfo(string name)
+        {
+            Name = name;
+            Fields = new();
+        }
+
+        internal bool CanAccessField(string fieldName) => Fields.ContainsKey(fieldName);
     }
 
     internal struct FunctionInfo

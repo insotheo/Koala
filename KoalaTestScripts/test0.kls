@@ -1,8 +1,39 @@
-func f(x: int) { printf("x is int; x = %i\n", x) }
-func f(x: float) { printf("x is float; x = %f\n", x) }
-
-func main(){
-	f(1)
-	f(1.0)
+struct Point2D{
+	x: double
+	y: double
 }
 
+func scanPoint2D(i: uint readonly, p: Point2D&){	
+	printf("x%i = ", i)
+	scanf("%lf", &p.x)
+	
+	printf("y%i = ", i)
+	scanf("%lf", &p.y)
+	printf("\n")
+}
+
+func abs(x: double readonly) : double{
+	if (x < 0.0) { return -x }
+	return x
+}
+
+func main(){
+	let p1: Point2D
+	let p2: Point2D
+	let p3: Point2D
+
+	scanPoint2D(1, &p1)
+	scanPoint2D(2, &p2)
+	scanPoint2D(3, &p3)
+	
+	printf("Area of triangle is ")
+	
+	
+	/*
+	0.5*	|x3 - x1	x2 - x1|
+			|y3 - y1	y2 - y1|
+	*/
+	let area: double readonly = 0.5 * ((p3.x - p1.x) * (p2.y - p1.y) - (p3.y - p1.y) * (p2.x - p1.x))
+	
+	printf("%.3lf\n", abs(area))
+}

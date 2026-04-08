@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using KoalaLang.Compiler.Parsers.ASTNodes;
+using System.Collections.Generic;
 using System.Text;
 
 namespace KoalaLang.Compiler.Analyzers
@@ -6,6 +7,8 @@ namespace KoalaLang.Compiler.Analyzers
     internal sealed class Context
     {
         internal Dictionary<string, Dictionary<string, List<FunctionInfo>>> Functions { get; private set; }
+        internal Dictionary<string, Dictionary<string, StructInfo>> Structs { get; private set; }
+
         internal AnalyzerContext Analyzer { get; private set; }
 
         internal string CurrentFileName;
@@ -15,6 +18,7 @@ namespace KoalaLang.Compiler.Analyzers
         internal Context(AnalyzerContext analyzer)
         {
             Functions = new();
+            Structs = new();
             Analyzer = analyzer;
             CurrentVars = new();
         }
@@ -26,6 +30,7 @@ namespace KoalaLang.Compiler.Analyzers
                 NewCurrentVars.Add(typeName, varInfo);
 
             Functions = oldCtx.Functions;
+            Structs = oldCtx.Structs;
             Analyzer = oldCtx.Analyzer;
             CurrentFileName = oldCtx.CurrentFileName;
             CurrentFunction = oldCtx.CurrentFunction;
@@ -63,7 +68,6 @@ namespace KoalaLang.Compiler.Analyzers
 
             CurrentVars.Add(varName, new VariableInfo(varName, type));
         }
-
 
         internal void DeclareFunction(string @namespace, FunctionInfo info)
         {
@@ -114,6 +118,38 @@ namespace KoalaLang.Compiler.Analyzers
             }
             return null;
         }
+
+        internal void DeclareStruct(string @namespace, ASTStructDecl structNode)
+        {
+            if (!Structs.ContainsKey(@namespace))
+                Structs.Add(@namespace, new());
+
+            if (Structs[@namespace].ContainsKey(structNode.StructName))
+            {
+                Panic($"Struct '{structNode.StructName}' already defined", structNode.Ln, structNode.Col);
+                return;
+            }
+
+            StructInfo info = new(structNode.StructName);
+
+            foreach(ASTVariableDecl field in structNode.Fields)
+            {
+                if (info.Fields.ContainsKey(field.VarName))
+                {
+                    Panic($"Field '{field.VarName}' already exists in struct '{info.Name}'", field.Ln, field.Col);
+                    continue;
+                }
+
+                TypeInfo type = new(field.TypeName, ctx: this, node: field);
+
+                info.Fields.Add(field.VarName, new(field.VarName, type));
+            }
+
+            Structs[@namespace].Add(info.Name, info);
+        }
+        internal bool IsStuctDefinedInCurrentContext(string structName) => Structs[CurrentFileName].ContainsKey(structName);
+        internal StructInfo GetStuct(string fileName, string structName) => Structs[fileName][structName];
+
 
         internal void Panic(string msg, ulong ln = 0, ulong col = 0) => Analyzer.Panic(CurrentFileName, msg, ln, col);
     }

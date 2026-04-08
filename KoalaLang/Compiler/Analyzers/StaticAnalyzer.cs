@@ -209,6 +209,49 @@ namespace KoalaLang.Compiler.Analyzers
                 return (node, castType);
             }
 
+            if(node is ASTDotAccess dotNode)
+            {
+                (var lhsNode, var lhsType) = RecognizeType(ctx, dotNode.LHS);
+
+                dotNode.LHS = lhsNode;
+
+                if (lhsType.Kind != TypeKind.Struct)
+                {
+                    ctx.Panic($"Cannot access field on non-struct type '{lhsType.ToStringOriginal()}'", node.Ln, node.Col);
+                    return (node, new(null));
+                }
+
+                if (!ctx.IsStuctDefinedInCurrentContext(lhsType.CustomTypeName))
+                {
+                    ctx.Panic($"Unknown struct '{lhsType.CustomTypeName}'", node.Ln, node.Col);
+                    return (node, new(null));
+                }
+                var structInfo = ctx.GetStuct(ctx.CurrentFileName, lhsType.CustomTypeName);
+
+                if (dotNode.RHS is not ASTIdentifier fieldIdent) //TODO: func call support
+                {
+                    ctx.Panic("Right-hand side of '.' must be a field name or a method call");
+                    return (node, new(null));
+                }
+
+                if (fieldIdent != null)
+                {
+                    string fieldName = fieldIdent.Identifier;
+
+                    if (!structInfo.CanAccessField(fieldName))
+                    {
+                        ctx.Panic($"Struct '{lhsType.CustomTypeName}' has no field '{fieldName}'", node.Ln, node.Col);
+                        return (node, new(null));
+                    }
+
+                    var newType = structInfo.Fields[fieldName].Type.Clone();
+                    newType.IsReadonly = lhsType.IsReadonly;
+
+                    return (dotNode, newType);
+                }
+                
+            }
+
             if (node is ASTReturn retNode)
                 return RecognizeType(ctx, retNode.Ret);
 
@@ -307,6 +350,8 @@ namespace KoalaLang.Compiler.Analyzers
             {
                 if (node is ASTFunction funcNode)
                 {
+                    ctx.CurrentFileName = fileName;
+
                     List<VariableInfo> signature = new();
                     foreach (var arg in funcNode.Args)
                         signature.Add(new(arg.argName, new(arg.typeName, ctx: ctx, node: funcNode)));

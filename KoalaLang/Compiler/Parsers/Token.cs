@@ -6,8 +6,9 @@
         Identifier, NumberI, NumberF, StringLiteral, True, False,
 
         //KW means keyword
-        ReturnKW, FuncKW, LetKW, IfKW, ElseKW, WhileKW, ReadonlyKW, AsKW,
+        ReturnKW, FuncKW, LetKW, IfKW, ElseKW, WhileKW, ReadonlyKW, AsKW, StructKW,
 
+        Dot, 
         Plus, Minus, Asterisk, Slash, Percent,
         GreaterThan, GreaterOrEqual, LessThan, LessOrEqual, Equal, Inequal, Not, LogicalOr, LogicalAnd,
         Ampersand, Pipe, Caret, Tilde, LeftShift, RightShift,

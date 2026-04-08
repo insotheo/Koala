@@ -148,6 +148,14 @@ namespace KoalaLang.Compiler.Parsers
                 string identifier = ctx.Current.Value;
 
                 if (ctx.Peek(1).Type == TokenType.LParen) return ParseFunctionCall(ctx, identifier);
+                else if(ctx.Peek(1).Type == TokenType.Dot)
+                {
+                    ctx.Next(); //consume identifier
+                    ctx.Next(); //consume .
+
+                    var calling = ParsePrimary(ctx);
+                    return new ASTDotAccess(new ASTIdentifier(identifier, ln, col), calling, ln, col);
+                }
 
                 ctx.Next();
                 return new ASTIdentifier(identifier, ln, col);
