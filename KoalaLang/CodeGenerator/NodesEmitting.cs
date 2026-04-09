@@ -66,7 +66,7 @@ namespace KoalaLang.CodeGenerator
         {
             if (expr is ASTConstantInt cInt) code.Append(cInt.Value);
             else if (expr is ASTConstantFloat cFloat) code.Append(cFloat.Value);
-            else if (expr is ASTConstantChar cChar) code.Append((uint)cChar.Value.Value);
+            else if (expr is ASTConstantChar cChar) code.Append($"'{cChar.Value}'");
             else if (expr is ASTConstantString cString) code.Append($"\"{cString.Value}\"");
             else if (expr is ASTConstantBoolean cBool) code.Append(cBool.Value ? "KOALA_TRUE" : "KOALA_FALSE");
             else if (expr is ASTIdentifier identifier) code.Append(identifier.Identifier); 
@@ -132,6 +132,16 @@ namespace KoalaLang.CodeGenerator
                 code.Append(".");
                 EmitExpression(code, dotNode.RHS);
                 if (insertParens) code.Append(")");
+            }
+
+            else if(expr is ASTIndexing idxNode)
+            {
+                if(insertParens) code.Append("(");
+                EmitExpression(code, idxNode.Source);
+                code.Append("[");
+                EmitExpression(code, idxNode.Index);
+                code.Append("]");
+                if(insertParens) code.Append(")");
             }
         }
     }

@@ -122,6 +122,8 @@ namespace KoalaLang.Compiler.Parsers
                     case ')': AddToken(TokenType.RParen); Next(); continue;
                     case '{': AddToken(TokenType.LBrace); Next(); continue;
                     case '}': AddToken(TokenType.RBrace); Next(); continue;
+                    case '[': AddToken(TokenType.LBracket); Next(); continue;
+                    case ']': AddToken(TokenType.RBracket); Next(); continue;
 
                     case '+': AddToken(TokenType.Plus); Next(); continue;
                     case '-': AddToken(TokenType.Minus); Next(); continue;
@@ -194,6 +196,11 @@ namespace KoalaLang.Compiler.Parsers
 
                             while(_isIdxValid && ((_cur != '"' && !isChar) || (_cur != '\'' && isChar)))
                             {
+                                if(_cur == '\\')
+                                {
+                                    stringLiteral.Append(_cur);
+                                    Next();
+                                }
                                 stringLiteral.Append(_cur);
                                 Next();
                             }

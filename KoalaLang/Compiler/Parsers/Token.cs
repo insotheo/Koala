@@ -13,7 +13,7 @@
         GreaterThan, GreaterOrEqual, LessThan, LessOrEqual, Equal, Inequal, Not, LogicalOr, LogicalAnd,
         Ampersand, Pipe, Caret, Tilde, LeftShift, RightShift,
 
-        LParen, RParen, LBrace, RBrace, Semicolon, Colon, Comma, Assignment,
+        LParen, RParen, LBrace, RBrace, LBracket, RBracket, Semicolon, Colon, Comma, Assignment,
     }
 
     internal struct Token

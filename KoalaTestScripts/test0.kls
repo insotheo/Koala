@@ -1,4 +1,22 @@
+struct String{
+	Value: byte*
+	
+	func getLen(): uint{
+		let cnt: uint = 0
+		let i: uint = 0
+		
+		while this.Value[i] != ('\0' as byte){
+			cnt = cnt + 1
+			i = i + 1
+		}
+		
+		return cnt
+	}
+}
+
 func main(){
-	let fire: char = '🔥'
-	nprint("%lc", fire)
+	let s: String
+	s.Value = "Hi! My name is \U0001F525!"
+	
+	nprint("\"%s\", %i\n", s.Value, s.getLen())
 }

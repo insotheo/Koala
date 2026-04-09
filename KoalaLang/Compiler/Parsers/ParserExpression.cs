@@ -104,7 +104,7 @@ namespace KoalaLang.Compiler.Parsers
             return left;
         }
 
-        internal static ASTNode ParsePrimary(ParserContext ctx)
+        internal static ASTNode ParsePrimary(ParserContext ctx, bool ignorePostfix = false)
         {
             UnaryOpType MapUnaryOp(TokenType type) => type switch
             {
@@ -119,54 +119,43 @@ namespace KoalaLang.Compiler.Parsers
             };
 
             ulong ln = ctx.Current.Ln, col = ctx.Current.Col;
+            ASTNode node;
 
             if (ctx.Current.Type == TokenType.NumberI)
             {
-                var node = new ASTConstantInt(ulong.Parse(ctx.Current.Value), ln, col);
+                node = new ASTConstantInt(ulong.Parse(ctx.Current.Value), ln, col);
                 ctx.Next();
-                return node;
             }
             else if (ctx.Current.Type == TokenType.NumberF)
             {
-                var node = new ASTConstantFloat(double.Parse(ctx.Current.Value), ln, col);
+                node = new ASTConstantFloat(double.Parse(ctx.Current.Value), ln, col);
                 ctx.Next();
-                return node;
             }
             else if (ctx.Current.Type == TokenType.True || ctx.Current.Type == TokenType.False)
             {
-                var node = new ASTConstantBoolean(ctx.Current.Type == TokenType.True, ln, col);
+                node = new ASTConstantBoolean(ctx.Current.Type == TokenType.True, ln, col);
                 ctx.Next();
-                return node;
             }
             else if (ctx.Current.Type == TokenType.CharLiteral)
             {
-                var node = new ASTConstantChar(Rune.GetRuneAt(ctx.Current.Value, 0), ln, col);
+                if (ctx.Current.Value.Length != 1 && ctx.Current.Value[0] != '\\')
+                    ctx.Panic("Character can only be one character length");
+                node = new ASTConstantChar(ctx.Current.Value, ln, col);
                 ctx.Next();
-                return node;
             }
             else if (ctx.Current.Type == TokenType.StringLiteral)
             {
-                var node = new ASTConstantString(ctx.Current.Value, ln, col);
+                node = new ASTConstantString(ctx.Current.Value, ln, col);
                 ctx.Next();
-                return node;
             }
 
             else if (ctx.Current.Type == TokenType.Identifier)
             {
-                string identifier = ctx.Current.Value;
+                node = new ASTIdentifier(ctx.Current.Value, ln, col);
+                ctx.Next(); //identifier
 
-                if (ctx.Peek(1).Type == TokenType.LParen) return ParseFunctionCall(ctx, identifier);
-                else if(ctx.Peek(1).Type == TokenType.Dot)
-                {
-                    ctx.Next(); //consume identifier
-                    ctx.Next(); //consume .
-
-                    var calling = ParsePrimary(ctx);
-                    return new ASTDotAccess(new ASTIdentifier(identifier, ln, col), calling, ln, col);
-                }
-
-                ctx.Next();
-                return new ASTIdentifier(identifier, ln, col);
+                if(ctx.Current.Type == TokenType.LParen)
+                    node = ParseFunctionCall(ctx, (node as ASTIdentifier).Identifier);
             }
 
             else if (ctx.Current.Type == TokenType.Tilde ||
@@ -179,47 +168,76 @@ namespace KoalaLang.Compiler.Parsers
                 UnaryOpType op = MapUnaryOp(ctx.Current.Type);
                 ctx.Next();
                 var expr = ParseExpression(ctx, UNARY_PRECEDENCE);
-                return new ASTUnaryOp(expr, op, ln, col);
+                node = new ASTUnaryOp(expr, op, ln, col);
             }
 
             else if (ctx.Current.Type == TokenType.LParen)
             {
-                //consume (
-                ctx.Next();
+                ctx.Next(); //consume (
 
-                var expr = ParseExpression(ctx);
+                node = ParseExpression(ctx);
 
-                if (!ctx.Expect(TokenType.RParen)) { ctx.Sync(TokenType.RParen, TokenType.Semicolon); return expr; }
+                if (!ctx.Expect(TokenType.RParen)) { ctx.Sync(TokenType.RParen, TokenType.Semicolon); return node; }
                 ctx.Next(); //consume )
-
-                return expr;
             }
 
-            ctx.Panic("Failed to parse expression");
-            ctx.Sync(TokenType.Semicolon);
-            return null;
+            else
+            {
+                ctx.Panic("Failed to parse expression");
+                ctx.Sync(TokenType.Semicolon);
+                return null;
+            }
+
+            //postfix parsing
+            while (ctx.NotEOF && !ignorePostfix)
+            {
+                if (ctx.Current.Type == TokenType.Dot)
+                {
+                    ctx.Next(); //.
+
+                    if (!ctx.Expect(TokenType.Identifier)) { ctx.Sync(TokenType.Semicolon); return node; }
+                    var right = ParsePrimary(ctx, ignorePostfix: true);
+
+                    node = new ASTDotAccess(node, right, ln, col);
+                }
+
+                else if (ctx.Current.Type == TokenType.LBracket)
+                {
+                    ulong ln2 = ctx.Current.Ln, col2 = ctx.Current.Col;
+                    ctx.Next(); //[
+
+                    var idxExpr = ParseExpression(ctx);
+
+                    if (!ctx.Expect(TokenType.RBracket)) { ctx.Sync(TokenType.RBracket, TokenType.Semicolon); return node; }
+                    ctx.Next();
+
+                    node = new ASTIndexing(node, idxExpr, ln2, col2);
+                }
+
+                else break;
+            }
+
+            return node;
         }
 
-        internal static ASTNode ParseFunctionCall(ParserContext ctx, string fname)
+        internal static ASTFunctionCall ParseFunctionCall(ParserContext ctx, string fName)
         {
             ulong ln = ctx.Current.Ln, col = ctx.Current.Col;
-            //consume identifier and (
-            ctx.Next(); ctx.Next();
+
+            ctx.Next(); //(
 
             List<ASTNode> args = new();
-            while(ctx.NotEOF && ctx.Current.Type != TokenType.RParen)
+            while (ctx.NotEOF && ctx.Current.Type != TokenType.RParen)
             {
-                ASTNode expr = ParseExpression(ctx);
-
-                args.Add(expr);
-
-                if (ctx.Current.Type == TokenType.Comma) ctx.Next();
+                args.Add(ParseExpression(ctx));
+                if (ctx.Current.Type == TokenType.Comma)
+                    ctx.Next();
             }
 
-            if (!ctx.Expect(TokenType.RParen)) { ctx.Sync(TokenType.RParen, TokenType.Semicolon); }
-            ctx.Next(); //consume )
+            if (!ctx.Expect(TokenType.RParen)) { ctx.Sync(TokenType.RParen, TokenType.Semicolon); return null; }
+            ctx.Next();//)
 
-            return new ASTFunctionCall(fname, args, ln, col);
+            return new ASTFunctionCall(fName, args, ln, col);
         }
 
         internal static string ParseType(ParserContext ctx)

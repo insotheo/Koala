@@ -10,12 +10,12 @@ namespace KoalaLang.Compiler.Analyzers
         static (ASTNode newNode, TypeInfo typeInfo) RecognizeType(Context ctx, ASTNode node)
         {
             if (node is ASTConstantInt) return (node, new("int", isLiteral: true));
-            if (node is ASTConstantFloat) return (node, new("float", isLiteral: true));
-            if (node is ASTConstantBoolean) return (node, new("bool", isLiteral: true));
-            if (node is ASTConstantChar) return (node, new("char", isLiteral: true));
-            if (node is ASTConstantString) return (node, new("char*", isLiteral: true)); //TODO: special type for strings
+            else if (node is ASTConstantFloat) return (node, new("float", isLiteral: true));
+            else if (node is ASTConstantBoolean) return (node, new("bool", isLiteral: true));
+            else if (node is ASTConstantChar) return (node, new("char", isLiteral: true));
+            else if (node is ASTConstantString) return (node, new("char*", isLiteral: true)); //TODO: special type for strings
 
-            if (node is ASTVariableDecl varDeclNode)
+            else if (node is ASTVariableDecl varDeclNode)
             {
                 if (!ctx.IsVariableInScope(varDeclNode.VarName))
                     return (node, new(null));
@@ -25,7 +25,7 @@ namespace KoalaLang.Compiler.Analyzers
                 return (node, varDeclType);
             }
 
-            if (node is ASTIdentifier identifier)
+            else if (node is ASTIdentifier identifier)
             {
                 string varName = identifier.Identifier;
 
@@ -56,7 +56,7 @@ namespace KoalaLang.Compiler.Analyzers
                 return (node, varTypeInfo);
             }
 
-            if (node is ASTFunctionCall funcCall)
+            else if (node is ASTFunctionCall funcCall)
             {
                 List<FunctionInfo> candidates = funcCall.SrcStruct.HasValue ? funcCall.SrcStruct.Value.Methods.Functions[funcCall.FunctionName] : ctx.GetFunctions(ctx.CurrentFileName, funcCall.FunctionName);
                 FunctionInfo? funcInfo = null;
@@ -109,7 +109,7 @@ namespace KoalaLang.Compiler.Analyzers
                 return (funcCall, funcInfo.Value.ReturnType.Clone());
             }
 
-            if (node is ASTBinaryOp binOp)
+            else if (node is ASTBinaryOp binOp)
             {
                 (var lhsNode, var lhsType) = RecognizeType(ctx, binOp.LHS);
                 (var rhsNode, var rhsType) = RecognizeType(ctx, binOp.RHS);
@@ -144,7 +144,7 @@ namespace KoalaLang.Compiler.Analyzers
                 return (newBinOp, lhsType);
             }
 
-            if (node is ASTUnaryOp unOp)
+            else if (node is ASTUnaryOp unOp)
             {
                 (var hsNode, var hsType) = RecognizeType(ctx, unOp.HS);
                 var unaryNode = new ASTUnaryOp(hsNode, unOp.Op, node.Ln, node.Col);
@@ -189,7 +189,7 @@ namespace KoalaLang.Compiler.Analyzers
                 return (unaryNode, hsType);
             }
 
-            if (node is ASTFunction funcNode)
+            else if (node is ASTFunction funcNode)
             {
                 if (funcNode.FuncType != null)
                     return (node, (TypeInfo)funcNode.FuncType);
@@ -201,7 +201,7 @@ namespace KoalaLang.Compiler.Analyzers
                 return (node, funcType);
             }
 
-            if (node is ASTCast castNode)
+            else if (node is ASTCast castNode)
             {
                 if (castNode.ResultType != null)
                     return (node, castNode.ResultType.Value);
@@ -213,7 +213,7 @@ namespace KoalaLang.Compiler.Analyzers
                 return (node, castType);
             }
 
-            if(node is ASTDotAccess dotNode)
+            else if(node is ASTDotAccess dotNode)
             {
                 (var lhsNode, var lhsType) = RecognizeType(ctx, dotNode.LHS);
 
@@ -273,7 +273,36 @@ namespace KoalaLang.Compiler.Analyzers
                 
             }
 
-            if (node is ASTReturn retNode)
+            else if(node is ASTIndexing idxNode)
+            {
+                (var srcExpr, var srcType) = RecognizeType(ctx, idxNode.Source);
+                (var idxExpr, var idxType) = RecognizeType(ctx, idxNode.Index);
+
+                idxNode.Source = srcExpr;
+                idxNode.Index = idxExpr;
+
+                if(idxType.Kind != TypeKind.Integer)
+                {
+                    ctx.Panic("Index is allowed to be only integer", idxExpr.Ln, idxExpr.Col);
+                    return (node, new(null));
+                }
+
+                if (srcType.IsPointer)
+                {
+                    var newType = srcType.Clone();
+                    newType.Modifiers.RemoveAt(0);
+                    newType.Rebuild();
+                    return (idxNode, newType);
+                }
+                else
+                {
+                    ctx.Panic($"Cannot apply indexing with [] to expression of type '{srcType.OriginalTypeName}'", srcExpr.Ln, srcExpr.Col);
+                    return (idxNode, new(null));
+                }
+            }
+
+
+            else if (node is ASTReturn retNode)
                 return RecognizeType(ctx, retNode.Ret);
 
             return (node, new(null));
