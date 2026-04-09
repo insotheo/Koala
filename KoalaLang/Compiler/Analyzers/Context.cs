@@ -97,6 +97,7 @@ namespace KoalaLang.Compiler.Analyzers
         internal List<FunctionInfo> GetFunctions(string fileName, string funcName)
         {
             if (!Functions.ContainsKey(fileName)) return new();
+            if (!Functions[fileName].Contains(funcName)) return new();
             return Functions[fileName].Functions[funcName];
         }
 

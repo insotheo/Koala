@@ -9,20 +9,69 @@ struct Complex{ //z = a + ib
 		return z
 	}
 	
-	func add(z1: Complex&): Complex{
-		return Complex::new(this.a + z1.a, this.b + z1.b)
+	func add(z1: Complex&){
+		this.a = this.a + z1.a
+		this.b = this.b + z1.b
+	}
+	
+	func sub(z1: Complex&){
+		this.a = this.a - z1.a
+		this.b = this.b - z1.b
+	}
+	
+	func mulByReal(lambda: double){
+		this.a = this.a * lambda
+		this.b = this.b * lambda
+	}
+	
+	func mulByComplex(z1: Complex&){
+		let newA: double readonly = this.a * z1.a - this.b * z1.b
+		let newB: double readonly = this.a * z1.b + this.b * z1.a
+		
+		this.a = newA
+		this.b = newB
+	}
+	
+	func invert(){
+		this.b = -this.b
 	}
 	
 	func print(){ 
-		if this.a == 0.0 { nprint("z = %.3lfi", this.b) }
-		nprint("z = %.3lf + %.3lfi", this.a, this.b)
+		if this.a == 0.0 { nprint("z = %.3lfi\n", this.b) }
+		else if this.b == 0.0 { nprint("z = %.3lf, z is Real\n", this.a) }
+		else { nprint("z = %.3lf + %.3lfi\n", this.a, this.b) }
 	}
 }
 
-func main(){
-	let z1: Complex = Complex::new(5.0, 3.0)
-	let z2: Complex = Complex::new(5.0, 3.0)
+func printDouble(d: double) { nprint("%.3lf", d) }
+
+func sqrt(x: double): double{
+	if x < 0.0 { return -1.0 }
+	else if x == 0.0 { return 0.0 }
 	
-	let s: Complex = z1.add(&z2)
-	s.print()
+	let guess: double = x / 2.0
+	let epsilon: double = 1.0 / 10000000.0
+	
+	while abs(guess * guess - x) > epsilon{
+		guess = (guess + x / guess) / 2.0
+	}
+	
+	return guess
+}
+
+func abs(x: double): double{
+	if x < 0.0 { return -x }
+	return x
+}
+
+func abs(z: Complex&): double{
+	let a2: double = z.a * z.a
+	let b2: double = z.b * z.b
+	return sqrt(a2 + b2)
+}
+
+func main(){
+	let z1: Complex = Complex::new(3.0, -4.0)
+	printDouble(abs(&z1))
+	z1.print()
 }
