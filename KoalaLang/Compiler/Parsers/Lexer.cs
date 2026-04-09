@@ -186,18 +186,22 @@ namespace KoalaLang.Compiler.Parsers
                         }
 
                     case '"':
+                    case '\'':
                         {
+                            bool isChar = _cur == '\'';
                             Next();
                             StringBuilder stringLiteral = new();
 
-                            while(_isIdxValid && _cur != '"')
+                            while(_isIdxValid && ((_cur != '"' && !isChar) || (_cur != '\'' && isChar)))
                             {
                                 stringLiteral.Append(_cur);
                                 Next();
                             }
                             Next();
 
-                            AddToken(TokenType.StringLiteral, stringLiteral.ToString(), _col); continue;
+                            if(!isChar) AddToken(TokenType.StringLiteral, stringLiteral.ToString(), _col); 
+                            else AddToken(TokenType.CharLiteral, stringLiteral.ToString(), _col); 
+                            continue;
                         }
 
                 }

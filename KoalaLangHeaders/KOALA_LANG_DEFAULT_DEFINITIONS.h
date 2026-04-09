@@ -18,6 +18,8 @@ typedef double KOALA_DOUBLE;
 
 typedef int KOALA_BOOL;
 typedef void KOALA_VOID;
+
+typedef uint32_t KOALA_CHAR;
 ///
 
 //true, false definitions

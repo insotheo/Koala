@@ -1,7 +1,4 @@
-struct Person{
-	Age: int
-	
-	func say(phrase: byte*){
-		nprint("'%s'\n", phrase)
-	}
+func main(){
+	let fire: char = '🔥'
+	nprint("%lc", fire)
 }

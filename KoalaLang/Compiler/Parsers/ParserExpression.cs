@@ -1,5 +1,6 @@
 ﻿using KoalaLang.Compiler.Parsers.ASTNodes;
 using System.Collections.Generic;
+using System.Text;
 
 namespace KoalaLang.Compiler.Parsers
 {
@@ -125,26 +126,32 @@ namespace KoalaLang.Compiler.Parsers
                 ctx.Next();
                 return node;
             }
-            if (ctx.Current.Type == TokenType.NumberF)
+            else if (ctx.Current.Type == TokenType.NumberF)
             {
                 var node = new ASTConstantFloat(double.Parse(ctx.Current.Value), ln, col);
                 ctx.Next();
                 return node;
             }
-            if(ctx.Current.Type == TokenType.True || ctx.Current.Type == TokenType.False)
+            else if (ctx.Current.Type == TokenType.True || ctx.Current.Type == TokenType.False)
             {
                 var node = new ASTConstantBoolean(ctx.Current.Type == TokenType.True, ln, col);
                 ctx.Next();
                 return node;
             }
-            if(ctx.Current.Type == TokenType.StringLiteral)
+            else if (ctx.Current.Type == TokenType.CharLiteral)
+            {
+                var node = new ASTConstantChar(Rune.GetRuneAt(ctx.Current.Value, 0), ln, col);
+                ctx.Next();
+                return node;
+            }
+            else if (ctx.Current.Type == TokenType.StringLiteral)
             {
                 var node = new ASTConstantString(ctx.Current.Value, ln, col);
                 ctx.Next();
                 return node;
             }
 
-            if (ctx.Current.Type == TokenType.Identifier)
+            else if (ctx.Current.Type == TokenType.Identifier)
             {
                 string identifier = ctx.Current.Value;
 
@@ -162,7 +169,7 @@ namespace KoalaLang.Compiler.Parsers
                 return new ASTIdentifier(identifier, ln, col);
             }
 
-            if (ctx.Current.Type == TokenType.Tilde ||
+            else if (ctx.Current.Type == TokenType.Tilde ||
                 ctx.Current.Type == TokenType.Minus ||
                 ctx.Current.Type == TokenType.Ampersand ||
                 ctx.Current.Type == TokenType.Asterisk ||
@@ -175,7 +182,7 @@ namespace KoalaLang.Compiler.Parsers
                 return new ASTUnaryOp(expr, op, ln, col);
             }
 
-            if (ctx.Current.Type == TokenType.LParen)
+            else if (ctx.Current.Type == TokenType.LParen)
             {
                 //consume (
                 ctx.Next();

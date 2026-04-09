@@ -1,3 +1,5 @@
+using System.Text;
+
 namespace KoalaLang.Compiler.Parsers.ASTNodes
 {
     internal class ASTConstantInt : ASTNode
@@ -19,6 +21,13 @@ namespace KoalaLang.Compiler.Parsers.ASTNodes
         internal bool Value { get; private set; }
 
         internal ASTConstantBoolean(bool val, ulong ln, ulong col) : base(ln, col) => Value = val;
+    }
+
+    internal class ASTConstantChar : ASTNode
+    {
+        internal Rune Value { get; private set; }
+
+        internal ASTConstantChar(Rune val, ulong ln, ulong col) : base(ln, col) => Value = val;
     }
 
     internal class ASTConstantString : ASTNode

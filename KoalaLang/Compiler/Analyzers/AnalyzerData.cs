@@ -8,7 +8,7 @@ namespace KoalaLang.Compiler.Analyzers
     internal enum TypeKind
     {
         None, 
-        Integer, Float, String,
+        Integer, Float, String, Char,
         Pointer, Reference,
         Struct,
     }
@@ -22,6 +22,7 @@ namespace KoalaLang.Compiler.Analyzers
         Long, ULong,
         Float, Double,
         Bool,
+        Char,
         Void
     }
 
@@ -100,6 +101,7 @@ namespace KoalaLang.Compiler.Analyzers
                 "float" => BuiltInType.Float,
                 "double" => BuiltInType.Double,
                 "bool" => BuiltInType.Bool,
+                "char" => BuiltInType.Char,
                 "void" => BuiltInType.Void,
 
                 _ => BuiltInType.None,
@@ -165,6 +167,9 @@ namespace KoalaLang.Compiler.Analyzers
 
             else if (info.BuiltIn == BuiltInType.Float || info.BuiltIn == BuiltInType.Double)
                 info.Kind = TypeKind.Float;
+
+            else if (info.BuiltIn == BuiltInType.Char)
+                info.Kind = TypeKind.Char;
 
             else if (info.BuiltIn == BuiltInType.Void)
                 info.Kind = TypeKind.None;
