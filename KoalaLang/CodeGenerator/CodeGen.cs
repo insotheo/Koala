@@ -18,8 +18,6 @@ namespace KoalaLang.CodeGenerator
         public CodeGen(Analyzer analyzer)
         {
             _ctx = analyzer.Output;
-
-            CultureInfo.CurrentCulture = new CultureInfo("en-us");
         }
 
         public void Generate(string outputDir)

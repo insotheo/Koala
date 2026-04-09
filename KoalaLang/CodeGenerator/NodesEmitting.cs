@@ -65,7 +65,7 @@ namespace KoalaLang.CodeGenerator
         static void EmitExpression(StringBuilder code, ASTNode expr, bool insertParens = true)
         {
             if (expr is ASTConstantInt cInt) code.Append(cInt.Value);
-            else if (expr is ASTConstantFloat cFloat) code.Append(cFloat.Value);
+            else if (expr is ASTConstantFloat cFloat) code.Append(cFloat.Value.ToString("0.0#############################", System.Globalization.CultureInfo.InvariantCulture));
             else if (expr is ASTConstantChar cChar) code.Append($"'{cChar.Value}'");
             else if (expr is ASTConstantString cString) code.Append($"\"{cString.Value}\"");
             else if (expr is ASTConstantBoolean cBool) code.Append(cBool.Value ? "KOALA_TRUE" : "KOALA_FALSE");

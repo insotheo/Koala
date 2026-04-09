@@ -1,26 +1,22 @@
-struct Person{
-	Name: byte*
-	Age: uint
+func abs(x: double): double{
+	if x < 0.0 { return -x }
+	return x
+}
+
+func sqrt(x: double): double{
+	if x < 0.0 { return -1.0 }
+	else if x == 0.0 { return 0.0 }
 	
-	static func new(name: byte*, age: uint): Person{
-		let p: Person
-		p.Name = name
-		p.Age = age
-		return p
+	let guess: double = x / 2.0
+	let epsilon: double = 1.0 / 10000000.0
+	
+	while abs(guess * guess - x) > epsilon{
+		guess = (guess + x / guess) / 2.0
 	}
 	
-	func greet(){
-		nprint("Hi! My name is %s! I'm %i years old!\n", this.Name, this.Age)
-	}
-	
-	func addYear(){
-		this.Age = this.Age + 1
-	}
+	return guess
 }
 
 func main(){
-	let john: Person = Person::new("John", 32)
-	john.greet()
-	john.addYear()
-	john.greet()
+	nprint("%lf", sqrt(2.0))
 }
