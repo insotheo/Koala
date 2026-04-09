@@ -1,6 +1,7 @@
 ﻿using KoalaLang.Compiler.Parsers.ASTNodes;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using static KoalaLang.Compiler.Parsers.ASTNodes.OperationsToStringStaticClass;
 
 namespace KoalaLang.Compiler.Analyzers
@@ -97,7 +98,12 @@ namespace KoalaLang.Compiler.Analyzers
                 }
                 if (funcInfo == null)
                 {
-                    ctx.Panic($"Call to undeclared function '{funcCall.FunctionName}'", funcCall.Ln, funcCall.Col);
+                    StringBuilder signatureSB = new();
+                    foreach (ASTNode arg in funcCall.Args)
+                        signatureSB.Append($"{RecognizeType(ctx, arg).typeInfo.ToStringOriginal()}, ");
+                    signatureSB.Append(")");
+
+                    ctx.Panic($"Call to undeclared function '{funcCall.FunctionName}({signatureSB.ToString().Replace(", )", "")})'", funcCall.Ln, funcCall.Col);
                     return (node, new(null));
                 }
 

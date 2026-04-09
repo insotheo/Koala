@@ -1,47 +1,49 @@
 struct Complex{ //z = a + ib
-	a: double
-	b: double
+	x: double
+	y: double
 	
-	static func new(a: double, b: double): Complex{
+	static func new(x: double, y: double): Complex{
 		let z: Complex
-		z.a = a
-		z.b = b
+		z.x = x
+		z.y = y
 		return z
 	}
 	
 	func add(z1: Complex&){
-		this.a = this.a + z1.a
-		this.b = this.b + z1.b
+		this.x = this.x + z1.x
+		this.y = this.y + z1.y
 	}
 	
 	func sub(z1: Complex&){
-		this.a = this.a - z1.a
-		this.b = this.b - z1.b
+		this.x = this.x - z1.x
+		this.y = this.y - z1.y
 	}
 	
 	func mulByReal(lambda: double){
-		this.a = this.a * lambda
-		this.b = this.b * lambda
+		this.x = this.x * lambda
+		this.y = this.y * lambda
 	}
 	
 	func mulByComplex(z1: Complex&){
-		let newA: double readonly = this.a * z1.a - this.b * z1.b
-		let newB: double readonly = this.a * z1.b + this.b * z1.a
+		let newX: double readonly = this.x * z1.x - this.y * z1.y
+		let newY: double readonly = this.x * z1.y + this.y * z1.x
 		
-		this.a = newA
-		this.b = newB
+		this.x = newX
+		this.y = newY
 	}
 	
 	func invert(){
-		this.b = -this.b
+		this.y = -this.y
 	}
 	
-	func getCosPhi(): double { return this.a / abs(this) }
+	func getCosPhi(): double { return this.x / abs(this) }
+	func getSinPhi(): double { return this.y / abs(this) }
+	func getTanPhi(): double { return this.y / this.x }
 	
 	func print(){ 
-		if this.a == 0.0 { nprint("z = %.3lfi\n", this.b) }
-		else if this.b == 0.0 { nprint("z = %.3lf, z is Real\n", this.a) }
-		else { nprint("z = %.3lf + %.3lfi\n", this.a, this.b) }
+		if this.x == 0.0 { nprint("z = %.3lfi\n", this.y) }
+		else if this.y == 0.0 { nprint("z = %.3lf, z is Real\n", this.x) }
+		else { nprint("z = %.3lf + %.3lfi\n", this.x, this.y) }
 	}
 }
 
@@ -67,12 +69,26 @@ func abs(x: double): double{
 }
 
 func abs(z: Complex&): double{
-	let a2: double = z.a * z.a
-	let b2: double = z.b * z.b
-	return sqrt(a2 + b2)
+	let x2: double = z.x * z.x
+	let y2: double = z.y * z.y
+	return sqrt(x2 + y2)
+}
+
+func pow(x: double, n: uint): double{
+	if n == 0 { return 1.0 }
+	else if n == 1 { return x }
+	
+	let res: double = 1.0
+	
+	while n > 1{
+		x = x * x
+		n = n - 1
+	}
+	
+	return x
 }
 
 func main(){
-	let z1: Complex = Complex::new(3.0, 0.0)
-	printDouble(z1.getCosPhi())
+	let z1: Complex = Complex::new(3.0, 3.0)
+	printDouble(pow(2.0, 3.0))
 }
