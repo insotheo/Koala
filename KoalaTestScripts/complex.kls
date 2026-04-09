@@ -1,4 +1,4 @@
-struct Complex{ //z = a + ib
+struct Complex{ //z = x + iy
 	x: double
 	y: double
 	
@@ -32,18 +32,94 @@ struct Complex{ //z = a + ib
 		this.y = newY
 	}
 	
+	func divByReal(lambda: double){
+		this.x = this.x / lambda
+		this.y = this.y / lambda
+	}
+	
+	func divByComplex(z1: Complex&){
+		let newX: double = (this.x * z1.x + this.y * z1.y) / pow(z1.len(), 2)
+		let newY: double = (this.y * z1.x - this.x * z1.y) / pow(z1.len(), 2)
+		this.x = newX
+		this.y = newY
+	}
+	
 	func invert(){
 		this.y = -this.y
 	}
 	
-	func getCosPhi(): double { return this.x / abs(this) }
-	func getSinPhi(): double { return this.y / abs(this) }
+	func arg(): double { 
+		let l: double = this.len()
+		return arctan2(this.y / l, this.x / l)
+	}
+	
+	func len(): double { return abs(this) }
+	
+	func getCosPhi(): double { return this.x / this.len() }
+	func getSinPhi(): double { return this.y / this.len() }
 	func getTanPhi(): double { return this.y / this.x }
 	
+	func Re(): double { return this.x }
+	func Im(): double { return this.y }
+	
+	func pow(n: uint){
+		let phi: double = this.arg()
+		let r: double = pow(this.len(), n)
+		let newCos: double = cos((n as double) * phi)
+		let newSin: double = sin((n as double) * phi)
+		
+		let newX: double = newCos * r
+		let newY: double = newSin * r
+		
+		this.x = newX
+		this.y = newY
+	}
+	
+	func root(n: uint, k: uint){
+		if k > n { k = k % n }
+		
+		let PI: double = 3.1415926535
+	
+		let phi: double = this.arg()
+		let newPhi: double = (phi + 2.0 * PI * (k as double)) / (n as double)
+		let r: double = sqrt(this.len())
+
+		let newCos: double = cos(newPhi)
+		let newSin: double = sin(newPhi)
+		
+		let newX: double = r * newCos
+		let newY: double = r * newSin
+		
+		this.x = newX
+		this.y = newY
+	}
+	
 	func print(){ 
-		if this.x == 0.0 { nprint("z = %.3lfi\n", this.y) }
-		else if this.y == 0.0 { nprint("z = %.3lf, z is Real\n", this.x) }
-		else { nprint("z = %.3lf + %.3lfi\n", this.x, this.y) }
+		let EPSILON: double = 0.001
+		let x: double = this.x
+		let y: double = this.y
+		
+		if abs(x) < EPSILON { x = 0.0 }
+		if abs(y) < EPSILON { y = 0.0 }
+		
+		if x == 0.0 { nprint("z = %.3lfi\n", y) }
+		else if y == 0.0 { nprint("z = %.3lf, z is Real\n", x) }
+		else { nprint("z = %.3lf + %.3lfi\n", x, y) }
+	}
+	
+	func printTrig(){
+		let EPSILON: double = 0.001
+		let cos: double = this.getCosPhi()
+		let sin: double = this.getSinPhi()
+		
+		if abs(cos) < EPSILON { cos = 0.0 }
+		if abs(sin) < EPSILON { sin = 0.0 }
+		
+		let r: double = this.len()
+		
+		if cos == 0.0 { nprint("z = %.3lfi\n", r * sin) }
+		else if sin == 0.0 { nprint("z = %.3lf, z is Real\n", r * cos) }
+		else { nprint("z = %.3lf(%.3lf + %.3lfi)\n", r, cos, sin) }
 	}
 }
 
@@ -80,15 +156,108 @@ func pow(x: double, n: uint): double{
 	
 	let res: double = 1.0
 	
-	while n > 1{
-		x = x * x
+	while n > 0{
+		res = res * x
 		n = n - 1
 	}
 	
-	return x
+	return res
+}
+
+func factorial(n: double): double{
+	if n == 0.0 { return 1.0 } 
+	
+	let res: double = 1.0
+	while n > 1.0{
+		res = res * n
+		n = n - 1.0
+	}
+	
+	return res
+}
+
+func sin(x: double): double{
+	let N: uint readonly = 30
+	let res: double = 0.0
+	let n: uint = 0
+	let k: uint = 0
+	
+	while n < N{
+		k = 2 * n + 1
+		res = res + pow(-1.0, n) * pow(x, k) / factorial(k as double)
+		
+		n = n + 1 
+	}
+	
+	return res
+}
+
+func cos(x: double): double{
+	let N: uint readonly = 30
+	let res: double = 0.0
+	let n: uint = 0
+	let k: uint = 0
+	
+	while n < N{
+		k = 2 * n
+		res = res + pow(-1.0, n) * pow(x, k) / factorial(k as double)
+		
+		n = n + 1 
+	}
+	
+	return res
+}
+
+func arctan(x: double): double{
+	let PI: double readonly = 3.1415926535
+	
+	if abs(x) > 1.0{
+		if x > 0.0{
+			return PI / 2.0 - arctan(1.0 / x)
+		}
+		else {
+			return -PI / 2.0 - arctan(1.0 / x) 
+		}
+	}
+	
+	let N: uint readonly = 150
+	let res: double = 0.0
+	let n: uint = 0
+	let k: uint = 0
+	
+	while n < N{
+		k = 2 * n + 1
+		res = res + pow(-1.0, n) * pow(x, k) / (k as double)
+		
+		n = n + 1 
+	}
+	
+	return res
+}
+
+func sign(a: double): double{
+	if a < 0.0 { return -1.0 }
+	else if a == 0.0 { return 0.0 }
+	else { return 1.0 }
+}
+
+func arctan2(y: double, x: double): double { 
+	let PI: double readonly = 3.1415926535
+	let t: double = arctan(y / x)
+	
+	if x > 0.0 { return t }
+	else if x < 0.0 && y >= 0.0 { return t + PI }
+	else if x < 0.0 && y < 0.0 { return t - PI }
+	
+	else if x == 0.0 && y > 0.0 { return PI / 2.0 }
+	else if x == 0.0 && y < 0.0 { return -PI / 2.0 }
+	
+	return 0.0
 }
 
 func main(){
-	let z1: Complex = Complex::new(3.0, 3.0)
-	printDouble(pow(2.0, 3.0))
+	let z1: Complex = Complex::new(sqrt(2.0) / 2.0, sqrt(2.0) / 2.0)
+	//z1.mulByReal(2.0)
+	z1.print()
+	z1.printTrig()
 }
