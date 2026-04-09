@@ -36,6 +36,8 @@ struct Complex{ //z = a + ib
 		this.b = -this.b
 	}
 	
+	func getCosPhi(): double { return this.a / abs(this) }
+	
 	func print(){ 
 		if this.a == 0.0 { nprint("z = %.3lfi\n", this.b) }
 		else if this.b == 0.0 { nprint("z = %.3lf, z is Real\n", this.a) }
@@ -43,7 +45,7 @@ struct Complex{ //z = a + ib
 	}
 }
 
-func printDouble(d: double) { nprint("%.3lf", d) }
+func printDouble(d: double) { nprint("%.3lf\n", d) }
 
 func sqrt(x: double): double{
 	if x < 0.0 { return -1.0 }
@@ -71,7 +73,6 @@ func abs(z: Complex&): double{
 }
 
 func main(){
-	let z1: Complex = Complex::new(3.0, -4.0)
-	printDouble(abs(&z1))
-	z1.print()
+	let z1: Complex = Complex::new(3.0, 0.0)
+	printDouble(z1.getCosPhi())
 }

@@ -1,7 +1,6 @@
 ﻿using KoalaLang.Compiler.Parsers.ASTNodes;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.InteropServices.JavaScript;
 using static KoalaLang.Compiler.Parsers.ASTNodes.OperationsToStringStaticClass;
 
 namespace KoalaLang.Compiler.Analyzers
@@ -241,7 +240,7 @@ namespace KoalaLang.Compiler.Analyzers
 
                         if (!structInfo.CanAccessField(fieldName))
                         {
-                            ctx.Panic($"Struct '{lhsType.CustomTypeName}.{fieldName}' is inaccessible or is not defined", node.Ln, node.Col);
+                            ctx.Panic($"Struct '{lhsType.CustomTypeName}.{fieldName}' is inaccessible or it's not defined", node.Ln, node.Col);
                             return (node, new(null));
                         }
 
@@ -256,11 +255,11 @@ namespace KoalaLang.Compiler.Analyzers
 
                         if (!structInfo.CanAccessMethod(methodName))
                         {
-                            ctx.Panic($"Struct '{lhsType.CustomTypeName}.{methodName}()' is inaccessible or is not defined", node.Ln, node.Col);
+                            ctx.Panic($"Struct '{lhsType.CustomTypeName}.{methodName}()' is inaccessible or it's not defined", node.Ln, node.Col);
                             return (node, new(null));
                         }
 
-                        ASTFunctionCall expandedMethodCall = new(methodName, methodCall.Args, methodCall.Ln, methodCall.Col);
+                        ASTFunctionCall expandedMethodCall = new(methodName, new(methodCall.Args), methodCall.Ln, methodCall.Col);
                         expandedMethodCall.Args.Insert(0, new ASTUnaryOp(dotNode.LHS, UnaryOpType.Reference, methodCall.Ln, methodCall.Col));
                         expandedMethodCall.SrcStruct = structInfo;
 
