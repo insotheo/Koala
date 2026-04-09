@@ -41,16 +41,7 @@ namespace KoalaLang.Compiler.Analyzers
                 foreach (var node in tree) //functions
                 {
                     if (node is ASTFunction funcNode)
-                    {
-                        List<VariableInfo> args = new();
-
-                        foreach ((string typeName, string argName) in funcNode.Args)
-                            args.Add(new(argName, new TypeInfo(typeName, ctx: ctx, node: funcNode)));
-
-                        ctx.DeclareFunction(fileName,
-                            new FunctionInfo(funcNode.FuncName, funcNode.RetType, args)
-                        );
-                    }
+                        ctx.DeclareFunction(fileName, FunctionsHandler.ParseFunctionInfo(ctx, funcNode));
                 }
             }
             ctx.CurrentFileName = "";

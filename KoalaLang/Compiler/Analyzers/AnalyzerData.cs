@@ -256,14 +256,19 @@ namespace KoalaLang.Compiler.Analyzers
     {
         internal string Name;
         internal Dictionary<string, VariableInfo> Fields;
+        internal FunctionsHandler Methods;
 
         internal StructInfo(string name)
         {
             Name = name;
             Fields = new();
+            Methods = new();
         }
 
         internal bool CanAccessField(string fieldName) => Fields.ContainsKey(fieldName);
+        
+        internal bool CanAccessMethod(string methodName) => Methods.Contains(methodName);
+        internal void DeclareMethod(string methodName, FunctionInfo method) => Methods.AddFunction(methodName, method);
     }
 
     internal struct FunctionInfo
@@ -276,16 +281,17 @@ namespace KoalaLang.Compiler.Analyzers
         internal List<VariableInfo> Args;
         internal bool IsExtern;
 
-        internal FunctionInfo(string funcName, string returnTypeName, List<VariableInfo> args, bool isExtern = false, Context ctx = null, ASTFunction funcNode = null)
+        internal FunctionInfo(string funcName, string returnTypeName, List<VariableInfo> args, bool isExtern = false, string methodOf = null, string uname = null, Context ctx = null, ASTFunction funcNode = null)
         {
             FuncName = funcName;
             ReturnType = new TypeInfo(returnTypeName, ctx: ctx, node: funcNode);
             Args = args;
             IsExtern = isExtern;
-            GenUName();
+            if(uname == null)
+                GenUName(methodOf);
         }
 
-        private void GenUName()
+        private void GenUName(string methodOf = null)
         {
             if(FuncName == "main" || IsExtern)
             {
@@ -295,7 +301,7 @@ namespace KoalaLang.Compiler.Analyzers
             _id += 1;
 
             StringBuilder uname = new();
-            uname.Append("_kl_f");
+            uname.Append(methodOf == null ? "_kl_f" : $"_kl_m{methodOf}_");
             uname.Append(_id);
             uname.Append("_");
             uname.Append(FuncName);

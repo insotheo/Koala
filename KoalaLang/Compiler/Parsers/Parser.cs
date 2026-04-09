@@ -24,7 +24,7 @@ namespace KoalaLang.Compiler.Parsers
 
         void ParseDeclaration()
         {
-            if (_ctx.Current.Type == TokenType.FuncKW) ParseFunction(_ctx);
+            if (_ctx.Current.Type == TokenType.FuncKW) _ctx.PushNode(ParseFunction(_ctx));
             else if (_ctx.Current.Type == TokenType.StructKW) ParseStruct(_ctx);
             else
             {

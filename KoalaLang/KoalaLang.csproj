@@ -7,4 +7,12 @@
 	<AssemblyName>koala_lang</AssemblyName>
   </PropertyGroup>
 
+	<ItemGroup>
+		<None Include="..\KoalaLangHeaders\**">
+			<Link>KoalaLangHeaders\%(RecursiveDir)%(Filename)%(Extension)</Link>
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+		</None>
+	</ItemGroup>
+	
 </Project>

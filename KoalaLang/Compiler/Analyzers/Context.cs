@@ -6,7 +6,7 @@ namespace KoalaLang.Compiler.Analyzers
 {
     internal sealed class Context
     {
-        internal Dictionary<string, Dictionary<string, List<FunctionInfo>>> Functions { get; private set; }
+        internal Dictionary<string, FunctionsHandler> Functions { get; private set; }
         internal Dictionary<string, Dictionary<string, StructInfo>> Structs { get; private set; }
 
         internal AnalyzerContext Analyzer { get; private set; }
@@ -74,12 +74,12 @@ namespace KoalaLang.Compiler.Analyzers
             if (!Functions.ContainsKey(@namespace))
                 Functions.Add(@namespace, new());
 
-            if (!Functions[@namespace].ContainsKey(info.FuncName))
-                Functions[@namespace].Add(info.FuncName, new());
+            if (!Functions[@namespace].Contains(info.FuncName))
+                Functions[@namespace].Functions[info.FuncName] = new();
 
-            foreach(var existing in Functions[@namespace][info.FuncName])
+            foreach(var existing in GetFunctions(@namespace, info.FuncName))
             {
-                if(IsSameSignature(existing.Args, info.Args))
+                if(FunctionsHandler.IsSameSignature(existing.Args, info.Args))
                 {
                     StringBuilder signatureStr = new();
                     foreach (var arg in existing.Args)
@@ -90,34 +90,13 @@ namespace KoalaLang.Compiler.Analyzers
                 }
             }
 
-            Functions[@namespace][info.FuncName].Add(info);
-        }
-        private bool IsSameSignature(List<VariableInfo> signA, List<VariableInfo> signB)
-        {
-            if (signA.Count != signB.Count)
-                return false;
-
-            for(int i = 0; i < signA.Count; i++)
-            {
-                if (!signA[i].Type.Cmp(signB[i].Type))
-                    return false;
-            }
-
-            return true;
+            Functions[@namespace].AddFunction(info.FuncName, info);
         }
 
-        internal List<FunctionInfo> GetFunctions(string fileName, string funcName) => Functions[fileName][funcName];
-        internal bool IsFunctionInCurrentContext(string funcName) => Functions[CurrentFileName].ContainsKey(funcName);
+        internal List<FunctionInfo> GetFunctions(string fileName, string funcName) => Functions[fileName].Functions[funcName];
+        internal bool IsFunctionInCurrentContext(string funcName) => Functions[CurrentFileName].Contains(funcName);
 
-        internal FunctionInfo? GetFunctionBySignature(string fileName, string funcName, List<VariableInfo> signature)
-        {
-            foreach(FunctionInfo info in GetFunctions(fileName, funcName))
-            {
-                if (IsSameSignature(info.Args, signature))
-                    return info;
-            }
-            return null;
-        }
+        internal FunctionInfo? GetFunctionBySignature(string fileName, string funcName, List<VariableInfo> signature) => Functions[fileName].GetFunctionBySignature(funcName, signature);
 
         internal void DeclareStruct(string @namespace, ASTStructDecl structNode)
         {
@@ -131,8 +110,9 @@ namespace KoalaLang.Compiler.Analyzers
             }
 
             StructInfo info = new(structNode.StructName);
+            Structs[@namespace].Add(info.Name, info);
 
-            foreach(ASTVariableDecl field in structNode.Fields)
+            foreach (ASTVariableDecl field in structNode.Fields)
             {
                 if (info.Fields.ContainsKey(field.VarName))
                 {
@@ -142,10 +122,13 @@ namespace KoalaLang.Compiler.Analyzers
 
                 TypeInfo type = new(field.TypeName, ctx: this, node: field);
 
-                info.Fields.Add(field.VarName, new(field.VarName, type));
+                Structs[@namespace][info.Name].Fields.Add(field.VarName, new(field.VarName, type));
             }
 
-            Structs[@namespace].Add(info.Name, info);
+            foreach(ASTFunction method in structNode.Methods)
+            {
+                Structs[@namespace][info.Name].DeclareMethod(method.FuncName, FunctionsHandler.ParseFunctionInfo(this, method));
+            }
         }
         internal bool IsStuctDefinedInCurrentContext(string structName) => Structs[CurrentFileName].ContainsKey(structName);
         internal StructInfo GetStuct(string fileName, string structName) => Structs[fileName][structName];

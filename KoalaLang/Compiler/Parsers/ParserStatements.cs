@@ -11,6 +11,7 @@ namespace KoalaLang.Compiler.Parsers
         {
             ulong ln = ctx.Current.Ln, col = ctx.Current.Col;
             List<ASTVariableDecl> fields = new();
+            List<ASTFunction> methods = new();
             string structName;
 
             //consume struct keyword
@@ -33,6 +34,12 @@ namespace KoalaLang.Compiler.Parsers
                     else
                         fields.Add(fieldDecl as ASTVariableDecl);
                 }
+                else if(ctx.Current.Type == TokenType.FuncKW)
+                {
+                    ASTFunction method = ParseFunction(ctx, structName);
+                    method.Args.Insert(0, ($"{structName}&", "this"));
+                    methods.Add(method);
+                }
                 else
                     ctx.Panic("Unsupported expression inside struct declaration");
             }
@@ -40,21 +47,21 @@ namespace KoalaLang.Compiler.Parsers
             if(!ctx.Expect(TokenType.RBrace)) { ctx.Sync(TokenType.FuncKW); return; }
             ctx.Next();
 
-            ctx.PushNode(new ASTStructDecl(structName, fields, ln, col));
+            ctx.PushNode(new ASTStructDecl(structName, fields, methods, ln, col));
         }
 
-        internal static void ParseFunction(ParserContext ctx)
+        internal static ASTFunction ParseFunction(ParserContext ctx, string methodOf = null)
         {
             ulong ln = ctx.Current.Ln, col = ctx.Current.Col;
             //consume func
             ctx.Next();
 
-            if (!ctx.Expect(TokenType.Identifier)) { ctx.Sync(TokenType.LBrace, TokenType.Semicolon); return; }
+            if (!ctx.Expect(TokenType.Identifier)) { ctx.Sync(TokenType.LBrace, TokenType.Semicolon); return null; }
 
             string fname = ctx.Current.Value;
             ctx.Next();
 
-            if(!ctx.Expect(TokenType.LParen)) { ctx.Sync(TokenType.LBrace, TokenType.Semicolon); return; }
+            if(!ctx.Expect(TokenType.LParen)) { ctx.Sync(TokenType.LBrace, TokenType.Semicolon); return null; }
             ctx.Next();
 
             List<(string typeName, string argName)> args = new();
@@ -74,7 +81,7 @@ namespace KoalaLang.Compiler.Parsers
                 if (ctx.Current.Type == TokenType.Comma) ctx.Next();
             }
 
-            if (!ctx.Expect(TokenType.RParen)) { ctx.Sync(TokenType.LBrace, TokenType.Semicolon); return; }
+            if (!ctx.Expect(TokenType.RParen)) { ctx.Sync(TokenType.LBrace, TokenType.Semicolon); return null; }
             ctx.Next();
 
             string returnType = "void";
@@ -84,10 +91,10 @@ namespace KoalaLang.Compiler.Parsers
                 returnType = ParseType(ctx);
             }
 
-            if(!ctx.Expect(TokenType.LBrace)) { ctx.Sync(TokenType.RBrace, TokenType.Semicolon); return; }
+            if(!ctx.Expect(TokenType.LBrace)) { ctx.Sync(TokenType.RBrace, TokenType.Semicolon); return null; }
             var body = ParseCodeBlock(ctx);
 
-            ctx.PushNode(new ASTFunction(fname, returnType, args, body, ln, col));
+            return new ASTFunction(fname, returnType, args, body, ln, col, methodOf: methodOf);
         }
 
         internal static ASTCodeBlock ParseCodeBlock(ParserContext ctx)

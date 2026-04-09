@@ -1,6 +1,6 @@
 ﻿using KoalaLang.Compiler.Parsers.ASTNodes;
 using System.Collections.Generic;
-
+using System.Linq;
 using static KoalaLang.Compiler.Parsers.ASTNodes.OperationsToStringStaticClass;
 
 namespace KoalaLang.Compiler.Analyzers
@@ -57,7 +57,7 @@ namespace KoalaLang.Compiler.Analyzers
 
             if (node is ASTFunctionCall funcCall)
             {
-                List<FunctionInfo> candidates = ctx.GetFunctions(ctx.CurrentFileName, funcCall.FunctionName);
+                List<FunctionInfo> candidates = funcCall.SrcStruct.HasValue ? funcCall.SrcStruct.Value.Methods.Functions[funcCall.FunctionName] : ctx.GetFunctions(ctx.CurrentFileName, funcCall.FunctionName);
                 FunctionInfo? funcInfo = null;
                 foreach(var func in candidates)
                 {
@@ -228,19 +228,20 @@ namespace KoalaLang.Compiler.Analyzers
                 }
                 var structInfo = ctx.GetStuct(ctx.CurrentFileName, lhsType.CustomTypeName);
 
-                if (dotNode.RHS is not ASTIdentifier fieldIdent) //TODO: func call support
+                if (dotNode.RHS is not ASTIdentifier &&
+                    dotNode.RHS is not ASTFunctionCall) //TODO: func call support
                 {
-                    ctx.Panic("Right-hand side of '.' must be a field name or a method call");
+                    ctx.Panic("Right-hand side of '.' must be a field name or a method call", dotNode.Ln, dotNode.Col);
                     return (node, new(null));
                 }
 
-                if (fieldIdent != null)
+                if (dotNode.RHS is ASTIdentifier fieldIdent)
                 {
                     string fieldName = fieldIdent.Identifier;
 
                     if (!structInfo.CanAccessField(fieldName))
                     {
-                        ctx.Panic($"Struct '{lhsType.CustomTypeName}' has no field '{fieldName}'", node.Ln, node.Col);
+                        ctx.Panic($"Struct '{lhsType.CustomTypeName}.{fieldName}' is inaccessible or is not defined", node.Ln, node.Col);
                         return (node, new(null));
                     }
 
@@ -248,6 +249,22 @@ namespace KoalaLang.Compiler.Analyzers
                     newType.IsReadonly = lhsType.IsReadonly;
 
                     return (dotNode, newType);
+                }
+                else if(dotNode.RHS is ASTFunctionCall methodCall)
+                {
+                    string methodName = methodCall.FunctionName;
+
+                    if (!structInfo.CanAccessMethod(methodName))
+                    {
+                        ctx.Panic($"Struct '{lhsType.CustomTypeName}.{methodName}()' is inaccessible or is not defined", node.Ln, node.Col);
+                        return (node, new(null));
+                    }
+
+                    ASTFunctionCall expandedMethodCall = new(methodName, methodCall.Args, methodCall.Ln, methodCall.Col);
+                    expandedMethodCall.Args.Insert(0, new ASTUnaryOp(dotNode.LHS, UnaryOpType.Reference, methodCall.Ln, methodCall.Col));
+                    expandedMethodCall.SrcStruct = structInfo;
+
+                    return RecognizeType(ctx, expandedMethodCall);
                 }
                 
             }
@@ -346,18 +363,39 @@ namespace KoalaLang.Compiler.Analyzers
 
         internal static void AnalyzeTree(Context ctx, string fileName, List<ASTNode> tree)
         {
+            ctx.CurrentFileName = fileName;
             foreach (ASTNode node in tree)
             {
                 if (node is ASTFunction funcNode)
                 {
-                    ctx.CurrentFileName = fileName;
-
                     List<VariableInfo> signature = new();
                     foreach (var arg in funcNode.Args)
                         signature.Add(new(arg.argName, new(arg.typeName, ctx: ctx, node: funcNode)));
 
-                    ctx.SetContext(fileName, ctx.GetFunctionBySignature(fileName, funcNode.FuncName, signature).Value);
+                    if (!funcNode.IsMethod)
+                        ctx.SetContext(fileName, ctx.GetFunctionBySignature(fileName, funcNode.FuncName, signature).Value);
+                    else
+                    {
+                        if(!ctx.IsStuctDefinedInCurrentContext(funcNode.MethodOf))
+                        {
+                            ctx.Panic($"Unknown struct '{funcNode.MethodOf}'");
+                            continue;
+                        }
+                        StructInfo src = ctx.GetStuct(fileName, funcNode.MethodOf);
+                        if (!src.CanAccessMethod(funcNode.FuncName))
+                        {
+                            ctx.Panic($"Method {funcNode.MethodOf}.{funcNode.MethodOf} is inaccessible");
+                            continue;
+                        }
+
+                        FunctionInfo funcCtx = src.Methods.GetFunctionBySignature(funcNode.FuncName, signature).Value;
+                        ctx.SetContext(fileName, funcCtx);
+                    }
                     AnalyzeCodeBlock(ctx, funcNode.Body);
+                }
+                else if(node is ASTStructDecl structNode)
+                {
+                    AnalyzeTree(ctx, fileName, structNode.Methods.Cast<ASTNode>().ToList());
                 }
             }
         }
