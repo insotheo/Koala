@@ -24,12 +24,24 @@ namespace KoalaLang.Compiler.Parsers
 
         void ParseDeclaration()
         {
-            if (_ctx.Current.Type == TokenType.FuncKW) _ctx.PushNode(ParseFunction(_ctx));
-            else if (_ctx.Current.Type == TokenType.StructKW) ParseStruct(_ctx);
+            var mods = ParseModifiers(_ctx);
+            if (_ctx.Current.Type == TokenType.FuncKW)
+            {
+                var funcDecl = ParseFunction(_ctx);
+                funcDecl.Modifiers = mods;
+                _ctx.PushNode(funcDecl);
+            }
+            else if (_ctx.Current.Type == TokenType.StructKW)
+            {
+                if (mods.Contains(Analyzers.Modifier.Static))
+                    _ctx.Panic("struct cannot be static");
+
+                ParseStruct(_ctx);
+            }
             else
             {
                 _ctx.Panic($"Unknown declaration: {_ctx.GetLine(_ctx.Current.Ln)}");
-                _ctx.Sync(TokenType.FuncKW);
+                _ctx.Sync(TokenType.FuncKW, TokenType.StructKW, TokenType.StaticKW);
                 _ctx.StepBack();
             }
         }

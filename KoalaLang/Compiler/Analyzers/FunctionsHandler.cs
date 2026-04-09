@@ -26,7 +26,7 @@ namespace KoalaLang.Compiler.Analyzers
             return null;
         }
 
-        internal static FunctionInfo ParseFunctionInfo(Context ctx, ASTFunction funcNode)
+        internal static FunctionInfo ParseFunctionInfo(Context ctx, ASTFunction funcNode, List<Modifier> modifiers)
         {
             List<VariableInfo> args = new();
 
@@ -34,8 +34,9 @@ namespace KoalaLang.Compiler.Analyzers
                 args.Add(new(argName, new TypeInfo(typeName, ctx: ctx, node: funcNode)));
 
             if(funcNode.IsMethod)
-                return new FunctionInfo(funcNode.FuncName, funcNode.RetType, args, methodOf: funcNode.MethodOf);
-            return new FunctionInfo(funcNode.FuncName, funcNode.RetType, args);
+                return new FunctionInfo(funcNode.FuncName, funcNode.RetType, args, modifiers, methodOf: funcNode.MethodOf);
+            else 
+                return new FunctionInfo(funcNode.FuncName, funcNode.RetType, args, modifiers);
         }
 
         internal static bool IsSameSignature(List<VariableInfo> signA, List<VariableInfo> signB)

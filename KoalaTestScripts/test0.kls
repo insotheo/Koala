@@ -1,22 +1,26 @@
-struct String{
-	Value: byte*
+struct Person{
+	Name: byte*
+	Age: uint
 	
-	func getLen(): uint{
-		let cnt: uint = 0
-		let i: uint = 0
-		
-		while this.Value[i] != ('\0' as byte){
-			cnt = cnt + 1
-			i = i + 1
-		}
-		
-		return cnt
+	static func new(name: byte*, age: uint): Person{
+		let p: Person
+		p.Name = name
+		p.Age = age
+		return p
+	}
+	
+	func greet(){
+		nprint("Hi! My name is %s! I'm %i years old!\n", this.Name, this.Age)
+	}
+	
+	func addYear(){
+		this.Age = this.Age + 1
 	}
 }
 
 func main(){
-	let s: String
-	s.Value = "Hi! My name is \U0001F525!"
-	
-	nprint("\"%s\", %i\n", s.Value, s.getLen())
+	let john: Person = Person::new("John", 32)
+	john.greet()
+	john.addYear()
+	john.greet()
 }

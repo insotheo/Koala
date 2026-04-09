@@ -1,6 +1,7 @@
 ﻿using KoalaLang.Compiler.Parsers.ASTNodes;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices.JavaScript;
 using static KoalaLang.Compiler.Parsers.ASTNodes.OperationsToStringStaticClass;
 
 namespace KoalaLang.Compiler.Analyzers
@@ -60,7 +61,7 @@ namespace KoalaLang.Compiler.Analyzers
             {
                 List<FunctionInfo> candidates = funcCall.SrcStruct.HasValue ? funcCall.SrcStruct.Value.Methods.Functions[funcCall.FunctionName] : ctx.GetFunctions(ctx.CurrentFileName, funcCall.FunctionName);
                 FunctionInfo? funcInfo = null;
-                foreach(var func in candidates)
+                foreach (var func in candidates)
                 {
                     if (func.IsExtern) //extern functions are unsafe
                     {
@@ -73,7 +74,7 @@ namespace KoalaLang.Compiler.Analyzers
 
                     bool ok = true;
 
-                    for(int i = 0; i < funcCall.Args.Count; i++)
+                    for (int i = 0; i < funcCall.Args.Count; i++)
                     {
                         var provided = RecognizeType(ctx, funcCall.Args[i]).typeInfo;
 
@@ -86,7 +87,7 @@ namespace KoalaLang.Compiler.Analyzers
 
                     if (ok)
                     {
-                        if(funcInfo != null)
+                        if (funcInfo != null)
                         {
                             ctx.Panic($"Ambiguous call to '{funcCall.FunctionName}'", funcCall.Ln, funcCall.Col);
                             return (node, new(null));
@@ -95,7 +96,7 @@ namespace KoalaLang.Compiler.Analyzers
                         funcInfo = func;
                     }
                 }
-                if(funcInfo == null)
+                if (funcInfo == null)
                 {
                     ctx.Panic($"Call to undeclared function '{funcCall.FunctionName}'", funcCall.Ln, funcCall.Col);
                     return (node, new(null));
@@ -213,67 +214,88 @@ namespace KoalaLang.Compiler.Analyzers
                 return (node, castType);
             }
 
-            else if(node is ASTDotAccess dotNode)
+            else if (node is ASTDotAccess dotNode)
             {
-                (var lhsNode, var lhsType) = RecognizeType(ctx, dotNode.LHS);
-
-                dotNode.LHS = lhsNode;
-
-                if (lhsType.Kind != TypeKind.Struct)
+                if (!dotNode.IsStaticAccess)
                 {
-                    ctx.Panic($"Cannot access field on non-struct type '{lhsType.ToStringOriginal()}'", node.Ln, node.Col);
-                    return (node, new(null));
-                }
+                    (var lhsNode, var lhsType) = RecognizeType(ctx, dotNode.LHS);
 
-                if (!ctx.IsStuctDefinedInCurrentContext(lhsType.CustomTypeName))
-                {
-                    ctx.Panic($"Unknown struct '{lhsType.CustomTypeName}'", node.Ln, node.Col);
-                    return (node, new(null));
-                }
-                var structInfo = ctx.GetStuct(ctx.CurrentFileName, lhsType.CustomTypeName);
+                    dotNode.LHS = lhsNode;
 
-                if (dotNode.RHS is not ASTIdentifier &&
-                    dotNode.RHS is not ASTFunctionCall)
-                {
-                    ctx.Panic("Right-hand side of '.' must be a field name or a method call", dotNode.Ln, dotNode.Col);
-                    return (node, new(null));
-                }
-
-                if (dotNode.RHS is ASTIdentifier fieldIdent)
-                {
-                    string fieldName = fieldIdent.Identifier;
-
-                    if (!structInfo.CanAccessField(fieldName))
+                    if (lhsType.Kind != TypeKind.Struct)
                     {
-                        ctx.Panic($"Struct '{lhsType.CustomTypeName}.{fieldName}' is inaccessible or is not defined", node.Ln, node.Col);
+                        ctx.Panic($"Cannot access field on non-struct type '{lhsType.ToStringOriginal()}'", node.Ln, node.Col);
                         return (node, new(null));
                     }
 
-                    var newType = structInfo.Fields[fieldName].Type.Clone();
-                    newType.IsReadonly = lhsType.IsReadonly;
+                    if (!ctx.IsStuctDefinedInCurrentContext(lhsType.CustomTypeName))
+                    {
+                        ctx.Panic($"Unknown struct '{lhsType.CustomTypeName}'", node.Ln, node.Col);
+                        return (node, new(null));
+                    }
+                    var structInfo = ctx.GetStuct(ctx.CurrentFileName, lhsType.CustomTypeName);
 
-                    return (dotNode, newType);
+                    if (dotNode.RHS is ASTIdentifier fieldIdent)
+                    {
+                        string fieldName = fieldIdent.Identifier;
+
+                        if (!structInfo.CanAccessField(fieldName))
+                        {
+                            ctx.Panic($"Struct '{lhsType.CustomTypeName}.{fieldName}' is inaccessible or is not defined", node.Ln, node.Col);
+                            return (node, new(null));
+                        }
+
+                        var newType = structInfo.Fields[fieldName].Type.Clone();
+                        newType.IsReadonly = lhsType.IsReadonly;
+
+                        return (dotNode, newType);
+                    }
+                    else if (dotNode.RHS is ASTFunctionCall methodCall)
+                    {
+                        string methodName = methodCall.FunctionName;
+
+                        if (!structInfo.CanAccessMethod(methodName))
+                        {
+                            ctx.Panic($"Struct '{lhsType.CustomTypeName}.{methodName}()' is inaccessible or is not defined", node.Ln, node.Col);
+                            return (node, new(null));
+                        }
+
+                        ASTFunctionCall expandedMethodCall = new(methodName, methodCall.Args, methodCall.Ln, methodCall.Col);
+                        expandedMethodCall.Args.Insert(0, new ASTUnaryOp(dotNode.LHS, UnaryOpType.Reference, methodCall.Ln, methodCall.Col));
+                        expandedMethodCall.SrcStruct = structInfo;
+
+                        return RecognizeType(ctx, expandedMethodCall);
+                    }
                 }
-                else if(dotNode.RHS is ASTFunctionCall methodCall)
+                else
                 {
+                    string typeName = (dotNode.LHS as ASTIdentifier).Identifier;
+
+                    if (!ctx.IsStuctDefinedInCurrentContext(typeName))
+                    {
+                        ctx.Panic($"struct '{typeName}' not found", dotNode.LHS.Ln, dotNode.LHS.Col);
+                        return (node, new(null));
+                    }
+                    var structInfo = ctx.GetStuct(ctx.CurrentFileName, typeName);
+                    ASTFunctionCall methodCall = dotNode.RHS as ASTFunctionCall;
+
                     string methodName = methodCall.FunctionName;
 
                     if (!structInfo.CanAccessMethod(methodName))
                     {
-                        ctx.Panic($"Struct '{lhsType.CustomTypeName}.{methodName}()' is inaccessible or is not defined", node.Ln, node.Col);
+                        ctx.Panic($"Struct '{typeName}.{methodName}()' is inaccessible or is not defined", node.Ln, node.Col);
                         return (node, new(null));
                     }
 
                     ASTFunctionCall expandedMethodCall = new(methodName, methodCall.Args, methodCall.Ln, methodCall.Col);
-                    expandedMethodCall.Args.Insert(0, new ASTUnaryOp(dotNode.LHS, UnaryOpType.Reference, methodCall.Ln, methodCall.Col));
                     expandedMethodCall.SrcStruct = structInfo;
 
                     return RecognizeType(ctx, expandedMethodCall);
                 }
-                
+
             }
 
-            else if(node is ASTIndexing idxNode)
+            else if (node is ASTIndexing idxNode)
             {
                 (var srcExpr, var srcType) = RecognizeType(ctx, idxNode.Source);
                 (var idxExpr, var idxType) = RecognizeType(ctx, idxNode.Index);
@@ -281,7 +303,7 @@ namespace KoalaLang.Compiler.Analyzers
                 idxNode.Source = srcExpr;
                 idxNode.Index = idxExpr;
 
-                if(idxType.Kind != TypeKind.Integer)
+                if (idxType.Kind != TypeKind.Integer)
                 {
                     ctx.Panic("Index is allowed to be only integer", idxExpr.Ln, idxExpr.Col);
                     return (node, new(null));

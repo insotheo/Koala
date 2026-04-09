@@ -88,6 +88,7 @@ namespace KoalaLang.Compiler.Parsers
                         case "as": AddToken(TokenType.AsKW, col:startCol); break;
                         case "struct": AddToken(TokenType.StructKW, col:startCol); break;
                         case "sizeof": AddToken(TokenType.SizeOfKW, col:startCol); break;
+                        case "static": AddToken(TokenType.StaticKW, col:startCol); break;
                          
                         default: AddToken(TokenType.Identifier, id, startCol); break;
                     }
@@ -98,7 +99,13 @@ namespace KoalaLang.Compiler.Parsers
                 switch (_cur)
                 {
                     case ';': AddToken(TokenType.Semicolon); Next(); continue;
-                    case ':': AddToken(TokenType.Colon); Next(); continue;
+                    case ':':
+                        {
+                            if(Peek() == ':') { AddToken(TokenType.DoubleColon); Next(); }
+                            else AddToken(TokenType.Colon); 
+                            
+                            Next(); continue;
+                        }
 
                     case '.': AddToken(TokenType.Dot); Next(); continue;
                     case ',': AddToken(TokenType.Comma); Next(); continue;

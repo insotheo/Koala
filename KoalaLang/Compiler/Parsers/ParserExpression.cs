@@ -191,14 +191,23 @@ namespace KoalaLang.Compiler.Parsers
             //postfix parsing
             while (ctx.NotEOF && !ignorePostfix)
             {
-                if (ctx.Current.Type == TokenType.Dot)
+                if (ctx.Current.Type == TokenType.Dot || ctx.Current.Type == TokenType.DoubleColon)
                 {
+                    if (node is not ASTIdentifier)
+                        ctx.Panic("Left-hand side of '.' or '::' must be identifier");
+
+                    bool isStaticAccess = ctx.Current.Type == TokenType.DoubleColon;
                     ctx.Next(); //.
 
                     if (!ctx.Expect(TokenType.Identifier)) { ctx.Sync(TokenType.Semicolon); return node; }
                     var right = ParsePrimary(ctx, ignorePostfix: true);
 
-                    node = new ASTDotAccess(node, right, ln, col);
+                    if (isStaticAccess && right is not ASTFunctionCall)
+                        ctx.Panic("Right-hand side of '::' must be a method call");
+                    else if (right is not ASTIdentifier && right is not ASTFunctionCall)
+                        ctx.Panic("Right-hand side of '.' or '::' must be a field name or a method call");
+
+                    node = new ASTDotAccess(node, right, isStaticAccess, ln, col);
                 }
 
                 else if (ctx.Current.Type == TokenType.LBracket)

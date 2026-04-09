@@ -245,6 +245,11 @@ namespace KoalaLang.Compiler.Analyzers
         internal string ToStringOriginal() => !String.IsNullOrEmpty(OriginalTypeName) ? OriginalTypeName : Kind.ToString().ToLower();
     }
 
+    internal enum Modifier
+    {
+        Static
+    }
+
     internal struct VariableInfo
     {
         internal string Name;
@@ -285,13 +290,19 @@ namespace KoalaLang.Compiler.Analyzers
         internal TypeInfo ReturnType;
         internal List<VariableInfo> Args;
         internal bool IsExtern;
+        internal List<Modifier> Modifiers;
 
-        internal FunctionInfo(string funcName, string returnTypeName, List<VariableInfo> args, bool isExtern = false, string methodOf = null, string uname = null, Context ctx = null, ASTFunction funcNode = null)
+        internal FunctionInfo(string funcName, string returnTypeName, List<VariableInfo> args, List<Modifier> modifiers,
+            bool isExtern = false, 
+            string methodOf = null, 
+            string uname = null,
+            Context ctx = null, ASTFunction funcNode = null)
         {
             FuncName = funcName;
             ReturnType = new TypeInfo(returnTypeName, ctx: ctx, node: funcNode);
             Args = args;
             IsExtern = isExtern;
+            Modifiers = modifiers;
 
             if (uname == null)
                 GenUName(methodOf);
@@ -308,7 +319,11 @@ namespace KoalaLang.Compiler.Analyzers
             _id += 1;
 
             StringBuilder uname = new();
-            uname.Append(methodOf == null ? "_kl_f" : $"_kl_m{methodOf}_");
+            uname.Append("_kl");
+            if (Modifiers.Count > 0) uname.Append("_");
+            foreach (Modifier mod in Modifiers)
+                uname.Append(mod.ToString().ToLower()[0]);
+            uname.Append(methodOf == null ? "_f" : $"_m{methodOf}_");
             uname.Append(_id);
             uname.Append("_");
             uname.Append(FuncName);

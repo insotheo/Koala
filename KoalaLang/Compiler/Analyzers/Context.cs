@@ -133,7 +133,7 @@ namespace KoalaLang.Compiler.Analyzers
 
             foreach(ASTFunction method in structNode.Methods)
             {
-                Structs[@namespace][info.Name].DeclareMethod(method.FuncName, FunctionsHandler.ParseFunctionInfo(this, method));
+                Structs[@namespace][info.Name].DeclareMethod(method.FuncName, FunctionsHandler.ParseFunctionInfo(this, method, method.Modifiers));
             }
         }
         internal bool IsStuctDefinedInCurrentContext(string structName) => Structs[CurrentFileName].ContainsKey(structName);

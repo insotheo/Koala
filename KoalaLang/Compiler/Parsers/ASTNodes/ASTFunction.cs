@@ -12,6 +12,8 @@ namespace KoalaLang.Compiler.Parsers.ASTNodes
         internal string MethodOf { get; private set; }
         internal bool IsMethod => !String.IsNullOrEmpty(MethodOf);
 
+        internal List<Modifier> Modifiers = new();
+
         internal List<(string typeName, string argName)> Args { get; private set; } 
         internal ASTCodeBlock Body { get; private set; }
 

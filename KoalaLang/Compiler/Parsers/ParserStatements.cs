@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using KoalaLang.Compiler.Analyzers;
 using KoalaLang.Compiler.Parsers.ASTNodes;
 
 using static KoalaLang.Compiler.Parsers.ParserExpression;
@@ -24,10 +25,16 @@ namespace KoalaLang.Compiler.Parsers
             if(!ctx.Expect(TokenType.LBrace)) { ctx.Sync(TokenType.RBrace); return; }
             ctx.Next();
 
+            List<Modifier> mods = new();
             while(ctx.NotEOF && ctx.Current.Type != TokenType.RBrace)
             {
+                mods = ParseModifiers(ctx);
+
                 if(ctx.Current.Type == TokenType.Identifier)
                 {
+                    if (mods.Contains(Modifier.Static))
+                        ctx.Panic("Cannot create static field");
+
                     ASTNode fieldDecl = ParseVarDecl(ctx, skipConsumingKW: true);
                     if (fieldDecl is ASTAssignment)
                         ctx.Panic("Unsupported expression: cannot assign inside struct declaration");
@@ -37,7 +44,9 @@ namespace KoalaLang.Compiler.Parsers
                 else if(ctx.Current.Type == TokenType.FuncKW)
                 {
                     ASTFunction method = ParseFunction(ctx, structName);
-                    method.Args.Insert(0, ($"{structName}&", "this"));
+                    if(!mods.Contains(Modifier.Static))
+                        method.Args.Insert(0, ($"{structName}&", "this"));
+                    method.Modifiers = mods;
                     methods.Add(method);
                 }
                 else
@@ -229,6 +238,24 @@ namespace KoalaLang.Compiler.Parsers
             ctx.SkipIfSemicolon();
 
             return new ASTReturn(expr, ln, col);
+        }
+
+        internal static List<Modifier> ParseModifiers(ParserContext ctx)
+        {
+            List<Modifier> mods = new();
+
+            while (ctx.NotEOF)
+            {
+                if (ctx.Current.Type == TokenType.StaticKW)
+                {
+                    mods.Add(Modifier.Static);
+                    ctx.Next();
+                }
+
+                else break;
+            }
+
+            return mods;
         }
     }
 }
