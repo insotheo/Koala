@@ -29,8 +29,8 @@ namespace KoalaLang.Compiler.Analyzers
                 var tree = ctx.Analyzer.Modules[fileName];
 
                 //DEFAULT FUNCTIONS
-                ctx.DeclareFunction(fileName, new FunctionInfo("printf", "int", [], isExtern: true));
-                ctx.DeclareFunction(fileName, new FunctionInfo("scanf", "int", [], isExtern: true));
+                ctx.DeclareFunction(fileName, new FunctionInfo("nprint", "int", [], isExtern: true, uname: "_F_KOALA_NATIVE_PRINT_F"));
+                ctx.DeclareFunction(fileName, new FunctionInfo("nscan", "int", [], isExtern: true, uname: "_F_KOALA_NATIVE_SCAN_F"));
 
                 foreach(var node in tree) //struct first
                 {

@@ -112,6 +112,7 @@ namespace KoalaLang.Compiler.Parsers
                 TokenType.Ampersand => UnaryOpType.Reference,
                 TokenType.Asterisk => UnaryOpType.DereferencingPtr,
                 TokenType.Not => UnaryOpType.Not,
+                TokenType.SizeOfKW => UnaryOpType.SizeOf,
 
                 _ => UnaryOpType.None,
             };
@@ -165,7 +166,8 @@ namespace KoalaLang.Compiler.Parsers
                 ctx.Current.Type == TokenType.Minus ||
                 ctx.Current.Type == TokenType.Ampersand ||
                 ctx.Current.Type == TokenType.Asterisk ||
-                ctx.Current.Type == TokenType.Not)
+                ctx.Current.Type == TokenType.Not ||
+                ctx.Current.Type == TokenType.SizeOfKW)
             {
                 UnaryOpType op = MapUnaryOp(ctx.Current.Type);
                 ctx.Next();

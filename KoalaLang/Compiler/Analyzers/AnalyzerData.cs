@@ -287,8 +287,10 @@ namespace KoalaLang.Compiler.Analyzers
             ReturnType = new TypeInfo(returnTypeName, ctx: ctx, node: funcNode);
             Args = args;
             IsExtern = isExtern;
-            if(uname == null)
+
+            if (uname == null)
                 GenUName(methodOf);
+            else FuncUName = uname;
         }
 
         private void GenUName(string methodOf = null)

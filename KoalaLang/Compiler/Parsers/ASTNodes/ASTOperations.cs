@@ -14,6 +14,7 @@
     {
         None,
         Neg, BitwiseNot, Reference, DereferencingPtr, Not,
+        SizeOf,
     }
 
     
@@ -53,6 +54,7 @@
             UnaryOpType.Not => "!",
             UnaryOpType.Reference => "&",
             UnaryOpType.DereferencingPtr => "*",
+            UnaryOpType.SizeOf => "sizeof",
 
             _ => " ",
         };

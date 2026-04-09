@@ -1,32 +1,7 @@
 struct Person{
-	Age: uint
-	Name: byte*
-	Friend: Person& //valid code
-	
-	func sayHello(){
-		printf("Hi! My name is %s. I'm %i years old!\n", this.Name, this.Age)
-	}
+	Age: int
 	
 	func say(phrase: byte*){
-		printf("%s says: %s", this.Name, phrase)
+		nprint("'%s'\n", phrase)
 	}
-	
-	func addYear(){
-		this.Age = this.Age + 1
-	}
-}
-
-func main(){
-	let simon: Person
-	
-	simon.Age = 32
-	simon.Name = "Simon"
-	
-	simon.sayHello()
-	
-	simon.addYear()
-	
-	simon.sayHello()
-	
-	simon.say("Say 'Hello'")
 }

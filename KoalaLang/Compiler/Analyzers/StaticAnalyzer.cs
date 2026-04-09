@@ -102,8 +102,8 @@ namespace KoalaLang.Compiler.Analyzers
 
                 funcCall.FunctionUName = funcInfo.Value.FuncUName;
 
-                foreach (ASTNode arg in funcCall.Args)
-                    RecognizeType(ctx, arg);
+                for (int i = 0; i < funcCall.Args.Count; i++)
+                    funcCall.Args[i] = RecognizeType(ctx, funcCall.Args[i]).newNode;
 
                 return (funcCall, funcInfo.Value.ReturnType.Clone());
             }
@@ -182,6 +182,9 @@ namespace KoalaLang.Compiler.Analyzers
                     return (unaryNode, newType);
                 }
 
+                if (unOp.Op == UnaryOpType.SizeOf)
+                    return (unaryNode, new("uint", isLiteral: true));
+
                 return (unaryNode, hsType);
             }
 
@@ -229,7 +232,7 @@ namespace KoalaLang.Compiler.Analyzers
                 var structInfo = ctx.GetStuct(ctx.CurrentFileName, lhsType.CustomTypeName);
 
                 if (dotNode.RHS is not ASTIdentifier &&
-                    dotNode.RHS is not ASTFunctionCall) //TODO: func call support
+                    dotNode.RHS is not ASTFunctionCall)
                 {
                     ctx.Panic("Right-hand side of '.' must be a field name or a method call", dotNode.Ln, dotNode.Col);
                     return (node, new(null));

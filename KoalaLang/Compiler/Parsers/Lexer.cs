@@ -87,6 +87,7 @@ namespace KoalaLang.Compiler.Parsers
                         case "readonly": AddToken(TokenType.ReadonlyKW, col:startCol); break;
                         case "as": AddToken(TokenType.AsKW, col:startCol); break;
                         case "struct": AddToken(TokenType.StructKW, col:startCol); break;
+                        case "sizeof": AddToken(TokenType.SizeOfKW, col:startCol); break;
                          
                         default: AddToken(TokenType.Identifier, id, startCol); break;
                     }

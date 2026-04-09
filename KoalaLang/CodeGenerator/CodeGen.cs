@@ -4,7 +4,6 @@ using KoalaLang.Tools;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
-using System.Reflection.PortableExecutable;
 using System.Text;
 
 using static KoalaLang.CodeGenerator.NodesEmitting;
@@ -42,7 +41,7 @@ namespace KoalaLang.CodeGenerator
 
                 header.Append("#include \"KOALA_LANG_DEFAULT_DEFINITIONS.h\"\n");
 
-                foreach(StructInfo @struct in _ctx.Structs[fileName].Values)
+                foreach(StructInfo @struct in _ctx.GetStructs(fileName))
                 {
                     StringBuilder structBuilder = new();
 

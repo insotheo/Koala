@@ -1,5 +1,6 @@
 ﻿using KoalaLang.Compiler.Parsers.ASTNodes;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 namespace KoalaLang.Compiler.Analyzers
@@ -93,7 +94,12 @@ namespace KoalaLang.Compiler.Analyzers
             Functions[@namespace].AddFunction(info.FuncName, info);
         }
 
-        internal List<FunctionInfo> GetFunctions(string fileName, string funcName) => Functions[fileName].Functions[funcName];
+        internal List<FunctionInfo> GetFunctions(string fileName, string funcName)
+        {
+            if (!Functions.ContainsKey(fileName)) return new();
+            return Functions[fileName].Functions[funcName];
+        }
+
         internal bool IsFunctionInCurrentContext(string funcName) => Functions[CurrentFileName].Contains(funcName);
 
         internal FunctionInfo? GetFunctionBySignature(string fileName, string funcName, List<VariableInfo> signature) => Functions[fileName].GetFunctionBySignature(funcName, signature);
@@ -132,7 +138,12 @@ namespace KoalaLang.Compiler.Analyzers
         }
         internal bool IsStuctDefinedInCurrentContext(string structName) => Structs[CurrentFileName].ContainsKey(structName);
         internal StructInfo GetStuct(string fileName, string structName) => Structs[fileName][structName];
-
+        
+        internal List<StructInfo> GetStructs(string fileName)
+        {
+            if (!Structs.ContainsKey(fileName)) return new();
+            return Structs[fileName].Values.ToList();
+        }
 
         internal void Panic(string msg, ulong ln = 0, ulong col = 0) => Analyzer.Panic(CurrentFileName, msg, ln, col);
     }

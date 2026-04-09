@@ -27,5 +27,8 @@ typedef void KOALA_VOID;
 
 //default functions
 #include <stdio.h>
+#define _F_KOALA_NATIVE_PRINT_F(...) printf(__VA_ARGS__)
+#define _F_KOALA_NATIVE_SCAN_F(...) scanf(__VA_ARGS__)
+
 
 #endif

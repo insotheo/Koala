@@ -83,7 +83,9 @@ namespace KoalaLang.CodeGenerator
             {
                 if (insertParens) code.Append("(");
                 code.Append(UnaryOpToStirng(unOp.Op));
+                if (unOp.Op == UnaryOpType.SizeOf) code.Append("(");
                 EmitExpression(code, unOp.HS);
+                if (unOp.Op == UnaryOpType.SizeOf) code.Append(")");
                 if (insertParens) code.Append(")");
             }
 
