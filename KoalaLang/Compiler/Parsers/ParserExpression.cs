@@ -193,9 +193,6 @@ namespace KoalaLang.Compiler.Parsers
             {
                 if (ctx.Current.Type == TokenType.Dot || ctx.Current.Type == TokenType.DoubleColon)
                 {
-                    if (node is not ASTIdentifier)
-                        ctx.Panic("Left-hand side of '.' or '::' must be identifier");
-
                     bool isStaticAccess = ctx.Current.Type == TokenType.DoubleColon;
                     ctx.Next(); //.
 
