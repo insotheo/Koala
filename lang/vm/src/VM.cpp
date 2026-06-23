@@ -24,6 +24,14 @@ namespace Koala{
             
             &&do_mov_imm,
             &&do_load_const,
+
+            &&do_add,
+            &&do_sub,
+            &&do_mul,
+            &&do_div_s,
+            &&do_div_u,
+            &&do_mod_s,
+            &&do_mod_u,
             
         };
 
@@ -54,18 +62,62 @@ namespace Koala{
         }
         
         do_mov_imm: {
-            DECODE_I(reg_dst, imm);
-
-            regs[reg_dst] = imm;
-
+            DECODE_I(dst, imm);
+            regs[dst] = imm;
             DISPATCH();
         }
 
         do_load_const: {
-            DECODE_I(reg_dst, const_idx);
+            DECODE_I(dst, const_idx);
+            regs[dst] = const_pool[const_idx];  
+            DISPATCH();
+        }
 
-            regs[reg_dst] = const_pool[const_idx];  
+        do_add: {
+            DECODE_R(dst, s1, s2);
+            regs[dst] = regs[s1] + regs[s2];
+            DISPATCH();
+        }
 
+        do_sub: {
+            DECODE_R(dst, s1, s2);
+            regs[dst] = regs[s1] - regs[s2];
+            DISPATCH();   
+        }
+
+        do_mul: {
+            DECODE_R(dst, s1, s2);
+            regs[dst] = regs[s1] * regs[s2];
+            DISPATCH();
+        }
+        
+        do_div_s: {
+            //TODO: zero devision panic
+            DECODE_R(dst, s1, s2);
+            int64_t val1 = static_cast<int64_t>(regs[s1]);
+            int64_t val2 = static_cast<int64_t>(regs[s2]);
+            regs[dst] = static_cast<uint64_t>(val1 / val2);
+            DISPATCH();
+        }
+        
+        do_div_u:{
+            DECODE_R(dst, s1, s2);
+            regs[dst] = static_cast<uint64_t>(regs[s1] / regs[s2]);
+            DISPATCH();
+        }
+
+        do_mod_s: {
+            //TODO: zero devision panic
+            DECODE_R(dst, s1, s2);
+            int64_t val1 = static_cast<int64_t>(regs[s1]);
+            int64_t val2 = static_cast<int64_t>(regs[s2]);
+            regs[dst] = static_cast<uint64_t>(val1 % val2);
+            DISPATCH();
+        }
+
+        do_mod_u: {
+            DECODE_R(dst, s1, s2);
+            regs[dst] = static_cast<uint64_t>(regs[s1] % regs[s2]);
             DISPATCH();
         }
     }
