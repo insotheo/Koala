@@ -29,6 +29,15 @@ namespace Koala{
 
         #define DISPATCH() goto *dispatch_table[((*ip++) >> 24) & 0xFF]
 
+        #define DECODE_I(r_dst, imm16)\
+            uint8_t r_dst = (*(ip - 1) >> 16) & 0xFF;\
+            uint16_t imm16 = *(ip - 1) & 0xFFFF
+
+        #define DECODE_R(r_dst, r_src1, r_src2)\
+            uint8_t r_dst = (*(ip - 1) >> 16) & 0xFF;\
+            uint8_t r_src1 = (*(ip - 1) >> 8) & 0xFF;\
+            uint8_t r_src2 = *(ip - 1) & 0xFF
+
         DISPATCH();
 
 
@@ -45,10 +54,7 @@ namespace Koala{
         }
         
         do_mov_imm: {
-            uint32_t current_ins = *(ip - 1);
-
-            uint8_t reg_dst = (current_ins >> 16) & 0xFF;
-            uint16_t imm = current_ins & 0xFFFF;
+            DECODE_I(reg_dst, imm);
 
             regs[reg_dst] = imm;
 
@@ -56,10 +62,7 @@ namespace Koala{
         }
 
         do_load_const: {
-            uint32_t current_ins = *(ip - 1);
-            
-            uint8_t reg_dst = (current_ins >> 16) & 0xFF;
-            uint16_t const_idx = current_ins & 0xFFFF;
+            DECODE_I(reg_dst, const_idx);
 
             regs[reg_dst] = const_pool[const_idx];  
 
