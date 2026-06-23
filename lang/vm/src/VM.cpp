@@ -53,8 +53,11 @@ namespace Koala{
             //TODO: call
             //DBG
             std::cout << "===[KOALA VM DUMP]===\n";
-            for(int i = 0; i < REGISTERS_AMOUNT; ++i){
-                std::cout << "R" << i << ": " << regs[i] << "\n";
+            for(int i = 0; i < REGISTERS_AMOUNT; ++i)
+            {   
+                double fval;
+                std::memcpy(&fval, &regs[i], sizeof(double));
+                std::cout << "R" << i << ": U:" << regs[i] << " | S: " << static_cast<int64_t>(regs[i]) << " | F: " << fval << "\n";
             }
             std::cout << "==========\n";
             
