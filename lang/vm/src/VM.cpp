@@ -22,6 +22,7 @@ namespace Koala{
         static const void* dispatch_table[] = {
             &&do_ret,
             
+            &&do_mov,
             &&do_mov_imm,
             &&do_load_const,
 
@@ -64,6 +65,12 @@ namespace Koala{
             return;
         }
         
+        do_mov:{
+            DECODE_R(dst, src, _);
+            regs[dst] = regs[src];
+            DISPATCH();
+        }
+
         do_mov_imm: {
             DECODE_I(dst, imm);
             regs[dst] = imm;
