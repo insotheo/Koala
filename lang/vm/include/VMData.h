@@ -8,7 +8,7 @@ namespace Koala{
     struct VMData{
         uint32_t MemRequired = 0; //in bytes
         std::vector<uint32_t> Bytecode;
-        // std::vector<uint64_t> ConstantPool;
+        std::vector<uint64_t> ConstantPool;
     };
 }
 

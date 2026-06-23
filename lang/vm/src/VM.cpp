@@ -16,16 +16,18 @@ namespace Koala{
         // uint64_t reg_bp = data.MemRequired;//base pointer
         const uint32_t* ip = data.Bytecode.data();
         const uint32_t* bytecode_start = data.Bytecode.data();
-        // const uint64_t* const_pool = data.ConstantPool.data();
+        const uint64_t* const_pool = data.ConstantPool.data();
         
 
         static const void* dispatch_table[] = {
             &&do_ret,
             
             &&do_mov_imm,
+            &&do_load_const,
+            
         };
 
-        #define DISPATCH() goto *dispatch_table[((*ip++) >> 24) & 0xFF];
+        #define DISPATCH() goto *dispatch_table[((*ip++) >> 24) & 0xFF]
 
         DISPATCH();
 
@@ -49,6 +51,17 @@ namespace Koala{
             uint16_t imm = current_ins & 0xFFFF;
 
             regs[reg_dst] = imm;
+
+            DISPATCH();
+        }
+
+        do_load_const: {
+            uint32_t current_ins = *(ip - 1);
+            
+            uint8_t reg_dst = (current_ins >> 16) & 0xFF;
+            uint16_t const_idx = current_ins & 0xFFFF;
+
+            regs[reg_dst] = const_pool[const_idx];  
 
             DISPATCH();
         }

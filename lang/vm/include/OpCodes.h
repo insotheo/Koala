@@ -8,7 +8,7 @@ namespace Koala{
         RET = 0,
 
         MOV_IMM,
-        // LOAD_CONST,
+        LOAD_CONST,
     };
 }
 
