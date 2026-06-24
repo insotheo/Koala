@@ -23,6 +23,11 @@ namespace Koala{
         SUB_F, 
         MUL_F,
         DIV_F,
+
+        CONV_SI2F,
+        CONV_UI2F,
+        CONV_F2SI,
+        CONV_F2UI,
     };
 }
 
@@ -59,6 +64,11 @@ namespace Koala{
 #define KOALA_ASM_SUB_F(dest_reg, src1, src2) KOALA_ASM_R(SUB_F, dest_reg, src1, src2)
 #define KOALA_ASM_MUL_F(dest_reg, src1, src2) KOALA_ASM_R(MUL_F, dest_reg, src1, src2)
 #define KOALA_ASM_DIV_F(dest_reg, src1, src2) KOALA_ASM_R(DIV_F, dest_reg, src1, src2)
+
+#define KOALA_ASM_CONV_SI2F(dest_reg, src) KOALA_ASM_R(CONV_SI2F, dest_reg, src, 0xFF)
+#define KOALA_ASM_CONV_UI2F(dest_reg, src) KOALA_ASM_R(CONV_UI2F, dest_reg, src, 0xFF)
+#define KOALA_ASM_CONV_F2SI(dest_reg, src) KOALA_ASM_R(CONV_F2SI, dest_reg, src, 0xFF)
+#define KOALA_ASM_CONV_F2UI(dest_reg, src) KOALA_ASM_R(CONV_F2UI, dest_reg, src, 0xFF)
 
 ///////////////
 

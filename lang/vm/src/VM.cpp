@@ -40,6 +40,11 @@ namespace Koala{
             &&do_sub_f,
             &&do_mul_f,
             &&do_div_f,
+
+            &&do_conv_si2f,
+            &&do_conv_ui2f,
+            &&do_conv_f2si,
+            &&do_conv_f2ui,
         };
 
         #define DISPATCH()\
@@ -110,53 +115,53 @@ namespace Koala{
         do_div_s: {
             //TODO: zero devision panic
             DECODE_R(dst, s1, s2);
-            int64_t val1 = static_cast<int64_t>(regs[s1]);
-            int64_t val2 = static_cast<int64_t>(regs[s2]);
-            regs[dst] = static_cast<uint64_t>(val1 / val2);
+            int64_t val1 = std::bit_cast<int64_t>(regs[s1]);
+            int64_t val2 = std::bit_cast<int64_t>(regs[s2]);
+            regs[dst] = std::bit_cast<uint64_t>(val1 / val2);
             DISPATCH();
         }
         
         do_div_u:{
             //TODO: zero devision panic
             DECODE_R(dst, s1, s2);
-            regs[dst] = static_cast<uint64_t>(regs[s1] / regs[s2]);
+            regs[dst] = regs[s1] / regs[s2];
             DISPATCH();
         }
 
         do_mod_s: {
             //TODO: zero devision panic
             DECODE_R(dst, s1, s2);
-            int64_t val1 = static_cast<int64_t>(regs[s1]);
-            int64_t val2 = static_cast<int64_t>(regs[s2]);
-            regs[dst] = static_cast<uint64_t>(val1 % val2);
+            int64_t val1 = std::bit_cast<int64_t>(regs[s1]);
+            int64_t val2 = std::bit_cast<int64_t>(regs[s2]);
+            regs[dst] = std::bit_cast<uint64_t>(val1 % val2);
             DISPATCH();
         }
 
         do_mod_u: {
             //TODO: zero devision panic
             DECODE_R(dst, s1, s2);
-            regs[dst] = static_cast<uint64_t>(regs[s1] % regs[s2]);
+            regs[dst] = regs[s1] % regs[s2];
             DISPATCH();
         }
 
         do_add_f: {
             DECODE_R(dst, s1, s2);
             double res = std::bit_cast<double>(regs[s1]) + std::bit_cast<double>(regs[s2]);
-            std::memcpy(&regs[dst], &res, sizeof(double));
+            regs[dst] = std::bit_cast<uint64_t>(res);
             DISPATCH();
         }
 
         do_sub_f: {
             DECODE_R(dst, s1, s2);
             double res = std::bit_cast<double>(regs[s1]) - std::bit_cast<double>(regs[s2]);
-            std::memcpy(&regs[dst], &res, sizeof(double));  
+            regs[dst] = std::bit_cast<uint64_t>(res);
             DISPATCH();
         }
 
         do_mul_f: {
             DECODE_R(dst, s1, s2);
             double res = std::bit_cast<double>(regs[s1]) * std::bit_cast<double>(regs[s2]);
-            std::memcpy(&regs[dst], &res, sizeof(double));
+            regs[dst] = std::bit_cast<uint64_t>(res);
             DISPATCH();
         }
 
@@ -164,7 +169,36 @@ namespace Koala{
             //TODO: zero devision panic
             DECODE_R(dst, s1, s2);
             double res = std::bit_cast<double>(regs[s1]) / std::bit_cast<double>(regs[s2]);
-            std::memcpy(&regs[dst], &res, sizeof(double));
+            regs[dst] = std::bit_cast<uint64_t>(res);
+            DISPATCH();
+        }
+
+        do_conv_si2f: {
+            DECODE_R(dst, src, _);
+            int64_t ival = std::bit_cast<int64_t>(regs[src]);
+            double fval = static_cast<double>(ival);
+            regs[dst] = std::bit_cast<uint64_t>(fval);
+            DISPATCH();
+        }
+
+        do_conv_ui2f: {
+            DECODE_R(dst, src, _);
+            regs[dst] = std::bit_cast<uint64_t>(static_cast<double>(regs[src]));
+            DISPATCH();
+        }
+
+        do_conv_f2si: {
+            DECODE_R(dst, src, _);
+            double fval = std::bit_cast<double>(regs[src]);
+            int64_t ival = static_cast<int64_t>(fval);
+            regs[dst] = std::bit_cast<uint64_t>(ival);
+            DISPATCH();
+        }
+
+        do_conv_f2ui: {
+            DECODE_R(dst, src, _);
+            double fval = std::bit_cast<double>(regs[src]);
+            regs[dst] = static_cast<uint64_t>(fval);
             DISPATCH();
         }
     }
