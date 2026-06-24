@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <iostream>
 #include <vector>
+#include <bit>
 
 namespace Koala{
 
@@ -33,7 +34,11 @@ namespace Koala{
             &&do_div_u,
             &&do_mod_s,
             &&do_mod_u,
-            
+
+            &&do_add_f,
+            &&do_sub_f,
+            &&do_mul_f,
+            &&do_div_f,
         };
 
         #define DISPATCH() goto *dispatch_table[((*ip++) >> 24) & 0xFF]
@@ -48,8 +53,7 @@ namespace Koala{
             uint8_t r_src2 = *(ip - 1) & 0xFF
 
         DISPATCH();
-
-
+        
         do_ret: {
             //TODO: call
             //DBG
@@ -111,6 +115,7 @@ namespace Koala{
         }
         
         do_div_u:{
+            //TODO: zero devision panic
             DECODE_R(dst, s1, s2);
             regs[dst] = static_cast<uint64_t>(regs[s1] / regs[s2]);
             DISPATCH();
@@ -126,8 +131,38 @@ namespace Koala{
         }
 
         do_mod_u: {
+            //TODO: zero devision panic
             DECODE_R(dst, s1, s2);
             regs[dst] = static_cast<uint64_t>(regs[s1] % regs[s2]);
+            DISPATCH();
+        }
+
+        do_add_f: {
+            DECODE_R(dst, s1, s2);
+            double res = std::bit_cast<double>(regs[s1]) + std::bit_cast<double>(regs[s2]);
+            std::memcpy(&regs[dst], &res, sizeof(double));
+            DISPATCH();
+        }
+
+        do_sub_f: {
+            DECODE_R(dst, s1, s2);
+            double res = std::bit_cast<double>(regs[s1]) - std::bit_cast<double>(regs[s2]);
+            std::memcpy(&regs[dst], &res, sizeof(double));  
+            DISPATCH();
+        }
+
+        do_mul_f: {
+            DECODE_R(dst, s1, s2);
+            double res = std::bit_cast<double>(regs[s1]) * std::bit_cast<double>(regs[s2]);
+            std::memcpy(&regs[dst], &res, sizeof(double));
+            DISPATCH();
+        }
+
+        do_div_f: {
+            //TODO: zero devision panic
+            DECODE_R(dst, s1, s2);
+            double res = std::bit_cast<double>(regs[s1]) / std::bit_cast<double>(regs[s2]);
+            std::memcpy(&regs[dst], &res, sizeof(double));
             DISPATCH();
         }
     }

@@ -18,6 +18,11 @@ namespace Koala{
         DIV_U,
         MOD_S,
         MOD_U,
+
+        ADD_F,
+        SUB_F, 
+        MUL_F,
+        DIV_F,
     };
 }
 
@@ -40,7 +45,7 @@ namespace Koala{
 
 #define KOALA_ASM_MOV(dest_reg, src) KOALA_ASM_I(MOV, dest_reg, src)
 #define KOALA_ASM_MOV_IMM(dest_reg, value) KOALA_ASM_I(MOV_IMM, dest_reg, value)
-#define KOALA_ASM_PUSH_CONST(dest_reg, value) KOALA_ASM_I(LOAD_CONST, dest_reg, value)
+#define KOALA_ASM_LOAD_CONST(dest_reg, value) KOALA_ASM_I(LOAD_CONST, dest_reg, value)
 
 #define KOALA_ASM_ADD(dest_reg, src1, src2) KOALA_ASM_R(ADD, dest_reg, src1, src2)
 #define KOALA_ASM_SUB(dest_reg, src1, src2) KOALA_ASM_R(SUB, dest_reg, src1, src2)
@@ -49,6 +54,11 @@ namespace Koala{
 #define KOALA_ASM_DIV_U(dest_reg, src1, src2) KOALA_ASM_R(DIV_U, dest_reg, src1, src2)
 #define KOALA_ASM_MOD_S(dest_reg, src1, src2) KOALA_ASM_R(MOD_S, dest_reg, src1, src2)
 #define KOALA_ASM_MOD_U(dest_reg, src1, src2) KOALA_ASM_R(MOD_U, dest_reg, src1, src2)
+
+#define KOALA_ASM_ADD_F(dest_reg, src1, src2) KOALA_ASM_R(ADD_F, dest_reg, src1, src2)
+#define KOALA_ASM_SUB_F(dest_reg, src1, src2) KOALA_ASM_R(SUB_F, dest_reg, src1, src2)
+#define KOALA_ASM_MUL_F(dest_reg, src1, src2) KOALA_ASM_R(MUL_F, dest_reg, src1, src2)
+#define KOALA_ASM_DIV_F(dest_reg, src1, src2) KOALA_ASM_R(DIV_F, dest_reg, src1, src2)
 
 ///////////////
 
