@@ -13,6 +13,7 @@ int main(){
             KOALA_ASM_MUL_F(R0, R0, R1),
             KOALA_ASM_CONV_F2SI(R0, R0),
             KOALA_ASM_MOV(R1, R0),
+            KOALA_ASM_CMP_LE_S(R0, R1),
             Koala::RET,
         },
         .ConstantPool = {

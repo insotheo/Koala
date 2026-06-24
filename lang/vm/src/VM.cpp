@@ -13,6 +13,7 @@ namespace Koala{
 
         //registers and pointers
         uint64_t regs[REGISTERS_AMOUNT] = {0};
+        bool reg_flags = false;
         // uint64_t reg_sp = data.MemRequired;//stack pointer
         // uint64_t reg_bp = data.MemRequired;//base pointer
         const uint32_t* ip = data.Bytecode.data();
@@ -45,6 +46,15 @@ namespace Koala{
             &&do_conv_ui2f,
             &&do_conv_f2si,
             &&do_conv_f2ui,
+
+            &&do_cmp_eq,
+            &&do_cmp_neq,
+            &&do_cmp_lt_s,
+            &&do_cmp_le_s,
+            &&do_cmp_lt_u,
+            &&do_cmp_le_u,
+            &&do_cmp_lt_f,
+            &&do_cmp_le_f,
         };
 
         #define DISPATCH()\
@@ -71,6 +81,7 @@ namespace Koala{
             {   
                 std::cout << "R" << i << ": U:" << regs[i] << " | S: " << static_cast<int64_t>(regs[i]) << " | F: " << std::bit_cast<double>(regs[i]) << "\n";
             }
+            std::cout << "Flags: " << reg_flags << "\n";
             std::cout << "==========\n";
             
             return;
@@ -199,6 +210,62 @@ namespace Koala{
             DECODE_R(dst, src, _);
             double fval = std::bit_cast<double>(regs[src]);
             regs[dst] = static_cast<uint64_t>(fval);
+            DISPATCH();
+        }
+
+        do_cmp_eq: {
+            DECODE_R(_, s1, s2);
+            reg_flags = (regs[s1] == regs[s2]);
+            DISPATCH();
+        }
+
+        do_cmp_neq: {
+            DECODE_R(_, s1, s2);
+            reg_flags = (regs[s1] != regs[s2]);
+            DISPATCH();
+        }
+
+        do_cmp_lt_s: {
+            DECODE_R(_, s1, s2);
+            int64_t val1 = std::bit_cast<int64_t>(regs[s1]);
+            int64_t val2 = std::bit_cast<int64_t>(regs[s2]);
+            reg_flags = (val1 < val2);
+            DISPATCH();
+        }
+
+        do_cmp_le_s: {
+            DECODE_R(_, s1, s2);
+            int64_t val1 = std::bit_cast<int64_t>(regs[s1]);
+            int64_t val2 = std::bit_cast<int64_t>(regs[s2]);
+            reg_flags = (val1 <= val2);
+            DISPATCH();
+        }
+
+        do_cmp_lt_u: {
+            DECODE_R(_, s1, s2);
+            reg_flags = (regs[s1] < regs[s2]);
+            DISPATCH();
+        }
+
+        do_cmp_le_u: {
+            DECODE_R(_, s1, s2);
+            reg_flags = (regs[s1] <= regs[s2]);
+            DISPATCH();
+        }
+
+        do_cmp_lt_f: {
+            DECODE_R(_, s1, s2);
+            double val1 = std::bit_cast<double>(regs[s1]);
+            double val2 = std::bit_cast<double>(regs[s2]);
+            reg_flags = (val1 < val2);
+            DISPATCH();
+        }
+
+        do_cmp_le_f: {
+            DECODE_R(_, s1, s2);
+            double val1 = std::bit_cast<double>(regs[s1]);
+            double val2 = std::bit_cast<double>(regs[s2]);
+            reg_flags = (val1 <= val2);
             DISPATCH();
         }
     }

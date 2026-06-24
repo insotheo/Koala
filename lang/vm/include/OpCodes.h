@@ -28,6 +28,15 @@ namespace Koala{
         CONV_UI2F,
         CONV_F2SI,
         CONV_F2UI,
+
+        CMP_EQ,
+        CMP_NEQ,
+        CMP_LT_S,
+        CMP_LE_S,
+        CMP_LT_U,
+        CMP_LE_U,
+        CMP_LT_F,
+        CMP_LE_F,
     };
 }
 
@@ -69,6 +78,15 @@ namespace Koala{
 #define KOALA_ASM_CONV_UI2F(dest_reg, src) KOALA_ASM_R(CONV_UI2F, dest_reg, src, 0xFF)
 #define KOALA_ASM_CONV_F2SI(dest_reg, src) KOALA_ASM_R(CONV_F2SI, dest_reg, src, 0xFF)
 #define KOALA_ASM_CONV_F2UI(dest_reg, src) KOALA_ASM_R(CONV_F2UI, dest_reg, src, 0xFF)
+
+#define KOALA_ASM_CMP_EQ(src1, src2) KOALA_ASM_R(CMP_EQ, 0, src1, src2)
+#define KOALA_ASM_CMP_NEQ(src1, src2) KOALA_ASM_R(CMP_NEQ, 0, src1, src2)
+#define KOALA_ASM_CMP_LT_S(src1, src2) KOALA_ASM_R(CMP_LT_S, 0, src1, src2)
+#define KOALA_ASM_CMP_LE_S(src1, src2) KOALA_ASM_R(CMP_LE_S, 0, src1, src2)
+#define KOALA_ASM_CMP_LT_U(src1, src2) KOALA_ASM_R(CMP_LT_U, 0, src1, src2)
+#define KOALA_ASM_CMP_LE_U(src1, src2) KOALA_ASM_R(CMP_LE_U, 0, src1, src2)
+#define KOALA_ASM_CMP_LT_F(src1, src2) KOALA_ASM_R(CMP_LT_F, 0, src1, src2)
+#define KOALA_ASM_CMP_LE_F(src1, src2) KOALA_ASM_R(CMP_LE_F, 0, src1, src2)
 
 ///////////////
 
