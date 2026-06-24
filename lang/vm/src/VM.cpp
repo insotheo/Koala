@@ -19,6 +19,7 @@ namespace Koala{
         const uint32_t* bytecode_start = data.Bytecode.data();
         const uint64_t* const_pool = data.ConstantPool.data();
         
+        uint32_t instr = 0;
 
         static const void* dispatch_table[] = {
             &&do_ret,
@@ -41,17 +42,20 @@ namespace Koala{
             &&do_div_f,
         };
 
-        #define DISPATCH() goto *dispatch_table[((*ip++) >> 24) & 0xFF]
+        #define DISPATCH()\
+            instr = *ip++;\
+            goto *dispatch_table[(instr >> 24) & 0xFF]
 
         #define DECODE_I(r_dst, imm16)\
-            uint8_t r_dst = (*(ip - 1) >> 16) & 0xFF;\
-            uint16_t imm16 = *(ip - 1) & 0xFFFF
+            uint8_t r_dst = (instr >> 16) & 0xFF;\
+            uint16_t imm16 = instr & 0xFFFF
 
         #define DECODE_R(r_dst, r_src1, r_src2)\
-            uint8_t r_dst = (*(ip - 1) >> 16) & 0xFF;\
-            uint8_t r_src1 = (*(ip - 1) >> 8) & 0xFF;\
-            uint8_t r_src2 = *(ip - 1) & 0xFF
+            uint8_t r_dst = (instr >> 16) & 0xFF;\
+            uint8_t r_src1 = (instr >> 8) & 0xFF;\
+            uint8_t r_src2 = instr & 0xFF
 
+        
         DISPATCH();
         
         do_ret: {
@@ -60,9 +64,7 @@ namespace Koala{
             std::cout << "===[KOALA VM DUMP]===\n";
             for(int i = 0; i < REGISTERS_AMOUNT; ++i)
             {   
-                double fval;
-                std::memcpy(&fval, &regs[i], sizeof(double));
-                std::cout << "R" << i << ": U:" << regs[i] << " | S: " << static_cast<int64_t>(regs[i]) << " | F: " << fval << "\n";
+                std::cout << "R" << i << ": U:" << regs[i] << " | S: " << static_cast<int64_t>(regs[i]) << " | F: " << std::bit_cast<double>(regs[i]) << "\n";
             }
             std::cout << "==========\n";
             
