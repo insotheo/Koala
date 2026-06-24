@@ -55,6 +55,10 @@ namespace Koala{
             &&do_cmp_le_u,
             &&do_cmp_lt_f,
             &&do_cmp_le_f,
+
+            &&do_jmp,
+            &&do_jez,
+            &&do_jnz,
         };
 
         #define DISPATCH()\
@@ -64,6 +68,9 @@ namespace Koala{
         #define DECODE_I(r_dst, imm16)\
             uint8_t r_dst = (instr >> 16) & 0xFF;\
             uint16_t imm16 = instr & 0xFFFF
+
+        #define DECODE_IX24(imm24)\
+            uint32_t imm24 = static_cast<int32_t>((instr & 0xFFFFFF) << 8) >> 8
 
         #define DECODE_R(r_dst, r_src1, r_src2)\
             uint8_t r_dst = (instr >> 16) & 0xFF;\
@@ -266,6 +273,24 @@ namespace Koala{
             double val1 = std::bit_cast<double>(regs[s1]);
             double val2 = std::bit_cast<double>(regs[s2]);
             reg_flags = (val1 <= val2);
+            DISPATCH();
+        }
+
+        do_jmp: {
+            DECODE_IX24(offset);
+            ip += std::bit_cast<int32_t>(offset);
+            DISPATCH();
+        }
+
+        do_jez: {
+            DECODE_IX24(offset);
+            ip += std::bit_cast<int32_t>(offset) * static_cast<int32_t>(!reg_flags);
+            DISPATCH();
+        }
+
+        do_jnz: {
+            DECODE_IX24(offset);
+            ip += std::bit_cast<int32_t>(offset) * static_cast<int32_t>(reg_flags);
             DISPATCH();
         }
     }

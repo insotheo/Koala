@@ -37,6 +37,10 @@ namespace Koala{
         CMP_LE_U,
         CMP_LT_F,
         CMP_LE_F,
+
+        JMP,
+        JEZ,
+        JNZ,
     };
 }
 
@@ -50,7 +54,9 @@ namespace Koala{
 #define KOALA_ASM_I(op, rA, imm16)\
     ((static_cast<uint32_t>(Koala::OpCode::op) << 24) | (static_cast<uint32_t>(rA) << 16) | (static_cast<uint16_t>(imm16)))
 
-
+//OpCode(8) | Const(24)
+#define KOALA_ASM_IX24(op, imm24)\
+    ((static_cast<int32_t>(Koala::OpCode::op) << 24) | imm24)
 
 
 //INSTRUCTIONS
@@ -87,6 +93,10 @@ namespace Koala{
 #define KOALA_ASM_CMP_LE_U(src1, src2) KOALA_ASM_R(CMP_LE_U, 0, src1, src2)
 #define KOALA_ASM_CMP_LT_F(src1, src2) KOALA_ASM_R(CMP_LT_F, 0, src1, src2)
 #define KOALA_ASM_CMP_LE_F(src1, src2) KOALA_ASM_R(CMP_LE_F, 0, src1, src2)
+
+#define KOALA_ASM_JMP(offset) KOALA_ASM_IX24(JMP, offset)
+#define KOALA_ASM_JEZ(offset) KOALA_ASM_IX24(JEZ, offset)
+#define KOALA_ASM_JNZ(offset) KOALA_ASM_IX24(JNZ, offset)
 
 ///////////////
 
