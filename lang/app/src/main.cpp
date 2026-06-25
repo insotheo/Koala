@@ -12,19 +12,12 @@ int main(){
         Koala::VMData data = {
             .MemRequired = 0,
             .Bytecode = {
-                KOALA_ASM_LOAD_CONST(R0, 0),
-                KOALA_ASM_MOV_IMM(R1, 1),
-                KOALA_ASM_MOV_IMM(R2, 0),
-
-                KOALA_ASM_SUB(R0, R0, R1),  
-
-                KOALA_ASM_CMP_EQ(R0, R2),
-                KOALA_ASM_JEZ((1 << 24) - 2),
+                KOALA_ASM_MOV_IMM(R0, 1),
+                KOALA_ASM_MOV_IMM(R1, 6),
+                KOALA_ASM_SHL(R0, R0, R1),
                 KOALA_ASM_RET(),
             },
-            .ConstantPool = {
-                1000000000
-            }
+            .ConstantPool = { }
         };
         
         vm.Run(&data, &exec);

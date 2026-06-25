@@ -18,6 +18,14 @@ namespace Koala{
             &&do_mov_imm,
             &&do_load_const,
 
+            &&do_and,
+            &&do_or,
+            &&do_xor,
+            &&do_not,
+            &&do_shl,
+            &&do_shr_s,
+            &&do_shr_u,
+
             &&do_add,
             &&do_sub,
             &&do_mul,
@@ -87,6 +95,11 @@ namespace Koala{
         DISPATCH();
         
         do_ret: {
+            //DBG
+            for(int i = 0; i < REGISTERS_AMOUNT; ++i){
+                std::cout << "R" << i << ": U:" << regs[i] << " | S: " << std::bit_cast<int64_t>(regs[i]) << " | F: " << std::bit_cast<double>(regs[i]) << "\n";
+            }
+
             return;
         }
         
@@ -102,6 +115,41 @@ namespace Koala{
 
         do_load_const: {
             regs[ip->Rx] = const_pool[ip->Imm];
+            DISPATCH_NEXT();
+        }
+
+        do_and: {
+            regs[ip->Rx] = regs[ip->Ry] & regs[ip->Rz];
+            DISPATCH_NEXT();
+        }
+
+        do_or: {
+            regs[ip->Rx] = regs[ip->Ry] | regs[ip->Rz];
+            DISPATCH_NEXT();
+        }
+
+        do_xor: {
+            regs[ip->Rx] = regs[ip->Ry] ^ regs[ip->Rz];
+            DISPATCH_NEXT();
+        }
+
+        do_not: {
+            regs[ip->Rx] = ~regs[ip->Ry];
+            DISPATCH_NEXT();
+        }
+
+        do_shl: {
+            regs[ip->Rx] = regs[ip->Ry] << regs[ip->Rz];
+            DISPATCH_NEXT();
+        }
+
+        do_shr_s: {
+            regs[ip->Rx] = std::bit_cast<uint64_t>(std::bit_cast<int64_t>(regs[ip->Ry]) >> regs[ip->Rz]);
+            DISPATCH_NEXT();
+        }
+
+        do_shr_u: {
+            regs[ip->Rx] = regs[ip->Ry] >> regs[ip->Rz];
             DISPATCH_NEXT();
         }
 

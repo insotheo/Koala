@@ -11,6 +11,14 @@ namespace Koala{
         MOV_IMM,
         LOAD_CONST,
 
+        AND,
+        OR,
+        XOR,
+        NOT,
+        SHL,
+        SHR_S,
+        SHR_U,
+
         ADD,
         SUB,
         MUL,
@@ -66,6 +74,14 @@ namespace Koala{
 #define KOALA_ASM_MOV(dest_reg, src) KOALA_ASM_R(MOV, dest_reg, src, 0)
 #define KOALA_ASM_MOV_IMM(dest_reg, value) KOALA_ASM_I(MOV_IMM, dest_reg, value)
 #define KOALA_ASM_LOAD_CONST(dest_reg, value) KOALA_ASM_I(LOAD_CONST, dest_reg, value)
+
+#define KOALA_ASM_AND(dest_reg, src1, src2) KOALA_ASM_R(AND, dest_reg, src1, src2)
+#define KOALA_ASM_OR(dest_reg, src1, src2) KOALA_ASM_R(OR, dest_reg, src1, src2)
+#define KOALA_ASM_XOR(dest_reg, src1, src2) KOALA_ASM_R(XOR, dest_reg, src1, src2)
+#define KOALA_ASM_NOT(dest_reg, src1) KOALA_ASM_R(NOT, dest_reg, src1, 0)
+#define KOALA_ASM_SHL(dest_reg, src1, src2) KOALA_ASM_R(SHL, dest_reg, src1, src2)
+#define KOALA_ASM_SHR_S(dest_reg, src1, src2) KOALA_ASM_R(SHR_S, dest_reg, src1, src2)
+#define KOALA_ASM_SHR_U(dest_reg, src1, src2) KOALA_ASM_R(SHR_U, dest_reg, src1, src2)
 
 #define KOALA_ASM_ADD(dest_reg, src1, src2) KOALA_ASM_R(ADD, dest_reg, src1, src2)
 #define KOALA_ASM_SUB(dest_reg, src1, src2) KOALA_ASM_R(SUB, dest_reg, src1, src2)
