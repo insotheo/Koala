@@ -8,8 +8,8 @@ namespace Koala{
     public:
         KoalaVM() = default;
         ~KoalaVM() = default;
-        
-        void Run(const VMData& data);
+
+        void Run(VMData* input, Executable* exec);
     };
 }
 

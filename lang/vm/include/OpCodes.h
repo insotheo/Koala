@@ -63,7 +63,7 @@ namespace Koala{
 
 #define KOALA_ASM_RET() Koala::OpCode::RET
 
-#define KOALA_ASM_MOV(dest_reg, src) KOALA_ASM_I(MOV, dest_reg, src)
+#define KOALA_ASM_MOV(dest_reg, src) KOALA_ASM_R(MOV, dest_reg, src, 0)
 #define KOALA_ASM_MOV_IMM(dest_reg, value) KOALA_ASM_I(MOV_IMM, dest_reg, value)
 #define KOALA_ASM_LOAD_CONST(dest_reg, value) KOALA_ASM_I(LOAD_CONST, dest_reg, value)
 

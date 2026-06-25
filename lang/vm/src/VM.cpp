@@ -1,27 +1,16 @@
 #include "VM.h"
 
 #include "Registers.h"
+#include "OpCodes.h"
+#include "VMData.h"
 #include <cstdint>
-#include <iostream>
 #include <vector>
 #include <bit>
+#include <iostream>
 
 namespace Koala{
 
-    void KoalaVM::Run(const VMData& data){
-        std::vector<uint8_t> ram(data.MemRequired, 0);
-
-        //registers and pointers
-        uint64_t regs[REGISTERS_AMOUNT] = {0};
-        bool reg_flags = false;
-        // uint64_t reg_sp = data.MemRequired;//stack pointer
-        // uint64_t reg_bp = data.MemRequired;//base pointer
-        const uint32_t* ip = data.Bytecode.data();
-        const uint32_t* bytecode_start = data.Bytecode.data();
-        const uint64_t* const_pool = data.ConstantPool.data();
-        
-        uint32_t instr = 0;
-
+    void KoalaVM::Run(VMData* input, Executable* exec){
         static const void* dispatch_table[] = {
             &&do_ret,
             
@@ -60,238 +49,222 @@ namespace Koala{
             &&do_jez,
             &&do_jnz,
         };
-
-        #define DISPATCH()\
-            instr = *ip++;\
-            goto *dispatch_table[(instr >> 24) & 0xFF]
-
-        #define DECODE_I(r_dst, imm16)\
-            uint8_t r_dst = (instr >> 16) & 0xFF;\
-            uint16_t imm16 = instr & 0xFFFF
-
-        #define DECODE_IX24(imm24)\
-            uint32_t imm24 = static_cast<int32_t>((instr & 0xFFFFFF) << 8) >> 8
-
-        #define DECODE_R(r_dst, r_src1, r_src2)\
-            uint8_t r_dst = (instr >> 16) & 0xFF;\
-            uint8_t r_src1 = (instr >> 8) & 0xFF;\
-            uint8_t r_src2 = instr & 0xFF
-
         
+        //MODE 1: Translation
+        if(input && exec){
+            exec->MemRequired = input->MemRequired;
+            exec->ConstantPool = input->ConstantPool;
+            exec->Bytecode.resize(input->Bytecode.size());
+            
+            for(size_t i = 0; i < input->Bytecode.size(); ++i){
+                uint32_t raw = input->Bytecode[i];
+                uint8_t op = (raw >> 24) & 0xFF;
+                exec->Bytecode[i].Handler = dispatch_table[op];
+                exec->Bytecode[i].Rx = (raw >> 16) & 0xFF;
+                exec->Bytecode[i].Ry = (raw >> 8) & 0xFF;
+                exec->Bytecode[i].Rz = raw & 0xFF;
+                if(op == OpCode::MOV_IMM || op == OpCode::LOAD_CONST){
+                    exec->Bytecode[i].Imm = raw & 0xFFFF;
+                }
+                else{
+                    exec->Bytecode[i].Imm = static_cast<int32_t>((raw & 0xFFFFFF) << 8) >> 8;
+                }
+            }
+            return;
+        }
+        
+        //MODE2: Executing
+        // std::vector<uint8_t> ram(exec->MemRequired, 0);
+        alignas(64) uint64_t regs[REGISTERS_AMOUNT] = {0};
+
+        bool reg_flags = false;
+        const Instruction* ip = exec->Bytecode.data();
+        const uint64_t* const_pool = exec->ConstantPool.data();
+        
+        #define DISPATCH() goto *ip->Handler
+        #define DISPATCH_NEXT() goto *(++ip)->Handler
+
         DISPATCH();
         
         do_ret: {
-            //TODO: call
-            //DBG
-            std::cout << "===[KOALA VM DUMP]===\n";
-            for(int i = 0; i < REGISTERS_AMOUNT; ++i)
-            {   
-                std::cout << "R" << i << ": U:" << regs[i] << " | S: " << static_cast<int64_t>(regs[i]) << " | F: " << std::bit_cast<double>(regs[i]) << "\n";
-            }
-            std::cout << "Flags: " << reg_flags << "\n";
-            std::cout << "==========\n";
-            
             return;
         }
         
         do_mov:{
-            DECODE_R(dst, src, _);
-            regs[dst] = regs[src];
-            DISPATCH();
+            regs[ip->Rx] = regs[ip->Ry];
+            DISPATCH_NEXT();
         }
 
         do_mov_imm: {
-            DECODE_I(dst, imm);
-            regs[dst] = imm;
-            DISPATCH();
+            regs[ip->Rx] = ip->Imm;
+            DISPATCH_NEXT();
         }
 
         do_load_const: {
-            DECODE_I(dst, const_idx);
-            regs[dst] = const_pool[const_idx];  
-            DISPATCH();
+            regs[ip->Rx] = const_pool[ip->Imm];
+            DISPATCH_NEXT();
         }
 
         do_add: {
-            DECODE_R(dst, s1, s2);
-            regs[dst] = regs[s1] + regs[s2];
-            DISPATCH();
+            regs[ip->Rx] = regs[ip->Ry] + regs[ip->Rz];
+            DISPATCH_NEXT();
         }
 
         do_sub: {
-            DECODE_R(dst, s1, s2);
-            regs[dst] = regs[s1] - regs[s2];
-            DISPATCH();   
+            regs[ip->Rx] = regs[ip->Ry] - regs[ip->Rz];
+            DISPATCH_NEXT();   
         }
 
         do_mul: {
-            DECODE_R(dst, s1, s2);
-            regs[dst] = regs[s1] * regs[s2];
-            DISPATCH();
+            regs[ip->Rx] = regs[ip->Ry] * regs[ip->Rz];
+            DISPATCH_NEXT();
         }
         
         do_div_s: {
             //TODO: zero devision panic
-            DECODE_R(dst, s1, s2);
-            int64_t val1 = std::bit_cast<int64_t>(regs[s1]);
-            int64_t val2 = std::bit_cast<int64_t>(regs[s2]);
-            regs[dst] = std::bit_cast<uint64_t>(val1 / val2);
-            DISPATCH();
+            int64_t val1 = std::bit_cast<int64_t>(regs[ip->Ry]);
+            int64_t val2 = std::bit_cast<int64_t>(regs[ip->Rz]);
+            regs[ip->Rx] = std::bit_cast<uint64_t>(val1 / val2);
+            DISPATCH_NEXT();
         }
         
         do_div_u:{
             //TODO: zero devision panic
-            DECODE_R(dst, s1, s2);
-            regs[dst] = regs[s1] / regs[s2];
-            DISPATCH();
+            regs[ip->Rx] = regs[ip->Ry] / regs[ip->Rz];
+            DISPATCH_NEXT();
         }
 
         do_mod_s: {
             //TODO: zero devision panic
-            DECODE_R(dst, s1, s2);
-            int64_t val1 = std::bit_cast<int64_t>(regs[s1]);
-            int64_t val2 = std::bit_cast<int64_t>(regs[s2]);
-            regs[dst] = std::bit_cast<uint64_t>(val1 % val2);
-            DISPATCH();
+            int64_t val1 = std::bit_cast<int64_t>(regs[ip->Ry]);
+            int64_t val2 = std::bit_cast<int64_t>(regs[ip->Rz]);
+            regs[ip->Rx] = std::bit_cast<uint64_t>(val1 % val2);
+            DISPATCH_NEXT();
         }
 
         do_mod_u: {
             //TODO: zero devision panic
-            DECODE_R(dst, s1, s2);
-            regs[dst] = regs[s1] % regs[s2];
-            DISPATCH();
+            regs[ip->Rx] = regs[ip->Ry] % regs[ip->Rz];
+            DISPATCH_NEXT();
         }
 
         do_add_f: {
-            DECODE_R(dst, s1, s2);
-            double res = std::bit_cast<double>(regs[s1]) + std::bit_cast<double>(regs[s2]);
-            regs[dst] = std::bit_cast<uint64_t>(res);
-            DISPATCH();
+            double res = std::bit_cast<double>(regs[ip->Ry]) + std::bit_cast<double>(regs[ip->Rz]);
+            regs[ip->Rx] = std::bit_cast<uint64_t>(res);
+            DISPATCH_NEXT();
         }
 
         do_sub_f: {
-            DECODE_R(dst, s1, s2);
-            double res = std::bit_cast<double>(regs[s1]) - std::bit_cast<double>(regs[s2]);
-            regs[dst] = std::bit_cast<uint64_t>(res);
-            DISPATCH();
+            double res = std::bit_cast<double>(regs[ip->Ry]) - std::bit_cast<double>(regs[ip->Rz]);
+            regs[ip->Rx] = std::bit_cast<uint64_t>(res);
+            DISPATCH_NEXT();
         }
 
         do_mul_f: {
-            DECODE_R(dst, s1, s2);
-            double res = std::bit_cast<double>(regs[s1]) * std::bit_cast<double>(regs[s2]);
-            regs[dst] = std::bit_cast<uint64_t>(res);
-            DISPATCH();
+            double res = std::bit_cast<double>(regs[ip->Ry]) * std::bit_cast<double>(regs[ip->Rz]);
+            regs[ip->Rx] = std::bit_cast<uint64_t>(res);
+            DISPATCH_NEXT();
         }
 
         do_div_f: {
             //TODO: zero devision panic
-            DECODE_R(dst, s1, s2);
-            double res = std::bit_cast<double>(regs[s1]) / std::bit_cast<double>(regs[s2]);
-            regs[dst] = std::bit_cast<uint64_t>(res);
-            DISPATCH();
+            double res = std::bit_cast<double>(regs[ip->Ry]) / std::bit_cast<double>(regs[ip->Rz]);
+            regs[ip->Rx] = std::bit_cast<uint64_t>(res);
+            DISPATCH_NEXT();
         }
 
         do_conv_si2f: {
-            DECODE_R(dst, src, _);
-            int64_t ival = std::bit_cast<int64_t>(regs[src]);
+            int64_t ival = std::bit_cast<int64_t>(regs[ip->Ry]);
             double fval = static_cast<double>(ival);
-            regs[dst] = std::bit_cast<uint64_t>(fval);
-            DISPATCH();
+            regs[ip->Rx] = std::bit_cast<uint64_t>(fval);
+            DISPATCH_NEXT();
         }
 
         do_conv_ui2f: {
-            DECODE_R(dst, src, _);
-            regs[dst] = std::bit_cast<uint64_t>(static_cast<double>(regs[src]));
-            DISPATCH();
+            regs[ip->Rx] = std::bit_cast<uint64_t>(static_cast<double>(regs[ip->Ry]));
+            DISPATCH_NEXT();
         }
 
         do_conv_f2si: {
-            DECODE_R(dst, src, _);
-            double fval = std::bit_cast<double>(regs[src]);
+            double fval = std::bit_cast<double>(regs[ip->Ry]);
             int64_t ival = static_cast<int64_t>(fval);
-            regs[dst] = std::bit_cast<uint64_t>(ival);
-            DISPATCH();
+            regs[ip->Rx] = std::bit_cast<uint64_t>(ival);
+            DISPATCH_NEXT();
         }
 
         do_conv_f2ui: {
-            DECODE_R(dst, src, _);
-            double fval = std::bit_cast<double>(regs[src]);
-            regs[dst] = static_cast<uint64_t>(fval);
-            DISPATCH();
+            double fval = std::bit_cast<double>(regs[ip->Ry]);
+            regs[ip->Rx] = static_cast<uint64_t>(fval);
+            DISPATCH_NEXT();
         }
 
         do_cmp_eq: {
-            DECODE_R(_, s1, s2);
-            reg_flags = (regs[s1] == regs[s2]);
-            DISPATCH();
+            reg_flags = (regs[ip->Ry] == regs[ip->Rz]);
+            DISPATCH_NEXT();
         }
 
         do_cmp_neq: {
-            DECODE_R(_, s1, s2);
-            reg_flags = (regs[s1] != regs[s2]);
-            DISPATCH();
+            reg_flags = (regs[ip->Ry] != regs[ip->Rz]);
+            DISPATCH_NEXT();
         }
 
         do_cmp_lt_s: {
-            DECODE_R(_, s1, s2);
-            int64_t val1 = std::bit_cast<int64_t>(regs[s1]);
-            int64_t val2 = std::bit_cast<int64_t>(regs[s2]);
+            int64_t val1 = std::bit_cast<int64_t>(regs[ip->Ry]);
+            int64_t val2 = std::bit_cast<int64_t>(regs[ip->Rz]);
             reg_flags = (val1 < val2);
-            DISPATCH();
+            DISPATCH_NEXT();
         }
 
         do_cmp_le_s: {
-            DECODE_R(_, s1, s2);
-            int64_t val1 = std::bit_cast<int64_t>(regs[s1]);
-            int64_t val2 = std::bit_cast<int64_t>(regs[s2]);
+            int64_t val1 = std::bit_cast<int64_t>(regs[ip->Ry]);
+            int64_t val2 = std::bit_cast<int64_t>(regs[ip->Rz]);
             reg_flags = (val1 <= val2);
-            DISPATCH();
+            DISPATCH_NEXT();
         }
 
         do_cmp_lt_u: {
-            DECODE_R(_, s1, s2);
-            reg_flags = (regs[s1] < regs[s2]);
-            DISPATCH();
+            reg_flags = (regs[ip->Ry] < regs[ip->Rz]);
+            DISPATCH_NEXT();
         }
 
         do_cmp_le_u: {
-            DECODE_R(_, s1, s2);
-            reg_flags = (regs[s1] <= regs[s2]);
-            DISPATCH();
+            reg_flags = (regs[ip->Ry] <= regs[ip->Rz]);
+            DISPATCH_NEXT();
         }
 
         do_cmp_lt_f: {
-            DECODE_R(_, s1, s2);
-            double val1 = std::bit_cast<double>(regs[s1]);
-            double val2 = std::bit_cast<double>(regs[s2]);
+            double val1 = std::bit_cast<double>(regs[ip->Ry]);
+            double val2 = std::bit_cast<double>(regs[ip->Rz]);
             reg_flags = (val1 < val2);
-            DISPATCH();
+            DISPATCH_NEXT();
         }
 
         do_cmp_le_f: {
-            DECODE_R(_, s1, s2);
-            double val1 = std::bit_cast<double>(regs[s1]);
-            double val2 = std::bit_cast<double>(regs[s2]);
+            double val1 = std::bit_cast<double>(regs[ip->Ry]);
+            double val2 = std::bit_cast<double>(regs[ip->Rz]);
             reg_flags = (val1 <= val2);
-            DISPATCH();
+            DISPATCH_NEXT();
         }
 
         do_jmp: {
-            DECODE_IX24(offset);
-            ip += std::bit_cast<int32_t>(offset);
+            ip += ip->Imm;
             DISPATCH();
         }
 
         do_jez: {
-            DECODE_IX24(offset);
-            ip += std::bit_cast<int32_t>(offset) * static_cast<int32_t>(!reg_flags);
-            DISPATCH();
+            if(!reg_flags){
+                ip += ip->Imm;
+                DISPATCH();
+            }
+            DISPATCH_NEXT();
         }
 
         do_jnz: {
-            DECODE_IX24(offset);
-            ip += std::bit_cast<int32_t>(offset) * static_cast<int32_t>(reg_flags);
-            DISPATCH();
+            if(reg_flags){
+                ip += ip->Imm;
+                DISPATCH();
+            }
+            DISPATCH_NEXT();
         }
     }
 
