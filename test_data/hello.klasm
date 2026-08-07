@@ -1,9 +1,6 @@
 _main:
-    push 0xFFFFFFFFFFFFFFFE
-    push 1
-    shra
-
-    push 0xFFFFFFFFFFFFFFFE 
-    push 1                  
-    shrl
+    push 0xFF        ; push1b
+    push 0xFFFF      ; push2b
+    push 0xFFFFFFFF  ; push4b
+    push 0xFFFFFFFFF ; push8b
     ret

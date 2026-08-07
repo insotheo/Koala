@@ -4,12 +4,28 @@ use crate::opcode::OpCode;
 
 const STACK_SIZE: usize = 16;
 
+macro_rules! read_bytes {
+    ($vm:ident, $ip:ident, $bytes_count:expr, $type:ident) => {
+        {
+            let mut bytes = [0u8; $bytes_count];
+            let src_ptr = $vm.bytecode.as_ptr().add(*$ip);
+            std::ptr::copy_nonoverlapping(src_ptr, bytes.as_mut_ptr(), $bytes_count);
+            *$ip += $bytes_count;
+
+            $type::from_le_bytes(bytes) as u64
+        }
+    };
+}
+
 macro_rules! define_instructions {
     (
         ctx: ($vm:ident, $ip:ident, $sp:ident, $stack:ident);
+
         $(
             $name:ident => $body:block
         )*
+
+
     ) => {
         $(
             #[inline(always)]
@@ -46,7 +62,10 @@ impl VM{
 
         table[OpCode::Ret as usize] = vm_ret;
         
-        table[OpCode::Push as usize] = vm_push;
+        table[OpCode::Push1b as usize] = vm_push1b;
+        table[OpCode::Push2b as usize] = vm_push2b;
+        table[OpCode::Push4b as usize] = vm_push4b;
+        table[OpCode::Push8b as usize] = vm_push8b;
         
         table[OpCode::Add as usize] = vm_add;
         table[OpCode::Sub as usize] = vm_sub;
@@ -106,12 +125,21 @@ define_instructions! {
         return false;
     }
 
-    vm_push => {
-        let mut bytes = [0u8; 8];
-        let src_ptr = vm.bytecode.as_ptr().add(*ip);
-        std::ptr::copy_nonoverlapping(src_ptr, bytes.as_mut_ptr(), 8);
-        *ip += 8;
-        stack[*sp] = u64::from_le_bytes(bytes);
+
+    vm_push1b => {
+        stack[*sp] = read_bytes!(vm, ip, 1, u8);
+        *sp += 1;
+    }
+    vm_push2b => {
+        stack[*sp] = read_bytes!(vm, ip, 2, u16);
+        *sp += 1;
+    }
+    vm_push4b => {
+        stack[*sp] = read_bytes!(vm, ip, 4, u32);
+        *sp += 1;
+    }
+    vm_push8b => {
+        stack[*sp] = read_bytes!(vm, ip, 8, u64);
         *sp += 1;
     }
 

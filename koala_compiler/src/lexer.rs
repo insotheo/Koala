@@ -159,6 +159,7 @@ impl Lexer{
 
             let token = if [
                     "ret",
+
                     "push",
 
                     "add",

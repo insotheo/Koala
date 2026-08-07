@@ -4,7 +4,12 @@ pub enum OpCode{
     None,
 
     Ret,
-    Push,
+
+    Push, //only for parser and frontend use
+    Push1b,
+    Push2b,
+    Push4b,
+    Push8b,
 
     Add,
     Sub,

@@ -68,6 +68,7 @@ impl Parser{
                     // getting opcode
                     let opcode = match op_name.as_str() {
                         "ret" => OpCode::Ret,
+
                         "push" => OpCode::Push,
 
                         "add" => OpCode::Add,
