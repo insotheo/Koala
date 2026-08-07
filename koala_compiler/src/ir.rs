@@ -1,10 +1,10 @@
-use crate::opcode::OpCode;
+use koala_vm::opcode::OpCode;
 
 #[derive(Debug, Clone)]
 pub enum Operand{
     None,
     IntConstant(u64),
-    Label(String),
+    // Label(String),
 }
 
 #[derive(Debug, Clone)]

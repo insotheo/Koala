@@ -1,10 +1,9 @@
 use std::env;
 use std::fs;
 
-use koala_vm::opcode;
-
 mod lexer;
 mod ir;
+mod parser;
 
 fn main(){
     let args: Vec<String> = env::args().collect();
@@ -22,12 +21,12 @@ fn main(){
         }
     };
 
-    let mut lexer = lexer::Lexer::new(&asm_source);
+    let lexer = lexer::Lexer::new(&asm_source);
+    let mut parser = parser::Parser::new(lexer);
 
-    let mut t = lexer.next_token();
-    while t.token != lexer::Token::EOF{
-        println!("{:?}", t.token);
-        t = lexer.next_token();
+    let _program = parser.parse_program();
+
+    if parser.failed(){
+        parser.print_errors_report(&asm_source);
     }
-
 }

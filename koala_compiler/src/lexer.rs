@@ -10,7 +10,7 @@ pub enum Token{
 
     OpCode(String),
     Identifier(String),
-    Digit(u64),
+    Number(u64),
 
     Colon,
     EOF
@@ -141,7 +141,7 @@ impl Lexer{
                 Err(_) => return TokenWithSpan { token:Token::Unknown("Incorrect number format".to_string()), span: start_span }
             };
 
-            return TokenWithSpan { token: Token::Digit(num), span: start_span };
+            return TokenWithSpan { token: Token::Number(num), span: start_span };
         }
 
         if ch.is_alphabetic() || ch == '_'{

@@ -1,4 +1,7 @@
 _main: ; this is entry point
-    push 0o10
-    push 0x
+    ; push hello
+    ; push 0x
+    ; add:
+    ; add
+    push 0xF
     ret
