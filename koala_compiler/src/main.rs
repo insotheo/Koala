@@ -1,5 +1,6 @@
 use std::env;
 use std::fs;
+use std::path::Path;
 
 mod lexer;
 mod ir;
@@ -24,9 +25,25 @@ fn main(){
     let lexer = lexer::Lexer::new(&asm_source);
     let mut parser = parser::Parser::new(lexer);
 
-    let _program = parser.parse_program();
+    let program = parser.parse_program();
 
     if parser.failed(){
         parser.print_errors_report(&asm_source);
     }
+
+    let bytecode = program.compile_to_bytes();
+
+    //save to file
+    let path = Path::new(asm_path);
+    let output_path = path.with_extension("klbc");
+
+    match fs::write(&output_path, &bytecode) {
+        Ok(_) => {
+            println!("Successfully compiled! Output saved to: {}", output_path.display());
+        },
+        Err(err) => {
+            eprintln!("Failed to write binary file {}: {}", output_path.display(), err);
+        }
+    }
+    
 }

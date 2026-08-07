@@ -142,14 +142,9 @@ impl Parser{
                     self.synchronize();
                 },
 
-                
+
             }
 
-        }
-
-        //DBG
-        for node in nodes.clone(){
-            println!("{:?}", node);
         }
 
         return ProgramIR::new(nodes);
