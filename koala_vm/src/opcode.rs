@@ -5,4 +5,20 @@ pub enum OpCode{
 
     Ret,
     Push,
+
+    Add,
+    Sub,
+    Neg,
+    Mul,
+    UMul,
+    Div,
+    UDiv,
+
+    And,
+    Or,
+    Xor,
+    Not,
+    Shl,
+    Shrl,
+    Shra,
 }

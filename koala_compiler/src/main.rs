@@ -31,6 +31,8 @@ fn main(){
 
     if parser.failed(){
         parser.print_errors_report(&asm_source);
+        println!("Compilation failed!");
+        return;
     }
 
     let bytecode = program.compile_to_bytes();

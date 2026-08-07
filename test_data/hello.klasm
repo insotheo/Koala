@@ -1,4 +1,9 @@
-_main: ; this is entry point
-    push 0xA
-    push 0xF
+_main:
+    push 0xFFFFFFFFFFFFFFFE
+    push 1
+    shra
+
+    push 0xFFFFFFFFFFFFFFFE 
+    push 1                  
+    shrl
     ret

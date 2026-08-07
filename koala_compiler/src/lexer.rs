@@ -158,8 +158,24 @@ impl Lexer{
             let lower_word = word.to_lowercase();
 
             let token = if [
-                    "push",
                     "ret",
+                    "push",
+
+                    "add",
+                    "sub",
+                    "neg",
+                    "mul",
+                    "umul",
+                    "div",
+                    "udiv",
+
+                    "and",
+                    "or",
+                    "xor",
+                    "not",
+                    "shl",
+                    "shrl",
+                    "shra",
                 ].contains(&lower_word.as_str()){
                     Token::OpCode(lower_word)
                 } else{

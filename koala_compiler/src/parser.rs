@@ -70,6 +70,22 @@ impl Parser{
                         "ret" => OpCode::Ret,
                         "push" => OpCode::Push,
 
+                        "add" => OpCode::Add,
+                        "sub" => OpCode::Sub,
+                        "neg" => OpCode::Neg,
+                        "mul" => OpCode::Mul,
+                        "umul" => OpCode::UMul,
+                        "div" => OpCode::Div,
+                        "udiv" => OpCode::UDiv,
+
+                        "and" => OpCode::And,
+                        "or" => OpCode::Or,
+                        "xor" => OpCode::Xor,
+                        "not" => OpCode::Not,
+                        "shl" => OpCode::Shl,
+                        "shrl" => OpCode::Shrl,
+                        "shra" => OpCode::Shra,
+
                         _ => {
                             self.add_error(
                                 &format!("OpCode '{}' recognized by lexer but unsupported by parser", op_name),

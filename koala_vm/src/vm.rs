@@ -6,8 +6,9 @@ const STACK_SIZE: usize = 16;
 
 macro_rules! define_instructions {
     (
+        ctx: ($vm:ident, $ip:ident, $sp:ident, $stack:ident);
         $(
-            $name:ident ($vm:ident, $ip:ident, $sp:ident, $stack:ident) => $body:block
+            $name:ident => $body:block
         )*
     ) => {
         $(
@@ -44,7 +45,24 @@ impl VM{
         let mut table: [InstructionFn; 256] = [vm_unknown; 256];
 
         table[OpCode::Ret as usize] = vm_ret;
+        
         table[OpCode::Push as usize] = vm_push;
+        
+        table[OpCode::Add as usize] = vm_add;
+        table[OpCode::Sub as usize] = vm_sub;
+        table[OpCode::Neg as usize] = vm_neg;
+        table[OpCode::Mul as usize] = vm_mul;
+        table[OpCode::UMul as usize] = vm_umul;
+        table[OpCode::Div as usize] = vm_div;
+        table[OpCode::UDiv as usize] = vm_udiv;
+
+        table[OpCode::And as usize] = vm_and;
+        table[OpCode::Or as usize] = vm_or;
+        table[OpCode::Xor as usize] = vm_xor;
+        table[OpCode::Not as usize] = vm_not;
+        table[OpCode::Shl as usize] = vm_shl;
+        table[OpCode::Shrl as usize] = vm_shrl;
+        table[OpCode::Shra as usize] = vm_shra;
 
         return VM
         { 
@@ -74,18 +92,21 @@ impl VM{
 }
 
 define_instructions! {
-    vm_ret(vm, ip, sp, stack) => {
+    ctx: (vm, ip, sp, stack);
+
+    vm_ret => {
         println!("VM finished via ret");
 
         println!("===STACK===");
         for i in 0..*sp{
-            println!("{}", stack[i]);
+            println!("U: {} | S: {} | F: {:.5}", stack[i], stack[i] as i64, f64::from_bits(stack[i]));
         }
+        println!("===========");
 
-        return true;
+        return false;
     }
 
-    vm_push(vm, ip, sp, stack) => {
+    vm_push => {
         let mut bytes = [0u8; 8];
         let src_ptr = vm.bytecode.as_ptr().add(*ip);
         std::ptr::copy_nonoverlapping(src_ptr, bytes.as_mut_ptr(), 8);
@@ -94,7 +115,99 @@ define_instructions! {
         *sp += 1;
     }
 
-    vm_unknown(vm, ip, sp, stack) => {
+    vm_add => {
+        let a = *stack.get_unchecked(*sp - 2);
+        let b = *stack.get_unchecked(*sp - 1);
+        stack[*sp - 2] = a.wrapping_add(b);
+        *sp -= 1;
+    }
+
+    vm_sub => {
+        let a = *stack.get_unchecked(*sp - 2);
+        let b = *stack.get_unchecked(*sp - 1);
+        stack[*sp - 2] = a.wrapping_sub(b);
+        *sp -= 1;
+    }
+
+    vm_neg => {
+        stack[*sp - 1] = stack[*sp - 1].wrapping_neg();
+    }
+
+    vm_mul => {
+        let a = *stack.get_unchecked(*sp - 2) as i64;
+        let b = *stack.get_unchecked(*sp - 1) as i64;
+        stack[*sp - 2] = a.wrapping_mul(b) as u64;
+        *sp -= 1;
+    }
+
+    vm_umul => {
+        let a = *stack.get_unchecked(*sp - 2);
+        let b = *stack.get_unchecked(*sp - 1);
+        stack[*sp - 2] = a.wrapping_mul(b);
+        *sp -= 1;
+    }
+
+    vm_div => {
+        let a = *stack.get_unchecked(*sp - 2) as i64;
+        let b = *stack.get_unchecked(*sp - 1) as i64;
+        stack[*sp - 2] = (a.wrapping_div(b)) as u64;
+        *sp -= 1;
+    }
+
+    vm_udiv => {
+        let a = *stack.get_unchecked(*sp - 2);
+        let b = *stack.get_unchecked(*sp - 1);
+        stack[*sp - 2] = a.wrapping_div(b);
+        *sp -= 1;
+    }
+
+    vm_and => {
+        let a = *stack.get_unchecked(*sp - 2);
+        let b = *stack.get_unchecked(*sp - 1);
+        stack[*sp - 2] = a & b;
+        *sp -= 1;
+    }
+
+    vm_or => {
+        let a = *stack.get_unchecked(*sp - 2);
+        let b = *stack.get_unchecked(*sp - 1);
+        stack[*sp - 2] = a | b;
+        *sp -= 1;
+    }
+
+    vm_xor => {
+        let a = *stack.get_unchecked(*sp - 2);
+        let b = *stack.get_unchecked(*sp - 1);
+        stack[*sp - 2] = a ^ b;
+        *sp -= 1;
+    }
+
+    vm_not => {
+        stack[*sp - 1] = !stack.get_unchecked(*sp - 1);
+    }
+
+    vm_shl => {
+        let a = *stack.get_unchecked(*sp - 2);
+        let b = *stack.get_unchecked(*sp - 1);
+        stack[*sp - 2] = a.wrapping_shl(b as u32);
+        *sp -= 1;
+    }
+
+    vm_shrl => {
+        let a = *stack.get_unchecked(*sp - 2);
+        let b = *stack.get_unchecked(*sp - 1);
+        stack[*sp - 2] = a.wrapping_shr(b as u32);
+        *sp -= 1;
+    }
+
+    vm_shra => {
+        let a = *stack.get_unchecked(*sp - 2) as i64;
+        let b = *stack.get_unchecked(*sp - 1);
+        stack[*sp - 2] = a.wrapping_shr(b as u32) as u64;
+        *sp -= 1;
+    }
+
+    vm_unknown => {
         eprintln!("VM Critical error: Unknown instruction at {}", *ip - 1);
         process::exit(1);
     }
