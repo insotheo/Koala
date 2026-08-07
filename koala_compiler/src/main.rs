@@ -2,6 +2,8 @@ use std::env;
 use std::fs;
 use std::path::Path;
 
+use koala_vm::vm;
+
 mod lexer;
 mod ir;
 mod parser;
@@ -45,5 +47,9 @@ fn main(){
             eprintln!("Failed to write binary file {}: {}", output_path.display(), err);
         }
     }
+
+    //dbg run
+    let vm = vm::VM::new(bytecode);
+    vm.run();
     
 }
