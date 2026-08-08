@@ -78,6 +78,14 @@ impl Parser{
                         "umul" => OpCode::UMul,
                         "div" => OpCode::Div,
                         "udiv" => OpCode::UDiv,
+                        "rem" => OpCode::Rem,
+                        "urem" => OpCode::URem,
+
+                        "fadd" => OpCode::FAdd,
+                        "fsub" => OpCode::FSub,
+                        "fneg" => OpCode::FNeg,
+                        "fmul" => OpCode::FMul,
+                        "fdiv" => OpCode::FDiv,
 
                         "and" => OpCode::And,
                         "or" => OpCode::Or,

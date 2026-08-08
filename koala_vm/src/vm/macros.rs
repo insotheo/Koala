@@ -13,6 +13,15 @@ macro_rules! read_bytes {
 }
 
 #[macro_export]
+macro_rules! pop2 {
+    ($stack:ident, $sp:ident, $a:ident, $b:ident) => {
+        let $a = *$stack.get_unchecked(*$sp - 2);
+        let $b = *$stack.get_unchecked(*$sp - 1);
+        *$sp -= 1;
+    };
+}
+
+#[macro_export]
 macro_rules! define_instructions {
     (
         ctx: ($vm:ident, $ip:ident, $sp:ident, $stack:ident);

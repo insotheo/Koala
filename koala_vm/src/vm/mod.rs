@@ -36,6 +36,14 @@ impl VM{
         table[OpCode::UMul as usize] = vm_umul;
         table[OpCode::Div as usize] = vm_div;
         table[OpCode::UDiv as usize] = vm_udiv;
+        table[OpCode::Rem as usize] = vm_rem;
+        table[OpCode::URem as usize] = vm_urem;
+
+        table[OpCode::FAdd as usize] = vm_fadd;
+        table[OpCode::FSub as usize] = vm_fsub;
+        table[OpCode::FNeg as usize] = vm_fneg;
+        table[OpCode::FMul as usize] = vm_fmul;
+        table[OpCode::FDiv as usize] = vm_fdiv;
 
         table[OpCode::And as usize] = vm_and;
         table[OpCode::Or as usize] = vm_or;

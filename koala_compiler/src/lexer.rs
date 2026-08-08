@@ -169,6 +169,14 @@ impl Lexer{
                     "umul",
                     "div",
                     "udiv",
+                    "rem",
+                    "urem",
+
+                    "fadd",
+                    "fsub",
+                    "fneg",
+                    "fmul",
+                    "fdiv",
 
                     "and",
                     "or",

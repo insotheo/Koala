@@ -18,6 +18,14 @@ pub enum OpCode{
     UMul,
     Div,
     UDiv,
+    Rem,
+    URem,
+
+    FAdd,
+    FSub,
+    FNeg,
+    FMul,
+    FDiv,
 
     And,
     Or,

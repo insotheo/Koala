@@ -34,97 +34,93 @@ define_instructions! {
         *sp += 1;
     }
 
+
     vm_add => {
-        let a = *stack.get_unchecked(*sp - 2);
-        let b = *stack.get_unchecked(*sp - 1);
-        stack[*sp - 2] = a.wrapping_add(b);
-        *sp -= 1;
+        pop2!(stack, sp, a, b);
+        stack[*sp - 1] = a.wrapping_add(b);
     }
-
     vm_sub => {
-        let a = *stack.get_unchecked(*sp - 2);
-        let b = *stack.get_unchecked(*sp - 1);
-        stack[*sp - 2] = a.wrapping_sub(b);
-        *sp -= 1;
+        pop2!(stack, sp, a, b);
+        stack[*sp - 1] = a.wrapping_sub(b);
     }
-
     vm_neg => {
         stack[*sp - 1] = stack[*sp - 1].wrapping_neg();
     }
-
     vm_mul => {
-        let a = *stack.get_unchecked(*sp - 2) as i64;
-        let b = *stack.get_unchecked(*sp - 1) as i64;
-        stack[*sp - 2] = a.wrapping_mul(b) as u64;
-        *sp -= 1;
+        pop2!(stack, sp, a, b);
+        stack[*sp - 1] = (a as i64).wrapping_mul(b as i64) as u64;
     }
-
     vm_umul => {
-        let a = *stack.get_unchecked(*sp - 2);
-        let b = *stack.get_unchecked(*sp - 1);
-        stack[*sp - 2] = a.wrapping_mul(b);
-        *sp -= 1;
+        pop2!(stack, sp, a, b);
+        stack[*sp - 1] = a.wrapping_mul(b);
     }
-
     vm_div => {
-        let a = *stack.get_unchecked(*sp - 2) as i64;
-        let b = *stack.get_unchecked(*sp - 1) as i64;
-        stack[*sp - 2] = (a.wrapping_div(b)) as u64;
-        *sp -= 1;
+        pop2!(stack, sp, a, b);
+        stack[*sp - 1] = (a as i64).wrapping_div(b as i64) as u64;
+    }
+    vm_udiv => {
+        pop2!(stack, sp, a, b);
+        stack[*sp - 1] = a.wrapping_div(b);
+    }
+    vm_rem => {
+        pop2!(stack, sp, a, b);
+        stack[*sp - 1] = (a as i64).wrapping_rem(b as i64) as u64;
+    }
+    vm_urem => {
+        pop2!(stack, sp, a, b);
+        stack[*sp - 1] = a.wrapping_rem(b);
     }
 
-    vm_udiv => {
-        let a = *stack.get_unchecked(*sp - 2);
-        let b = *stack.get_unchecked(*sp - 1);
-        stack[*sp - 2] = a.wrapping_div(b);
-        *sp -= 1;
+
+    vm_fadd => {
+        pop2!(stack, sp, a, b);
+        stack[*sp - 1] = (f64::from_bits(a) + f64::from_bits(b)).to_bits();
     }
+    vm_fsub => {
+        pop2!(stack, sp, a, b);
+        stack[*sp - 1] = (f64::from_bits(a) - f64::from_bits(b)).to_bits();
+    }
+    vm_fneg => {
+        stack[*sp - 1] = (-f64::from_bits(*stack.get_unchecked(*sp - 1))).to_bits();
+    }
+    vm_fmul => {
+        pop2!(stack, sp, a, b);
+        stack[*sp - 1] = (f64::from_bits(a) * f64::from_bits(b)).to_bits();
+    }
+    vm_fdiv => {
+        pop2!(stack, sp, a, b);
+        stack[*sp - 1] = (f64::from_bits(a) / f64::from_bits(b)).to_bits();
+    }
+
 
     vm_and => {
-        let a = *stack.get_unchecked(*sp - 2);
-        let b = *stack.get_unchecked(*sp - 1);
-        stack[*sp - 2] = a & b;
-        *sp -= 1;
+        pop2!(stack, sp, a, b);
+        stack[*sp - 1] = a & b;
     }
-
     vm_or => {
-        let a = *stack.get_unchecked(*sp - 2);
-        let b = *stack.get_unchecked(*sp - 1);
-        stack[*sp - 2] = a | b;
-        *sp -= 1;
+        pop2!(stack, sp, a, b);
+        stack[*sp - 1] = a | b;
     }
-
     vm_xor => {
-        let a = *stack.get_unchecked(*sp - 2);
-        let b = *stack.get_unchecked(*sp - 1);
-        stack[*sp - 2] = a ^ b;
-        *sp -= 1;
+        pop2!(stack, sp, a, b);
+        stack[*sp - 1] = a ^ b;
     }
-
     vm_not => {
-        stack[*sp - 1] = !stack.get_unchecked(*sp - 1);
+        stack[*sp - 1] = !*stack.get_unchecked(*sp - 1);
     }
-
     vm_shl => {
-        let a = *stack.get_unchecked(*sp - 2);
-        let b = *stack.get_unchecked(*sp - 1);
-        stack[*sp - 2] = a.wrapping_shl(b as u32);
-        *sp -= 1;
+        pop2!(stack, sp, a, b);
+        stack[*sp - 1] = a.wrapping_shl(b as u32);
     }
-
     vm_shrl => {
-        let a = *stack.get_unchecked(*sp - 2);
-        let b = *stack.get_unchecked(*sp - 1);
-        stack[*sp - 2] = a.wrapping_shr(b as u32);
-        *sp -= 1;
+        pop2!(stack, sp, a, b);
+        stack[*sp - 1] = a.wrapping_shr(b as u32);
+    }
+    vm_shra => {
+        pop2!(stack, sp, a, b);
+        stack[*sp - 1] = (a as i32).wrapping_shr(b as u32) as u64;
     }
 
-    vm_shra => {
-        let a = *stack.get_unchecked(*sp - 2) as i64;
-        let b = *stack.get_unchecked(*sp - 1);
-        stack[*sp - 2] = a.wrapping_shr(b as u32) as u64;
-        *sp -= 1;
-    }
 
     vm_unknown => {
         eprintln!("VM Critical error: Unknown instruction at {}", *ip - 1);
