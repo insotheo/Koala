@@ -34,4 +34,9 @@ pub enum OpCode{
     Shl,
     Shrl,
     Shra,
+
+    ConvF2I,
+    ConvF2U,
+    ConvI2F,
+    ConvU2F,
 }

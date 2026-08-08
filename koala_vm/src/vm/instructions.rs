@@ -122,6 +122,20 @@ define_instructions! {
     }
 
 
+    vm_conv_f2i => {
+        stack[*sp - 1] = (f64::from_bits(*stack.get_unchecked(*sp - 1)) as i64) as u64;
+    }
+    vm_conv_f2u => {
+        stack[*sp - 1] = f64::from_bits(*stack.get_unchecked(*sp - 1)) as u64;
+    }
+    vm_conv_i2f => {
+        stack[*sp - 1] = (*stack.get_unchecked(*sp - 1) as i64 as f64).to_bits();
+    }
+    vm_conv_u2f => {
+        stack[*sp - 1] = (*stack.get_unchecked(*sp - 1) as f64).to_bits();
+    }
+
+
     vm_unknown => {
         eprintln!("VM Critical error: Unknown instruction at {}", *ip - 1);
         process::exit(1);

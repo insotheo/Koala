@@ -148,7 +148,7 @@ impl Lexer{
             let mut word = String::new();
 
             while let Some(c) = self.peek_char(){
-                if c.is_alphabetic() || c == '_'{
+                if c.is_alphabetic() || c.is_ascii_digit() || c == '_'{
                     word.push(self.read_char().unwrap());
                 } else{
                     break;
@@ -185,6 +185,11 @@ impl Lexer{
                     "shl",
                     "shrl",
                     "shra",
+
+                    "conv_f2i",
+                    "conv_f2u",
+                    "conv_i2f",
+                    "conv_u2f",
                 ].contains(&lower_word.as_str()){
                     Token::OpCode(lower_word)
                 } else{

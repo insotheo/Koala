@@ -1,5 +1,7 @@
 _main:
     push 0x40091EB851EB851F ; 3.14
+    conv_f2u
     push 0x4059000000000000 ; 100.0
-    fadd
+    conv_f2i
+    mul
     ret

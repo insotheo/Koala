@@ -95,6 +95,11 @@ impl Parser{
                         "shrl" => OpCode::Shrl,
                         "shra" => OpCode::Shra,
 
+                        "conv_f2i" => OpCode::ConvF2I,
+                        "conv_f2u" => OpCode::ConvF2U,
+                        "conv_i2f" => OpCode::ConvI2F,
+                        "conv_u2f" => OpCode::ConvU2F,
+
                         _ => {
                             self.add_error(
                                 &format!("OpCode '{}' recognized by lexer but unsupported by parser", op_name),

@@ -52,6 +52,11 @@ impl VM{
         table[OpCode::Shl as usize] = vm_shl;
         table[OpCode::Shrl as usize] = vm_shrl;
         table[OpCode::Shra as usize] = vm_shra;
+
+        table[OpCode::ConvF2I as usize] = vm_conv_f2i;
+        table[OpCode::ConvF2U as usize] = vm_conv_f2u;
+        table[OpCode::ConvI2F as usize] = vm_conv_i2f;
+        table[OpCode::ConvU2F as usize] = vm_conv_u2f;
         ////////////////////////////////////////////////////////////////////
 
         return VM
