@@ -70,6 +70,10 @@ impl Parser{
                         "ret" => OpCode::Ret,
 
                         "push" => OpCode::Push,
+                        "push1b" => OpCode::Push1b,
+                        "push2b" => OpCode::Push2b,
+                        "push4b" => OpCode::Push4b,
+                        "push8b" => OpCode::Push8b,
 
                         "add" => OpCode::Add,
                         "sub" => OpCode::Sub,
@@ -95,6 +99,15 @@ impl Parser{
                         "shrl" => OpCode::Shrl,
                         "shra" => OpCode::Shra,
 
+                        "eq" => OpCode::Eq,
+                        "neq" => OpCode::Neq,
+                        "cmplt" => OpCode::Cmplt,
+                        "cmple" => OpCode::Cmple,
+                        "ucmplt" => OpCode::UCmplt,
+                        "ucmple" => OpCode::UCmple,
+                        "fcmplt" => OpCode::FCmplt,
+                        "fcmple" => OpCode::FCmple,
+
                         "conv_f2i" => OpCode::ConvF2I,
                         "conv_f2u" => OpCode::ConvF2U,
                         "conv_i2f" => OpCode::ConvI2F,
@@ -115,7 +128,7 @@ impl Parser{
 
                     //getting its operand(if has)
                     let operand = match opcode {
-                        OpCode::Push => {
+                        OpCode::Push | OpCode::Push1b | OpCode::Push2b | OpCode::Push4b | OpCode::Push8b => {
                             let oper = match &self.current_token.token {
                                 Token::Number(num) => Operand::IntConstant(*num),
                                 

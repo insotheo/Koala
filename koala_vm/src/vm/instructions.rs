@@ -122,6 +122,41 @@ define_instructions! {
     }
 
 
+    vm_eq => {
+        pop2!(stack, sp, a, b);
+        stack[*sp - 1] = (a == b) as u64;
+    }
+    vm_neq => {
+        pop2!(stack, sp, a, b);
+        stack[*sp - 1] = (a != b) as u64;
+    }
+    vm_cmplt => {
+        pop2!(stack, sp, a, b);
+        stack[*sp - 1] = ((a as i64) < (b as i64)) as u64;
+    }
+    vm_cmple => {
+        pop2!(stack, sp, a, b);
+        stack[*sp - 1] = ((a as i64) <= (b as i64)) as u64;
+    }
+    vm_ucmplt => {
+        pop2!(stack, sp, a, b);
+        stack[*sp - 1] = (a < b) as u64;
+    }
+    vm_ucmple => {
+        pop2!(stack, sp, a, b);
+        stack[*sp - 1] = (a <= b) as u64;
+    }
+    vm_fcmplt => {
+        pop2!(stack, sp, a, b);
+        stack[*sp - 1] = (f64::from_bits(a) < f64::from_bits(b)) as u64;
+    }
+    vm_fcmple => {
+        pop2!(stack, sp, a, b);
+        stack[*sp - 1] = (f64::from_bits(a) <= f64::from_bits(b)) as u64;
+    }
+
+
+
     vm_conv_f2i => {
         stack[*sp - 1] = (f64::from_bits(*stack.get_unchecked(*sp - 1)) as i64) as u64;
     }

@@ -52,6 +52,15 @@ impl VM{
         table[OpCode::Shl as usize] = vm_shl;
         table[OpCode::Shrl as usize] = vm_shrl;
         table[OpCode::Shra as usize] = vm_shra;
+        
+        table[OpCode::Eq as usize] = vm_eq;
+        table[OpCode::Neq as usize] = vm_neq;
+        table[OpCode::Cmplt as usize] = vm_cmplt;
+        table[OpCode::Cmple as usize] = vm_cmple;
+        table[OpCode::UCmplt as usize] = vm_ucmplt;
+        table[OpCode::UCmple as usize] = vm_ucmple;
+        table[OpCode::FCmplt as usize] = vm_fcmplt;
+        table[OpCode::FCmple as usize] = vm_fcmple;
 
         table[OpCode::ConvF2I as usize] = vm_conv_f2i;
         table[OpCode::ConvF2U as usize] = vm_conv_f2u;

@@ -161,6 +161,10 @@ impl Lexer{
                     "ret",
 
                     "push",
+                    "push1b",
+                    "push2b",
+                    "push4b",
+                    "push8b",
 
                     "add",
                     "sub",
@@ -185,6 +189,15 @@ impl Lexer{
                     "shl",
                     "shrl",
                     "shra",
+
+                    "eq",
+                    "neq",
+                    "cmplt",
+                    "cmple",
+                    "ucmplt",
+                    "ucmple",
+                    "fcmplt",
+                    "fcmple",
 
                     "conv_f2i",
                     "conv_f2u",

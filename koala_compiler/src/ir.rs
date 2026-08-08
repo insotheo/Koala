@@ -80,7 +80,8 @@ impl ProgramIR{
                             bytecode.extend_from_slice(&val.to_le_bytes());
                         }
                     }
-                } else {
+                }
+                else {
                 
                     bytecode.push(*opcode as u8);
 
@@ -88,8 +89,13 @@ impl ProgramIR{
                         Operand::None => {},
 
                         Operand::IntConstant(val) => {
-                            let bytes = val.to_le_bytes();
+                            let bytes: Vec<u8> = match *opcode {
+                                OpCode::Push1b => (*val as u8).to_le_bytes().to_vec(),
+                                OpCode::Push2b => (*val as u16).to_le_bytes().to_vec(),
+                                OpCode::Push4b => (*val as u32).to_le_bytes().to_vec(),
 
+                                _ => val.to_le_bytes().to_vec()
+                            };
                             bytecode.extend_from_slice(&bytes);
                         }
 

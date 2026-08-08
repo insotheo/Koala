@@ -35,6 +35,15 @@ pub enum OpCode{
     Shrl,
     Shra,
 
+    Eq,
+    Neq,
+    Cmplt,
+    Cmple,
+    UCmplt,
+    UCmple,
+    FCmplt,
+    FCmple,
+
     ConvF2I,
     ConvF2U,
     ConvI2F,
