@@ -1,3 +1,3 @@
 _main:
-    push 0xFF
+    push 255
     ret

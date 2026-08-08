@@ -2,93 +2,202 @@ use crate::opcode::OpCode;
 
 #[macro_use]
 mod macros;
-mod instructions;
-
-use instructions::*;
 
 const STACK_SIZE: usize = 16;
 
-
-type InstructionFn = unsafe fn(vm: &VM, ip: &mut usize, sp: &mut usize, stack: &mut [u64; STACK_SIZE]) -> bool;
-
-
 pub struct VM{
     pub bytecode: Vec<u8>,
-    dispatch_table: [InstructionFn; 256]
 }
 
 impl VM{
     pub fn new(bytecode: Vec<u8>) -> Self{
-        let mut table: [InstructionFn; 256] = [vm_unknown; 256];
-
-        //table
-        table[OpCode::Ret as usize] = vm_ret;
-        
-        table[OpCode::Push1b as usize] = vm_push1b;
-        table[OpCode::Push2b as usize] = vm_push2b;
-        table[OpCode::Push4b as usize] = vm_push4b;
-        table[OpCode::Push8b as usize] = vm_push8b;
-        
-        table[OpCode::Add as usize] = vm_add;
-        table[OpCode::Sub as usize] = vm_sub;
-        table[OpCode::Neg as usize] = vm_neg;
-        table[OpCode::Mul as usize] = vm_mul;
-        table[OpCode::UMul as usize] = vm_umul;
-        table[OpCode::Div as usize] = vm_div;
-        table[OpCode::UDiv as usize] = vm_udiv;
-        table[OpCode::Rem as usize] = vm_rem;
-        table[OpCode::URem as usize] = vm_urem;
-
-        table[OpCode::FAdd as usize] = vm_fadd;
-        table[OpCode::FSub as usize] = vm_fsub;
-        table[OpCode::FNeg as usize] = vm_fneg;
-        table[OpCode::FMul as usize] = vm_fmul;
-        table[OpCode::FDiv as usize] = vm_fdiv;
-
-        table[OpCode::And as usize] = vm_and;
-        table[OpCode::Or as usize] = vm_or;
-        table[OpCode::Xor as usize] = vm_xor;
-        table[OpCode::Not as usize] = vm_not;
-        table[OpCode::Shl as usize] = vm_shl;
-        table[OpCode::Shrl as usize] = vm_shrl;
-        table[OpCode::Shra as usize] = vm_shra;
-        
-        table[OpCode::Eq as usize] = vm_eq;
-        table[OpCode::Neq as usize] = vm_neq;
-        table[OpCode::Cmplt as usize] = vm_cmplt;
-        table[OpCode::Cmple as usize] = vm_cmple;
-        table[OpCode::UCmplt as usize] = vm_ucmplt;
-        table[OpCode::UCmple as usize] = vm_ucmple;
-        table[OpCode::FCmplt as usize] = vm_fcmplt;
-        table[OpCode::FCmple as usize] = vm_fcmple;
-
-        table[OpCode::ConvF2I as usize] = vm_conv_f2i;
-        table[OpCode::ConvF2U as usize] = vm_conv_f2u;
-        table[OpCode::ConvI2F as usize] = vm_conv_i2f;
-        table[OpCode::ConvU2F as usize] = vm_conv_u2f;
-        ////////////////////////////////////////////////////////////////////
-
         return VM
         { 
             bytecode: bytecode,
-            dispatch_table: table
         };
     }
 
     pub fn run(&self){
+        let vm = self;
+        let code = self.bytecode.as_slice();
+
         let mut ip: usize = 0;
         let mut sp: usize = 0;
         let mut stack: [u64; STACK_SIZE] = [0; STACK_SIZE];
 
-        while ip < self.bytecode.len(){
+        while ip < code.len(){
             unsafe {
-                let opcode_byte = *self.bytecode.get_unchecked(ip);
+                let opcode_byte = *code.get_unchecked(ip);
                 ip += 1;
 
-                let handler = *self.dispatch_table.get_unchecked(opcode_byte as usize);
+                let opcode: OpCode = std::mem::transmute(opcode_byte);
 
-                if !handler(self, &mut ip, &mut sp, &mut stack){
-                    break;
+                define_instructions! {
+                    ctx: (vm, ip, sp, stack);
+                    match opcode;
+
+                    Ret => {
+                        println!("VM finished via ret");
+
+                        println!("===STACK===");
+                        for i in 0..sp{
+                            println!("U: {} | S: {} | F: {:.5}", stack[i], stack[i] as i64, f64::from_bits(stack[i]));
+                        }
+                        println!("===========");
+                    }
+
+
+                    Push1b => {
+                        stack[sp] = read_bytes!(vm, ip, 1, u8);
+                        sp += 1;
+                    }
+                    Push2b => {
+                        stack[sp] = read_bytes!(vm, ip, 2, u16);
+                        sp += 1;
+                    }
+                    Push4b => {
+                        stack[sp] = read_bytes!(vm, ip, 4, u32);
+                        sp += 1;
+                    }
+                    Push8b => {
+                        stack[sp] = read_bytes!(vm, ip, 8, u64);
+                        sp += 1;
+                    }
+
+
+                    Add => {
+                        pop2!(stack, sp, a, b);
+                        stack[sp - 1] = a.wrapping_add(b) as u64;
+                    }
+                    Sub => {
+                        pop2!(stack, sp, a, b);
+                        stack[sp - 1] = a.wrapping_sub(b) as u64;
+                    }
+                    Neg => {
+                        stack[sp - 1] = stack[sp - 1].wrapping_neg();
+                    }
+                    Mul => {
+                        pop2!(stack, sp, a, b);
+                        stack[sp - 1] = (a as i64).wrapping_mul(b as i64) as u64;
+                    }
+                    UMul => {
+                        pop2!(stack, sp, a, b);
+                        stack[sp - 1] = a.wrapping_mul(b);
+                    }
+                    Div => {
+                        pop2!(stack, sp, a, b);
+                        stack[sp - 1] = (a as i64).wrapping_div(b as i64) as u64;
+                    }
+                    UDiv => {
+                        pop2!(stack, sp, a, b);
+                        stack[sp - 1] = a.wrapping_div(b);
+                    }
+                    Rem => {
+                        pop2!(stack, sp, a, b);
+                        stack[sp - 1] = (a as i64).wrapping_rem(b as i64) as u64;
+                    }
+                    URem => {
+                        pop2!(stack, sp, a, b);
+                        stack[sp - 1] = a.wrapping_rem(b);
+                    }
+
+
+                    FAdd => {
+                        pop2!(stack, sp, a, b);
+                        stack[sp - 1] = (f64::from_bits(a) + f64::from_bits(b)) as u64;
+                    }
+                    FSub => {
+                        pop2!(stack, sp, a, b);
+                        stack[sp - 1] = (f64::from_bits(a) - f64::from_bits(b)) as u64;
+                    }
+                    FNeg => {
+                        stack[sp - 1] = (-f64::from_bits(stack[sp - 1])) as u64;
+                    }
+                    FMul => {
+                        pop2!(stack, sp, a, b);
+                        stack[sp - 1] = (f64::from_bits(a) * f64::from_bits(b)) as u64;
+                    }
+                    FDiv => {
+                        pop2!(stack, sp, a, b);
+                        stack[sp - 1] = (f64::from_bits(a) / f64::from_bits(b)) as u64;
+                    }
+
+
+                    And => {
+                        pop2!(stack, sp, a, b);
+                        stack[sp - 1] = a & b;
+                    }
+                    Or => {
+                        pop2!(stack, sp, a, b);
+                        stack[sp - 1] = a | b;
+                    }
+                    Xor => {
+                        pop2!(stack, sp, a, b);
+                        stack[sp - 1] = a ^ b;
+                    }
+                    Not => {
+                        stack[sp - 1] = !stack[sp - 1];
+                    }
+                    Shl => {
+                        pop2!(stack, sp, a, b);
+                        stack[sp - 1] = a.wrapping_shl(b as u32) as u64;
+                    }
+                    Shrl => {
+                        pop2!(stack, sp, a, b);
+                        stack[sp - 1] = a.wrapping_shr(b as u32) as u64;
+                    }
+                    Shra => {
+                        pop2!(stack, sp, a, b);
+                        stack[sp - 1] = (a as i64).wrapping_shr(b as u32) as u64;
+                    }
+
+
+                    Eq => {
+                        pop2!(stack, sp, a, b);
+                        stack[sp - 1] = (a == b) as u64;
+                    }
+                    Neq => {
+                        pop2!(stack, sp, a, b);
+                        stack[sp - 1] = (a != b) as u64;
+                    }
+                    Cmplt => {
+                        pop2!(stack, sp, a, b);
+                        stack[sp - 1] = ((a as i64) < (b as i64)) as u64;
+                    }
+                    Cmple => {
+                        pop2!(stack, sp, a, b);
+                        stack[sp - 1] = ((a as i64) <= (b as i64)) as u64;
+                    }
+                    UCmplt => {
+                        pop2!(stack, sp, a, b);
+                        stack[sp - 1] = (a < b) as u64;
+                    }
+                    UCmple => {
+                        pop2!(stack, sp, a, b);
+                        stack[sp - 1] = (a <= b) as u64;
+                    }
+                    FCmplt => {
+                        pop2!(stack, sp, a, b);
+                        stack[sp - 1] = (f64::from_bits(a) < f64::from_bits(b)) as u64;
+                    }
+                    FCmple => {
+                        pop2!(stack, sp, a, b);
+                        stack[sp - 1] = (f64::from_bits(a) <= f64::from_bits(b)) as u64;
+                    }
+
+
+                    ConvF2I => {
+                        stack[sp - 1] = (f64::from_bits(stack[sp - 1]) as i64) as u64;
+                    }
+                    ConvF2U => {
+                        stack[sp - 1] = f64::from_bits(stack[sp - 1]) as u64;
+                    }
+                    ConvI2F => {
+                        stack[sp - 1] = ((stack[sp - 1] as i64) as f64).to_bits();
+                    }
+                    ConvU2F => {
+                        stack[sp - 1] = (stack[sp - 1] as f64).to_bits();
+                    }
                 }
             }
         }
