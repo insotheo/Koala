@@ -1,3 +1,16 @@
-_main:
-    push 255
+_if_else_example:
+    push 0xFF
+    push 0xFF
+    eq
+    jez _else
+    _if:
+        push 0x1
+        jmp _exit
+    _else:
+        push 0x2
+    _exit:
+        ret
+
+_endless_loop_example:
+    jmp _endless_loop_example
     ret

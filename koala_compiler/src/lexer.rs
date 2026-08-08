@@ -161,10 +161,6 @@ impl Lexer{
                     "ret",
 
                     "push",
-                    "push1b",
-                    "push2b",
-                    "push4b",
-                    "push8b",
 
                     "add",
                     "sub",
@@ -198,6 +194,10 @@ impl Lexer{
                     "ucmple",
                     "fcmplt",
                     "fcmple",
+
+                    "jmp",
+                    "jez",
+                    "jnz",
 
                     "conv_f2i",
                     "conv_f2u",

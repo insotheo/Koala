@@ -70,10 +70,6 @@ impl Parser{
                         "ret" => OpCode::Ret,
 
                         "push" => OpCode::Push,
-                        "push1b" => OpCode::Push1b,
-                        "push2b" => OpCode::Push2b,
-                        "push4b" => OpCode::Push4b,
-                        "push8b" => OpCode::Push8b,
 
                         "add" => OpCode::Add,
                         "sub" => OpCode::Sub,
@@ -108,6 +104,10 @@ impl Parser{
                         "fcmplt" => OpCode::FCmplt,
                         "fcmple" => OpCode::FCmple,
 
+                        "jmp" => OpCode::Jmp,
+                        "jez" => OpCode::Jez,
+                        "jnz" => OpCode::Jnz,
+
                         "conv_f2i" => OpCode::ConvF2I,
                         "conv_f2u" => OpCode::ConvF2U,
                         "conv_i2f" => OpCode::ConvI2F,
@@ -128,13 +128,13 @@ impl Parser{
 
                     //getting its operand(if has)
                     let operand = match opcode {
-                        OpCode::Push | OpCode::Push1b | OpCode::Push2b | OpCode::Push4b | OpCode::Push8b => {
+                        OpCode::Push => {
                             let oper = match &self.current_token.token {
                                 Token::Number(num) => Operand::IntConstant(*num),
                                 
                                 _ => {
                                     self.add_error(
-                                        &format!("Instruction 'push' requires constant argument"),
+                                        &format!("Instruction requires constant argument"),
                                         self.current_token.span
                                     );
                                     failed_parsing_instr = true;
@@ -147,6 +147,27 @@ impl Parser{
                             
                             oper
                         },
+
+                        OpCode::Jmp | OpCode::Jez | OpCode::Jnz => {
+                            let oper = match &self.current_token.token {
+                                Token::Number(num) => Operand::IntConstant(*num),
+                                Token::Identifier(label) => Operand::Label(label.clone()),
+
+                                _ => {
+                                    self.add_error(
+                                        &format!("Instruction requires constant argument"),
+                                        self.current_token.span
+                                    );
+                                    failed_parsing_instr = true;
+
+                                    Operand::None
+                                }
+                            };
+
+                            self.next_token();
+                            
+                            oper
+                        }
 
                         _ => Operand::None,
                     };

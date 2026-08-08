@@ -44,6 +44,8 @@ impl VM{
                             println!("U: {} | S: {} | F: {:.5}", stack[i], stack[i] as i64, f64::from_bits(stack[i]));
                         }
                         println!("===========");
+
+                        break;
                     }
 
 
@@ -104,22 +106,22 @@ impl VM{
 
                     FAdd => {
                         pop2!(stack, sp, a, b);
-                        stack[sp - 1] = (f64::from_bits(a) + f64::from_bits(b)) as u64;
+                        stack[sp - 1] = (f64::from_bits(a) + f64::from_bits(b)).to_bits();
                     }
                     FSub => {
                         pop2!(stack, sp, a, b);
-                        stack[sp - 1] = (f64::from_bits(a) - f64::from_bits(b)) as u64;
+                        stack[sp - 1] = (f64::from_bits(a) - f64::from_bits(b)).to_bits();
                     }
                     FNeg => {
-                        stack[sp - 1] = (-f64::from_bits(stack[sp - 1])) as u64;
+                        stack[sp - 1] = (-f64::from_bits(stack[sp - 1])).to_bits();
                     }
                     FMul => {
                         pop2!(stack, sp, a, b);
-                        stack[sp - 1] = (f64::from_bits(a) * f64::from_bits(b)) as u64;
+                        stack[sp - 1] = (f64::from_bits(a) * f64::from_bits(b)).to_bits();
                     }
                     FDiv => {
                         pop2!(stack, sp, a, b);
-                        stack[sp - 1] = (f64::from_bits(a) / f64::from_bits(b)) as u64;
+                        stack[sp - 1] = (f64::from_bits(a) / f64::from_bits(b)).to_bits();
                     }
 
 
@@ -184,6 +186,65 @@ impl VM{
                         pop2!(stack, sp, a, b);
                         stack[sp - 1] = (f64::from_bits(a) <= f64::from_bits(b)) as u64;
                     }
+
+
+                    Jmp1b => {
+                        let offset = read_bytes!(vm, ip, 1, i8);
+                        ip = (ip as i64 + offset as i64) as usize;
+                    }
+                    Jmp2b => {
+                        let offset = read_bytes!(vm, ip, 2, i16);
+                        ip = (ip as i64 + offset as i64) as usize;
+                    }
+                    Jmp4b => {
+                        let offset = read_bytes!(vm, ip, 4, i32);
+                        ip = (ip as i64 + offset as i64) as usize;
+                    }
+                    Jmp8b => {
+                        let offset = read_bytes!(vm, ip, 8, i64);
+                        ip = (ip as i64 + offset as i64) as usize;
+                    }
+                    Jez1b => {
+                        let offset = read_bytes!(vm, ip, 1, i8);
+                        sp -= 1;
+                        if stack[sp] == 0 { ip = (ip as i64 + offset as i64) as usize; }
+                    }
+                    Jez2b => {
+                        let offset = read_bytes!(vm, ip, 2, i16);
+                        sp -= 1;
+                        if stack[sp] == 0 { ip = (ip as i64 + offset as i64) as usize; }
+                    }
+                    Jez4b => {
+                        let offset = read_bytes!(vm, ip, 4, i32);
+                        sp -= 1;
+                        if stack[sp] == 0 { ip = (ip as i64 + offset as i64) as usize; }
+                    }
+                    Jez8b => {
+                        let offset = read_bytes!(vm, ip, 8, i64);
+                        sp -= 1;
+                        if stack[sp] == 0 { ip = (ip as i64 + offset as i64) as usize; }
+                    }
+                    Jnz1b => {
+                        let offset = read_bytes!(vm, ip, 1, i8);
+                        sp -= 1;
+                        if stack[sp] != 0 { ip = (ip as i64 + offset as i64) as usize; }
+                    }
+                    Jnz2b => {
+                        let offset = read_bytes!(vm, ip, 2, i16);
+                        sp -= 1;
+                        if stack[sp] != 0 { ip = (ip as i64 + offset as i64) as usize; }
+                    }
+                    Jnz4b => {
+                        let offset = read_bytes!(vm, ip, 4, i32);
+                        sp -= 1;
+                        if stack[sp] != 0 { ip = (ip as i64 + offset as i64) as usize; }
+                    }
+                    Jnz8b => {
+                        let offset = read_bytes!(vm, ip, 8, i64);
+                        sp -= 1;
+                        if stack[sp] != 0 { ip = (ip as i64 + offset as i64) as usize; }
+                    }
+
 
 
                     ConvF2I => {
