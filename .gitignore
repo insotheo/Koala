@@ -1,2 +1,6 @@
-*.klbc
+.vscode/
 [Bb]in/
+build/
+.cache/
+
+*.klbc
