@@ -1,7 +1,2 @@
-_count_to_1b_test:
-    push 1000000000
-    _loop:
-        dec
-        dup
-        jnz _loop
+_main:
     ret
