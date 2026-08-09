@@ -71,8 +71,12 @@ impl Parser{
 
                         "push" => OpCode::Push,
 
+                        "dup" => OpCode::Dup,
+
                         "add" => OpCode::Add,
                         "sub" => OpCode::Sub,
+                        "inc" => OpCode::Inc,
+                        "dec" => OpCode::Dec,
                         "neg" => OpCode::Neg,
                         "mul" => OpCode::Mul,
                         "umul" => OpCode::UMul,

@@ -162,8 +162,12 @@ impl Lexer{
 
                     "push",
 
+                    "dup",
+
                     "add",
                     "sub",
+                    "inc",
+                    "dec",
                     "neg",
                     "mul",
                     "umul",

@@ -1,9 +1,9 @@
 #[macro_export]
 macro_rules! read_bytes {
-    ($vm:ident, $ip:ident, $bytes_count:expr, $type:ident) => {
+    ($bytecode:ident, $ip:ident, $bytes_count:expr, $type:ident) => {
         {
             let mut bytes = [0u8; $bytes_count];
-            let src_ptr = $vm.bytecode.as_ptr().add($ip);
+            let src_ptr = $bytecode.as_ptr().add($ip);
             std::ptr::copy_nonoverlapping(src_ptr, bytes.as_mut_ptr(), $bytes_count);
             $ip += $bytes_count;
 
@@ -15,9 +15,9 @@ macro_rules! read_bytes {
 #[macro_export]
 macro_rules! pop2 {
     ($stack:ident, $sp:ident, $a:ident, $b:ident) => {
-        let $a = *$stack.get_unchecked($sp - 2);
-        let $b = *$stack.get_unchecked($sp - 1);
-        $sp -= 1;
+        $sp -= 2;
+        let $a = *$stack.get_unchecked($sp);
+        let $b = *$stack.get_unchecked($sp + 1);
     };
 }
 
@@ -35,7 +35,7 @@ macro_rules! define_instructions {
     ) => {
         match $opcode{
             $(
-                OpCode::$name => {
+                crate::opcode::raw_opcodes::$name => {
                     $body
                 }
             )*

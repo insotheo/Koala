@@ -1,16 +1,7 @@
-_if_else_example:
-    push 0xFF
-    push 0xFF
-    eq
-    jez _else
-    _if:
-        push 0x1
-        jmp _exit
-    _else:
-        push 0x2
-    _exit:
-        ret
-
-_endless_loop_example:
-    jmp _endless_loop_example
+_count_to_1b_test:
+    push 1000000000
+    _loop:
+        dec
+        dup
+        jnz _loop
     ret

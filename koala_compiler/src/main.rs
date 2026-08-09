@@ -52,6 +52,11 @@ fn main(){
 
     //dbg run
     let vm = vm::VM::new(bytecode);
+    
+    let start = std::time::Instant::now();
     vm.run();
+    let duration = start.elapsed();
+    println!("Exec time: {:?}", duration);
+
     
 }
