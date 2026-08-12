@@ -2,5 +2,5 @@
 #include <stdio.h>
 
 void test() {
-    printf("Hello from KoalaVM!");
+    printf("Hello from KoalaVM!\n");
 }
