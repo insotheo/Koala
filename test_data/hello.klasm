@@ -1,4 +1,10 @@
-_main: ; this is entry point
-    mov r0, 0xFF ; mov_imm16 0 0xFF
-    mov r1, r0 ; mov_reg 1 0
+.error_label:
+_foo:
+    mov r0, 0xF
+    .some_minor_label:
+    ret
+
+_foo2:
+    mov r1, 0xF
+    .some_minor_label:
     ret

@@ -1,10 +1,7 @@
 #include "parser/parser.hpp"
 
-#include "lexer/token.hpp"
-#include "parser/descriptor.hpp"
 #include <memory>
 #include <format>
-#include <string>
 #include <iostream>
 
 namespace koalac{
@@ -35,7 +32,9 @@ namespace koalac{
 
     void Parser::ParseLabel(IRNodes* nodes){
         std::string ident = std::get<std::string>(m_Cur.Val);
+        bool isLocalLabel = ident.starts_with('.');
         Span startSpan = m_Cur.Span;
+
         Next();
         if(m_Cur.Type != TokenType::Colon){
             Panic("Unexpected token after label identifier. Expected colon ':'.", m_Cur.Span);
@@ -45,8 +44,18 @@ namespace koalac{
 
         auto it = m_Labels.find(ident);
         if(it != m_Labels.end()){
-            Panic(std::format("Lable '{}' was declared multiple times", ident), startSpan);
+            Panic(std::format("Label '{}' was declared multiple times", ident), startSpan);
             return;
+        }
+        
+        if(isLocalLabel){
+            if(m_CurGlobalLabel.empty()){
+                Panic(std::format("Cannot assign local label '{}'. No global label found.", ident), startSpan);
+                return;
+            }
+            ident = m_CurGlobalLabel + ident;
+        } else {
+            m_CurGlobalLabel = ident;
         }
         m_Labels.emplace(ident, startSpan);
 

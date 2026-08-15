@@ -6,6 +6,7 @@
 #include "parser/descriptor.hpp"
 #include <vector>
 #include <unordered_map>
+#include <string>
 
 namespace koalac{
 
@@ -34,7 +35,7 @@ namespace koalac{
     class Parser{
     public:
         Parser(Lexer* lexer)
-        : m_Lexer(lexer), m_Cur(m_Lexer->NextToken()), m_Next(m_Lexer->NextToken())
+        : m_Lexer(lexer), m_Cur(m_Lexer->NextToken()), m_Next(m_Lexer->NextToken()), m_CurGlobalLabel("")
         {}
 
         IRProgram MakeProgram();
@@ -45,8 +46,11 @@ namespace koalac{
         Lexer* m_Lexer;
         Token m_Cur;
         Token m_Next;
+        
         std::vector<ParserError> m_Errors;
+
         std::unordered_map<std::string, Span> m_Labels;
+        std::string m_CurGlobalLabel;
 
         void ParseLabel(IRNodes* nodes);
         void ParseInstruction(IRNodes* nodes);

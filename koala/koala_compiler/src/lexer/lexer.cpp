@@ -136,9 +136,9 @@ namespace koalac{
             return Token(type, startSpan, val);
         }
 
-        if(std::isalpha(c) || c == '_'){
+        if(std::isalpha(c) || c == '_' || c == '.'){
             std::stringstream ss;
-            while(M_IDX_IS_VALID && (std::isalnum(CUR_CHAR) || CUR_CHAR == '_')){
+            while(M_IDX_IS_VALID && (std::isalnum(CUR_CHAR) || CUR_CHAR == '_' || CUR_CHAR == '.')){
                 ss << CUR_CHAR;
                 Next();
             }
@@ -159,6 +159,7 @@ namespace koalac{
             default: break;
         }
 
+        Next();
         return Token(TokenType::Unknown, startSpan);
     }
 
