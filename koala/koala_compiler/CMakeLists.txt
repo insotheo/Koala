@@ -4,6 +4,7 @@ set(APP_NAME "kolac")
 set(COMPILER_SOURCES
 src/main.cpp
 src/lexer/lexer.cpp
+src/parser/parser.cpp
 )
 
 add_executable(${APP_NAME} ${COMPILER_SOURCES})

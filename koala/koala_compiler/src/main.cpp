@@ -1,5 +1,3 @@
-#include "lexer/token.hpp"
-#include <variant>
 extern "C"{
     #include <test.h>
 }
@@ -10,6 +8,8 @@ extern "C"{
 #include <unordered_map>
 
 #include "lexer/lexer.hpp"
+#include "parser/parser.hpp"
+#include "ir.hpp"
 
 
 void printHelp() {
@@ -68,21 +68,12 @@ int main(int argc, char** argv){
 
     { //processing source code
         koalac::Lexer lexer(source);
+        koalac::Parser parser(&lexer);
 
-        koalac::Token t = lexer.NextToken();
-        while(t.Type != koalac::TokenType::EndOfFile){
-            std::cout << "Type(" << t.Span.Line << ", " << t.Span.Column << "): " << (int)t.Type << " Val: ";
-            std::visit([](const auto& arg){
-                using T = std::decay_t<decltype(arg)>;
-                if constexpr (std::is_same_v<T, std::monostate>){
-                    std::cout << "<NONE>";
-                } else {
-                    std::cout << arg;
-                }
-            }, t.Val);
-            std::cout << "\n";
-
-            t = lexer.NextToken(); 
+        koalac::IRProgram program = parser.MakeProgram();
+        if(!parser.IsSuccess()){
+            parser.PrintErrors();
+            return -1;
         }
     }
 

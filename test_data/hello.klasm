@@ -1,7 +1,5 @@
 _main: ; this is entry point
-    mov r0, 0b102
-    mov r1, 0o10
-    mov r2, 10
-    mov r3, 0x10
-    mov r100000, HI
+    mov r0, 0xFF ; mov_imm16 0 0xFF
+    mov r1, r0 ; mov_reg 1 0
+    _some_wrong_label
     ret
