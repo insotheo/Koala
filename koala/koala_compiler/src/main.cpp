@@ -9,8 +9,8 @@ extern "C"{
 
 #include "lexer/lexer.hpp"
 #include "parser/parser.hpp"
+#include "translator/translator.hpp"
 #include "ir.hpp"
-
 
 void printHelp() {
     std::cout << R"(kolac <path_to_source.klasm> <args>
@@ -39,6 +39,7 @@ int main(int argc, char** argv){
                         areArgsFine = false;
                     } else {
                         args[std::string(argv[i])] = std::string(argv[i + 1]);
+                        i++;
                     }
                 }
             }
@@ -65,7 +66,8 @@ int main(int argc, char** argv){
 
         fs.close();
     }
-
+    
+    koalac::Bytecode bc;
     { //processing source code
         koalac::Lexer lexer(source);
         koalac::Parser parser(&lexer);
@@ -75,6 +77,38 @@ int main(int argc, char** argv){
             parser.PrintErrors();
             return -1;
         }
+        
+        bc = koalac::translateToBytecode(program);
+    }
+
+    { //saving bytecode to file
+        std::string outName;
+
+        if(args.contains("-o")){
+            outName = args["-o"];
+        } else {
+            std::string inputPath = argv[1];
+            size_t lastDot = inputPath.find_last_of(".");
+            if(lastDot != std::string::npos){
+                outName = inputPath.substr(0, lastDot) + ".klbc"; //klbc is Koala Bytecode
+            } else {
+                outName = inputPath + ".klbc";
+            }
+        }
+
+        std::ofstream outFs(outName, std::ios::out | std::ios::binary);
+        if(!outFs){
+            std::cerr << "Failed to open output file for writting: " << outName << "\n";
+            return -1;
+        }
+
+        outFs.write(reinterpret_cast<const char*>(bc.data()), static_cast<std::streamsize>(bc.size()));
+        if(!outFs.good()){
+            std::cerr << "Error occured while writing bytecode data.\n";
+            return -1;
+        }
+
+        std::cout << "Successfully compiled and saved to " << outName << "\n";
     }
 
     return 0; 

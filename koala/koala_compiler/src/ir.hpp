@@ -28,6 +28,8 @@ namespace koalac{
         : Op(op), Args(std::move(args)), IRNode(span)
         {}
 
+        size_t GetSize();
+
         ~IRInstruction() override = default;
     };
 
@@ -51,7 +53,6 @@ namespace koalac{
         ~IRProgram() = default;
 
         inline const IRNodes& GetNodes() const { return m_Nodes; }
-
     private:
         IRNodes m_Nodes;
     };
