@@ -14,5 +14,6 @@ set(CMAKE_C_STANDARD 17)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS OFF)
 
-add_subdirectory(koala_vm)
+add_subdirectory(koala_core)
 add_subdirectory(koala_compiler)
+add_subdirectory(koala_vm)

@@ -1,6 +1,4 @@
-extern "C"{
-    #include <test.h>
-}
+#include <KoalaCore>
 #include <iostream>
 #include <cstring>
 #include <string>
@@ -11,6 +9,8 @@ extern "C"{
 #include "parser/parser.hpp"
 #include "translator/translator.hpp"
 #include "ir.hpp"
+
+const uint8_t KOALA_MAGIC_BYTES[] = {KOALA_MAG_0, KOALA_MAG_1, KOALA_MAG_2, KOALA_MAG_3, KOALA_MAG_4 };
 
 void printHelp() {
     std::cout << R"(kolac <path_to_source.klasm> <args>
@@ -102,6 +102,7 @@ int main(int argc, char** argv){
             return -1;
         }
 
+        outFs.write(reinterpret_cast<const char*>(KOALA_MAGIC_BYTES), static_cast<std::streamsize>(5));
         outFs.write(reinterpret_cast<const char*>(bc.data()), static_cast<std::streamsize>(bc.size()));
         if(!outFs.good()){
             std::cerr << "Error occured while writing bytecode data.\n";

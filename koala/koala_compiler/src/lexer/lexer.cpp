@@ -32,7 +32,7 @@ uint64_t parseRegisterIdx(const std::string& s){
     uint64_t n = 0;
     for(size_t i = 1; i < s.size(); ++i){
         n = n * 10 + (static_cast<unsigned char>(s[i]) - '0');
-        if(n >= KOALA_VM_REGISTERS_COUNT) return UINT64_MAX;
+        if(n >= KOALA_CORE_VM_REGISTERS_COUNT) return UINT64_MAX;
     }
     return n;
 }

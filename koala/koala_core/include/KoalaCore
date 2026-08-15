@@ -1,0 +1,6 @@
+#pragma once
+
+extern "C"{
+    #include "vm_config.h"
+    #include "vm.h"
+}

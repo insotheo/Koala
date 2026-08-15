@@ -1,5 +1,5 @@
 project(KOALA_COMPILER VERSION 0.0.1 LANGUAGES C CXX)
-set(APP_NAME "kolac")
+set(APP_NAME "koalac")
 
 set(COMPILER_SOURCES
 src/main.cpp
@@ -15,4 +15,4 @@ target_include_directories(${APP_NAME}
 PRIVATE src/
 )
 
-target_link_libraries(${APP_NAME} PRIVATE koala_vm)
+target_link_libraries(${APP_NAME} PRIVATE koala_core)
