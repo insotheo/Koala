@@ -5,6 +5,7 @@
 #include "ir.hpp"
 #include "parser/descriptor.hpp"
 #include <vector>
+#include <unordered_map>
 
 namespace koalac{
 
@@ -45,6 +46,7 @@ namespace koalac{
         Token m_Cur;
         Token m_Next;
         std::vector<ParserError> m_Errors;
+        std::unordered_map<std::string, Span> m_Labels;
 
         void ParseLabel(IRNodes* nodes);
         void ParseInstruction(IRNodes* nodes);

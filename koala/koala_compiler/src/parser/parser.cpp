@@ -5,7 +5,6 @@
 #include <memory>
 #include <format>
 #include <string>
-#include <unordered_map>
 #include <iostream>
 
 namespace koalac{
@@ -43,6 +42,14 @@ namespace koalac{
             Sync();
         }
         Next();
+
+        auto it = m_Labels.find(ident);
+        if(it != m_Labels.end()){
+            Panic(std::format("Lable '{}' was declared multiple times", ident), startSpan);
+            return;
+        }
+        m_Labels.emplace(ident, startSpan);
+
         nodes->push_back(std::make_unique<IRLabel>(ident, startSpan));
     }
 

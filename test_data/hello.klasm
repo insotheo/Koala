@@ -1,5 +1,4 @@
 _main: ; this is entry point
     mov r0, 0xFF ; mov_imm16 0 0xFF
     mov r1, r0 ; mov_reg 1 0
-    _some_wrong_label
     ret
