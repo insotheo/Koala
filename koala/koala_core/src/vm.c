@@ -18,35 +18,37 @@ void koalaVMRun(uint8_t* bytecode){
     
     #define DISPATCH() goto *dispatch_tabel[*pc++]
 
+    #define UNPACK_REG(name) uint8_t name = *pc++
+    #define UNPACK_IMM16(name)\
+        uint16_t name;\
+        memcpy(&name, pc, sizeof(uint16_t));\
+        pc += sizeof(uint16_t);
+    #define BITS_AS_FLOAT(src, out)\
+        float out;\
+        memcpy(&out, &src, sizeof(out));
+    
     DISPATCH();
 
     vm_ret: {
         //DBG
         for(size_t i = 0; i < KOALA_CORE_VM_REGISTERS_COUNT; ++i){
-            float f;
-            memcpy(&f, &registers[i], sizeof(f));
+            BITS_AS_FLOAT(registers[i], f);
             printf("R%.2ld S: %ld | U: %ld | F: %f\n", i, (int64_t)registers[i], registers[i], f);
         }
+        /////
 
         return;
     }
 
     vm_mov_imm16: {
-        uint8_t dst = *pc++;
-        uint16_t imm = 0;
-        memcpy(&imm, pc, sizeof(uint16_t));
-        pc += 2;
-
+        UNPACK_REG(dst); UNPACK_IMM16(imm);
         registers[dst] = imm;
-        
         DISPATCH();
     }
     
     vm_mov_reg: {
-        uint8_t dst = *pc++;
-        uint8_t src = *pc++;
+        UNPACK_REG(dst); UNPACK_REG(src);
         registers[dst] = registers[src];
-
         DISPATCH();
     }
 }
