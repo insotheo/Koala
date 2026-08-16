@@ -11,7 +11,41 @@ namespace koalac{
         {"mov", {
             { .Op = OpCode::MOV_IMM16, .Format = {ArgType::Register, ArgType::Imm16} },
             { .Op = OpCode::MOV_REG, .Format = {ArgType::Register, ArgType::Register} }
-        }}
+        }},
+
+        { "add", {
+            { .Op = OpCode::ADD_IMM16, .Format = { ArgType::Register, ArgType::Register, ArgType::Imm16 } },
+            { .Op = OpCode::ADD_REG, .Format = { ArgType::Register, ArgType::Register, ArgType::Register } }
+        }},
+        { "sub", {
+            { .Op = OpCode::SUB_IMM16, .Format = { ArgType::Register, ArgType::Register, ArgType::Imm16 } },
+            { .Op = OpCode::SUB_IMM16_R, .Format = { ArgType::Register, ArgType::Imm16, ArgType::Register } },
+            { .Op = OpCode::SUB_REG, .Format = { ArgType::Register, ArgType::Register, ArgType::Register } }
+        }},
+        { "mul", {
+            { .Op = OpCode::MUL_IMM16, .Format = { ArgType::Register, ArgType::Register, ArgType::Imm16 } },
+            { .Op = OpCode::MUL_REG, .Format = { ArgType::Register, ArgType::Register, ArgType::Register } }
+        }},
+        { "idiv", {
+            { .Op = OpCode::IDIV_IMM16, .Format = { ArgType::Register, ArgType::Register, ArgType::Imm16 } },
+            { .Op = OpCode::IDIV_IMM16_R, .Format = { ArgType::Register, ArgType::Imm16, ArgType::Register } },
+            { .Op = OpCode::IDIV_REG, .Format = { ArgType::Register, ArgType::Register, ArgType::Register } }
+        }},
+        { "div", {
+            { .Op = OpCode::DIV_IMM16, .Format = { ArgType::Register, ArgType::Register, ArgType::Imm16 } },
+            { .Op = OpCode::DIV_IMM16_R, .Format = { ArgType::Register, ArgType::Imm16, ArgType::Register } },
+            { .Op = OpCode::DIV_REG, .Format = { ArgType::Register, ArgType::Register, ArgType::Register } }
+        }},
+        { "irem", {
+            { .Op = OpCode::IREM_IMM16, .Format = { ArgType::Register, ArgType::Register, ArgType::Imm16 } },
+            { .Op = OpCode::IREM_IMM16_R, .Format = { ArgType::Register, ArgType::Imm16, ArgType::Register } },
+            { .Op = OpCode::IREM_REG, .Format = { ArgType::Register, ArgType::Register, ArgType::Register } }
+        }},
+        { "rem", {
+            { .Op = OpCode::REM_IMM16, .Format = { ArgType::Register, ArgType::Register, ArgType::Imm16 } },
+            { .Op = OpCode::REM_IMM16_R, .Format = { ArgType::Register, ArgType::Imm16, ArgType::Register } },
+            { .Op = OpCode::REM_REG, .Format = { ArgType::Register, ArgType::Register, ArgType::Register } }
+        }},
     };
 
     IRProgram Parser::MakeProgram(){

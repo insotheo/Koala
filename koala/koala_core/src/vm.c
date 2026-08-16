@@ -6,34 +6,81 @@
 #include <stdio.h>
 
 void koalaVMRun(uint8_t* bytecode){
-    static void* dispatch_tabel[] = {
+    static void* dispatch_table[] = {
         [RET] = &&vm_ret,
 
         [MOV_IMM16] = &&vm_mov_imm16,
         [MOV_REG] = &&vm_mov_reg,
+
+        [ADD_IMM16] = &&vm_add_imm16,
+        [ADD_REG] = &&vm_add_reg,
+        
+        [SUB_IMM16] = &&vm_sub_imm16,
+        [SUB_IMM16_R] = &&vm_sub_imm16_r,
+        [SUB_REG] = &&vm_sub_reg,
+
+        [MUL_IMM16] = &&vm_mul_imm16,
+        [MUL_REG] = &&vm_mul_reg,
+
+        [IDIV_IMM16] = &&vm_idiv_imm16,
+        [IDIV_IMM16_R] = &&vm_idiv_imm16_r,
+        [IDIV_REG] = &&vm_idiv_reg,
+
+        [DIV_IMM16] = &&vm_div_imm16,
+        [DIV_IMM16_R] = &&vm_div_imm16_r,
+        [DIV_REG] = &&vm_div_reg,
+
+        [IREM_IMM16] = &&vm_irem_imm16,
+        [IREM_IMM16_R] = &&vm_irem_imm16_r,
+        [IREM_REG] = &&vm_irem_reg,
+
+        [REM_IMM16] = &&vm_rem_imm16,
+        [REM_IMM16_R] = &&vm_rem_imm16_r,
+        [REM_REG] = &&vm_rem_reg,
     };
 
     uint8_t* pc = &bytecode[0];
-    uint64_t registers[KOALA_CORE_VM_REGISTERS_COUNT];
+    uint64_t registers[KOALA_CORE_VM_REGISTERS_COUNT] = {0};
     
-    #define DISPATCH() goto *dispatch_tabel[*pc++]
+    #define DISPATCH() goto *dispatch_table[*pc++]
 
-    #define UNPACK_REG(name) uint8_t name = *pc++
-    #define UNPACK_IMM16(name)\
-        uint16_t name;\
-        memcpy(&name, pc, sizeof(uint16_t));\
-        pc += sizeof(uint16_t);
-    #define BITS_AS_FLOAT(src, out)\
-        float out;\
-        memcpy(&out, &src, sizeof(out));
+    #define READ_REG() (*pc++)
+    #define DECODE_REG(name) uint8_t name = READ_REG()
+    #define USE_REG(name) registers[name]
+
+    #define READ_IMM16() ({\
+            int16_t val;\
+            memcpy(&val, pc, sizeof(int16_t));\
+            pc += sizeof(int16_t);\
+            val;\
+        })
+    #define DECODE_IMM16(name) int16_t name = READ_IMM16()
+    #define USE_IMM16(name) (int16_t)name
+
+    #define CAST_TO_SIGNED(val) ((int64_t)val)
+    #define CAST_TO_UNSIGNED(val) ((uint64_t)val)
+
+    #define BITS_AS_FLOAT(bits)({\
+            double fbits;\
+            memcpy(&fbits, &bits, sizeof(fbits));\
+            fbits;\
+        })
     
+
+    #define VM_BINARY_OP(instr, operation, type1, type2, mod)\
+        vm_##instr: {\
+            DECODE_REG(dst); DECODE_##type1(op1); DECODE_##type2(op2);\
+            USE_REG(dst) = (uint64_t)(CAST_TO_##mod(USE_##type1(op1)) operation CAST_TO_##mod(USE_##type2(op2)));\
+            DISPATCH();\
+        }
+
     DISPATCH();
 
     vm_ret: {
         //DBG
         for(size_t i = 0; i < KOALA_CORE_VM_REGISTERS_COUNT; ++i){
-            BITS_AS_FLOAT(registers[i], f);
-            printf("R%.2ld S: %ld | U: %ld | F: %f\n", i, (int64_t)registers[i], registers[i], f);
+            double f = BITS_AS_FLOAT(registers[i]);
+            printf("R%.2ld S: %ld | U: %lu | F: %f\n", i, (int64_t)registers[i], (uint64_t)registers[i], f);
         }
         /////
 
@@ -41,14 +88,40 @@ void koalaVMRun(uint8_t* bytecode){
     }
 
     vm_mov_imm16: {
-        UNPACK_REG(dst); UNPACK_IMM16(imm);
-        registers[dst] = imm;
+        DECODE_REG(dst); DECODE_IMM16(imm);
+        USE_REG(dst) = USE_IMM16(imm);
         DISPATCH();
     }
     
     vm_mov_reg: {
-        UNPACK_REG(dst); UNPACK_REG(src);
-        registers[dst] = registers[src];
+        DECODE_REG(dst); DECODE_REG(src);
+        USE_REG(dst) = USE_REG(src);
         DISPATCH();
     }
+
+    VM_BINARY_OP(add_imm16,     +, REG, IMM16, SIGNED)
+    VM_BINARY_OP(add_reg,       +, REG, REG, SIGNED)
+    
+    VM_BINARY_OP(sub_imm16,     -, REG, IMM16, SIGNED)
+    VM_BINARY_OP(sub_imm16_r,   -, IMM16, REG, SIGNED)
+    VM_BINARY_OP(sub_reg,       -, REG, REG, SIGNED)
+
+    VM_BINARY_OP(mul_imm16,     *, REG, IMM16, SIGNED)
+    VM_BINARY_OP(mul_reg,       *, REG, REG, SIGNED)
+
+    VM_BINARY_OP(idiv_imm16,    /, REG, IMM16, SIGNED)
+    VM_BINARY_OP(idiv_imm16_r,  /, IMM16, REG, SIGNED)
+    VM_BINARY_OP(idiv_reg,      /, REG, REG, SIGNED)
+
+    VM_BINARY_OP(div_imm16,     /, REG, IMM16, UNSIGNED)
+    VM_BINARY_OP(div_imm16_r,   /, IMM16, REG, UNSIGNED)
+    VM_BINARY_OP(div_reg,       /, REG, REG, UNSIGNED)
+
+    VM_BINARY_OP(irem_imm16,    %, REG, IMM16, SIGNED)
+    VM_BINARY_OP(irem_imm16_r,  %, IMM16, REG, SIGNED)
+    VM_BINARY_OP(irem_reg,      %, REG, REG, SIGNED)
+
+    VM_BINARY_OP(rem_imm16,     %, REG, IMM16, UNSIGNED)
+    VM_BINARY_OP(rem_imm16_r,   %, IMM16, REG, UNSIGNED)
+    VM_BINARY_OP(rem_reg,       %, REG, REG, UNSIGNED)
 }

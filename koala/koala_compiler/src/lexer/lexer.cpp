@@ -147,6 +147,13 @@ namespace koalac{
             if(isRegister(ident)) return Token(TokenType::Register, startSpan, parseRegisterIdx(ident));
             else if(
                 ident == "mov" ||
+                ident == "add" ||
+                ident == "sub" ||
+                ident == "mul" ||
+                ident == "idiv" ||
+                ident == "div" ||
+                ident == "irem" ||
+                ident == "rem" ||
                 ident == "ret"
             ) return Token(TokenType::Keyword, startSpan, ident);
             else return Token(TokenType::Identifier, startSpan, ident);
