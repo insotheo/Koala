@@ -46,6 +46,37 @@ namespace koalac{
             { .Op = OpCode::REM_IMM16_R, .Format = { ArgType::Register, ArgType::Imm16, ArgType::Register } },
             { .Op = OpCode::REM_REG, .Format = { ArgType::Register, ArgType::Register, ArgType::Register } }
         }},
+        { "and", {
+            { .Op = OpCode::AND_IMM16, .Format = { ArgType::Register, ArgType::Register, ArgType::Imm16 } },
+            { .Op = OpCode::AND_REG, .Format = { ArgType::Register, ArgType::Register, ArgType::Register } }
+        }},
+        { "or", {
+            { .Op = OpCode::OR_IMM16, .Format = { ArgType::Register, ArgType::Register, ArgType::Imm16 } },
+            { .Op = OpCode::OR_REG, .Format = { ArgType::Register, ArgType::Register, ArgType::Register } }
+        }},
+        { "xor", {
+            { .Op = OpCode::XOR_IMM16, .Format = { ArgType::Register, ArgType::Register, ArgType::Imm16 } },
+            { .Op = OpCode::XOR_REG, .Format = { ArgType::Register, ArgType::Register, ArgType::Register } }
+        }},
+        { "not", {
+            { .Op = OpCode::NOT_IMM16, .Format = { ArgType::Register,ArgType::Imm16 } },
+            { .Op = OpCode::NOT_REG, .Format = { ArgType::Register, ArgType::Register } }
+        }},
+        { "shl", {
+            { .Op = OpCode::SHL_IMM16, .Format = { ArgType::Register, ArgType::Register, ArgType::Imm16 } },
+            { .Op = OpCode::SHL_IMM16_R, .Format = { ArgType::Register, ArgType::Imm16, ArgType::Register } },
+            { .Op = OpCode::SHL_REG, .Format = { ArgType::Register, ArgType::Register, ArgType::Register } }
+        }},
+        { "shr", {
+            { .Op = OpCode::SHR_IMM16, .Format = { ArgType::Register, ArgType::Register, ArgType::Imm16 } },
+            { .Op = OpCode::SHR_IMM16_R, .Format = { ArgType::Register, ArgType::Imm16, ArgType::Register } },
+            { .Op = OpCode::SHR_REG, .Format = { ArgType::Register, ArgType::Register, ArgType::Register } }
+        }},
+        { "sar", {
+            { .Op = OpCode::SAR_IMM16, .Format = { ArgType::Register, ArgType::Register, ArgType::Imm16 } },
+            { .Op = OpCode::SAR_IMM16_R, .Format = { ArgType::Register, ArgType::Imm16, ArgType::Register } },
+            { .Op = OpCode::SAR_REG, .Format = { ArgType::Register, ArgType::Register, ArgType::Register } }
+        }},
     };
 
     IRProgram Parser::MakeProgram(){

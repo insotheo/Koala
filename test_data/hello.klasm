@@ -1,17 +1,17 @@
 _start:
-    mov r0, 0xF         ; r0 = 15
-    mov r1, 0x1         ; r1 = 1
-    add r2, r0, r1      ; r2 = r0 + r1 = 15 + 1 = 16
-    sub r3, 0, r1       ; r3 = 0 - r1 = 0 - 1 = -1
-    mul r4, r0, 0xA     ; r4 = r0 * 10 = 15 * 10 = 150
-    mul r5, r4, r3      ; r5 = r4 * r3 = 150 * (-1) = -150
-    div r6, r4, 5       ; r6 = r4 / 5 = 150 / 5 = 30
-    div r7, r5, 5       ; r7 = r5 / 5 = 18446744073709551466 / 5 = 3689348814741910293
-    idiv r8, r5, 5      ; r8 = r5 / 5 = -150 / 5 = -30
-    irem r9, r8, 0x4    ; r9 = r8 % 4 = -30 % 4 = -2
-    mov r10, r9         ; r10 = r9 = -2
-    mul r10, r10, r3    ; r10 = r10 * r3 = -2 * (-1) = 2
-    rem r10, 5, r10     ; r10 = 5 % 2 = 1
-    mov r11, 0xFFFF     ; r11 = -1
+    .data:
+        mov r0, 0b101
+        mov r1, 0b110
+        mov r8, 0xFF81
+    .test:
+        and r2, r0, r1
+        or r3, r0, r1
+        xor r4, r0, r1
+        xor r5, r4, r1
+        shl r6, 1, r2 ; 2 in power of 4 is 16
+        shr r7, r6, r2 ; inverse
+        sar r9, r8, 1
+        shl r10, r9, 1
+        not r12, 5
 
     ret

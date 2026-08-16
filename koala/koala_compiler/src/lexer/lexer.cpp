@@ -154,6 +154,13 @@ namespace koalac{
                 ident == "div" ||
                 ident == "irem" ||
                 ident == "rem" ||
+                ident == "and" ||
+                ident == "or" ||
+                ident == "xor" ||
+                ident == "not" ||
+                ident == "shl" ||
+                ident == "shr" ||
+                ident == "sar" ||
                 ident == "ret"
             ) return Token(TokenType::Keyword, startSpan, ident);
             else return Token(TokenType::Identifier, startSpan, ident);
