@@ -152,6 +152,7 @@ namespace koalac{
                 ident == "mul" ||
                 ident == "idiv" ||
                 ident == "div" ||
+                ident == "neg" ||
                 ident == "irem" ||
                 ident == "rem" ||
                 ident == "and" ||

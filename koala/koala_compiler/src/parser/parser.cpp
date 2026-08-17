@@ -36,6 +36,10 @@ namespace koalac{
             { .Op = OpCode::DIV_IMM16_R, .Format = { ArgType::Register, ArgType::Imm16, ArgType::Register } },
             { .Op = OpCode::DIV_REG, .Format = { ArgType::Register, ArgType::Register, ArgType::Register } }
         }},
+        { "neg", {
+            { .Op = OpCode::NEG_IMM16, .Format = { ArgType::Register,ArgType::Imm16 } },
+            { .Op = OpCode::NEG_REG, .Format = { ArgType::Register, ArgType::Register } }
+        }},
         { "irem", {
             { .Op = OpCode::IREM_IMM16, .Format = { ArgType::Register, ArgType::Register, ArgType::Imm16 } },
             { .Op = OpCode::IREM_IMM16_R, .Format = { ArgType::Register, ArgType::Imm16, ArgType::Register } },

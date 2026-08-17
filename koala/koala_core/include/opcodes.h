@@ -28,6 +28,9 @@ enum OpCode : uint8_t {
     DIV_IMM16_R,
     DIV_REG,
     
+    NEG_IMM16,
+    NEG_REG,
+
     IREM_IMM16,
     IREM_IMM16_R,
     IREM_REG,

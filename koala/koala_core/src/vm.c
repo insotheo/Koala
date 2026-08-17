@@ -30,6 +30,9 @@ void koalaVMRun(uint8_t* bytecode){
         [DIV_IMM16_R]                   = &&vm_div_imm16_r,
         [DIV_REG]                       = &&vm_div_reg,
 
+        [NEG_IMM16]                     = &&vm_neg_imm16,
+        [NEG_REG]                       = &&vm_neg_reg,
+        
         [IREM_IMM16]                    = &&vm_irem_imm16,
         [IREM_IMM16_R]                  = &&vm_irem_imm16_r,
         [IREM_REG]                      = &&vm_irem_reg,
@@ -100,7 +103,7 @@ void koalaVMRun(uint8_t* bytecode){
     #define VM_UNARY_OP(instr, operation, type, mod)\
         vm_##instr: {\
             DECODE_REG(dst); DECODE_##type(op);\
-            USE_REG(dst) = (uint64_t)(operation CAST_TO_##mod(op));\
+            USE_REG(dst) = (uint64_t)(operation CAST_TO_##mod(USE_##type(op)));\
             DISPATCH();\
         }
 
@@ -146,6 +149,9 @@ void koalaVMRun(uint8_t* bytecode){
     VM_BINARY_OP(div_imm16,     /, REG, IMM16, UNSIGNED)
     VM_BINARY_OP(div_imm16_r,   /, IMM16, REG, UNSIGNED)
     VM_BINARY_OP(div_reg,       /, REG, REG, UNSIGNED)
+
+    VM_UNARY_OP(neg_imm16,      -, IMM16, UNSIGNED)
+    VM_UNARY_OP(neg_reg,        -, REG, UNSIGNED)
 
     VM_BINARY_OP(irem_imm16,    %, REG, IMM16, SIGNED)
     VM_BINARY_OP(irem_imm16_r,  %, IMM16, REG, SIGNED)

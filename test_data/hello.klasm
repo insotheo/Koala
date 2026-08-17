@@ -1,17 +1,9 @@
 _start:
-    .data:
-        mov r0, 0b101
-        mov r1, 0b110
-        mov r8, 0xFF81
-    .test:
-        and r2, r0, r1
-        or r3, r0, r1
-        xor r4, r0, r1
-        xor r5, r4, r1
-        shl r6, 1, r2 ; 2 in power of 4 is 16
-        shr r7, r6, r2 ; inverse
-        sar r9, r8, 1
-        shl r10, r9, 1
-        not r12, 5
+    mov r0, 0xF
+    neg r1, r0
+    neg r2, 0xF
 
+    mov r3, 0b101
+    not r3, r3
+    
     ret
