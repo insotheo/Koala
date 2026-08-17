@@ -13,6 +13,8 @@ namespace koalac{
                     size += 1;
                 } else if(std::is_same_v<T, uint16_t>) {
                     size += 2;
+                } else if(std::is_same_v<T, uint64_t>) {
+                    size += 8;
                 }
 
             }, arg);

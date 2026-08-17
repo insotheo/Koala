@@ -18,7 +18,7 @@ namespace koalac{
         virtual ~IRNode() = default;
     };
 
-    using IRArg = std::variant<uint8_t, uint16_t>; //TODO: uint64_t args support
+    using IRArg = std::variant<uint8_t, uint16_t, uint64_t>;
 
     struct IRInstruction : public IRNode{
         OpCode Op;

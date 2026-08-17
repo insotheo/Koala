@@ -33,6 +33,9 @@ namespace koalac{
                         } else if(std::is_same_v<T, uint16_t>){
                             auto bytes = std::bit_cast<std::array<uint8_t, sizeof(uint16_t)>>(static_cast<uint16_t>(val));
                             bc.insert(bc.end(), bytes.begin(), bytes.end());
+                        } else if(std::is_same_v<T, uint64_t>){
+                            auto bytes = std::bit_cast<std::array<uint8_t, sizeof(uint64_t)>>(static_cast<uint64_t>(val));
+                            bc.insert(bc.end(), bytes.begin(), bytes.end());
                         }
 
                     }, arg);

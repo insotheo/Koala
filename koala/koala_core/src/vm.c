@@ -10,6 +10,7 @@ void koalaVMRun(uint8_t* bytecode){
         [RET]                           = &&vm_ret,
 
         [MOV_IMM16]                     = &&vm_mov_imm16,
+        [MOV_IMM64]                     = &&vm_mov_imm64,
         [MOV_REG]                       = &&vm_mov_reg,
 
         [ADD_IMM16]                     = &&vm_add_imm16,
@@ -75,14 +76,18 @@ void koalaVMRun(uint8_t* bytecode){
     #define DECODE_REG(name) uint8_t name = READ_REG()
     #define USE_REG(name) registers[name]
 
-    #define READ_IMM16() ({\
-            int16_t val;\
-            memcpy(&val, pc, sizeof(int16_t));\
-            pc += sizeof(int16_t);\
-            val;\
-        })
-    #define DECODE_IMM16(name) int16_t name = READ_IMM16()
-    #define USE_IMM16(name) (int16_t)name
+    #define READ_IMM_N(type) ({\
+        type val;\
+        memcpy(&val, pc, sizeof(type));\
+        pc += sizeof(type);\
+        val;\
+    })
+    #define DECODE_IMM_N(type, name) type name = READ_IMM_N(type)
+    #define USE_IMM_N(type, name) ((type)name)
+
+    #define READ_IMM16() READ_IMM_N(int16_t)
+    #define DECODE_IMM16(name) DECODE_IMM_N(int16_t, name)
+    #define USE_IMM16(name) USE_IMM_N(int16_t, name)
 
     #define CAST_TO_SIGNED(val) ((int64_t)val)
     #define CAST_TO_UNSIGNED(val) ((uint64_t)val)
@@ -126,6 +131,12 @@ void koalaVMRun(uint8_t* bytecode){
         DISPATCH();
     }
     
+    vm_mov_imm64: {
+        DECODE_REG(dst); DECODE_IMM_N(int64_t, imm);
+        USE_REG(dst) = USE_IMM_N(int64_t, imm);
+        DISPATCH();
+    }
+
     vm_mov_reg: {
         DECODE_REG(dst); DECODE_REG(src);
         USE_REG(dst) = USE_REG(src);

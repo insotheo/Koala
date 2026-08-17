@@ -10,6 +10,7 @@ namespace koalac{
         {"ret", {{ .Op = OpCode::RET, .Format = {} }}},
         {"mov", {
             { .Op = OpCode::MOV_IMM16, .Format = {ArgType::Register, ArgType::Imm16} },
+            { .Op = OpCode::MOV_IMM64, .Format = {ArgType::Register, ArgType::Imm64} },
             { .Op = OpCode::MOV_REG, .Format = {ArgType::Register, ArgType::Register} }
         }},
 
@@ -154,7 +155,10 @@ namespace koalac{
                         break;
                     
                     case TokenType::Number:
-                        args.push_back(ParserArg(ArgType::Imm16, static_cast<uint16_t>(argVal)));
+                        if(argVal <= UINT16_MAX)
+                            args.push_back(ParserArg(ArgType::Imm16, static_cast<uint16_t>(argVal)));
+                        else
+                            args.push_back(ParserArg(ArgType::Imm64, argVal));
                         break;
                     
                     default: break;

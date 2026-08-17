@@ -8,6 +8,7 @@ namespace koalac{
     enum class ArgType{
         Register,
         Imm16,
+        Imm64,
     };
 
     struct InstrVariant {

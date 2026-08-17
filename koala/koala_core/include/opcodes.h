@@ -8,6 +8,7 @@ enum OpCode : uint8_t {
     RET,
     
     MOV_IMM16,
+    MOV_IMM64,
     MOV_REG,
 
     ADD_IMM16,
