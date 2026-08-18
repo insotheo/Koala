@@ -83,6 +83,8 @@ namespace koalac{
             { .Op = OpCode::SAR_REG, .Format = { ArgType::Register, ArgType::Register, ArgType::Register } }
         }},
         {"jmp", {{ .Op = OpCode::_JMP_UNDEFINED, .Format = { ArgType::Label } }}},
+        {"jez", {{ .Op = OpCode::_JEZ_UNDEFINED, .Format = { ArgType::Register, ArgType::Label } }}},
+        {"jnz", {{ .Op = OpCode::_JNZ_UNDEFINED, .Format = { ArgType::Register, ArgType::Label } }}},
     };
 
     IRProgram Parser::MakeProgram(){

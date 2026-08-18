@@ -68,6 +68,12 @@ void koalaVMRun(uint8_t* bytecode){
 
         [JMP_SHORT]                     = &&vm_jmp_short,
         [JMP_LONG]                      = &&vm_jmp_long,
+
+        [JEZ_SHORT]                     = &&vm_jez_short,
+        [JEZ_LONG]                      = &&vm_jez_long,
+
+        [JNZ_SHORT]                     = &&vm_jnz_short,
+        [JNZ_LONG]                      = &&vm_jnz_long,
     };
 
     uint8_t* pc = &bytecode[0];
@@ -212,6 +218,30 @@ void koalaVMRun(uint8_t* bytecode){
     vm_jmp_long: {
         DECODE_IMM64(offset);
         pc += offset;
+        DISPATCH();
+    }
+
+    vm_jez_short: {
+        DECODE_REG(zf); DECODE_IMM16(offset);
+        pc += offset * (USE_REG(zf) == 0);
+        DISPATCH();
+    }
+
+    vm_jez_long: {
+        DECODE_REG(zf); DECODE_IMM64(offset);
+        pc += offset * (USE_REG(zf) == 0);
+        DISPATCH();
+    }
+
+    vm_jnz_short: {
+        DECODE_REG(zf); DECODE_IMM16(offset);
+        pc += offset * (USE_REG(zf) != 0);
+        DISPATCH();
+    }
+
+    vm_jnz_long: {
+        DECODE_REG(zf); DECODE_IMM64(offset);
+        pc += offset * (USE_REG(zf) != 0);
         DISPATCH();
     }
 }

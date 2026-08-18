@@ -16,7 +16,10 @@ namespace koalac{
                 } else if(std::is_same_v<T, uint64_t>) {
                     size += 8;
                 } else if(std::is_same_v<T, std::string>) {
-                    if(Op == OpCode::JMP_SHORT){
+                    if(Op == OpCode::JMP_SHORT ||
+                       Op == OpCode::JEZ_SHORT ||
+                       Op == OpCode::JNZ_SHORT
+                    ){
                         size += 2;
                     } else {
                         size += 8;

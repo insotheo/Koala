@@ -67,4 +67,12 @@ enum OpCode : uint8_t {
     _JMP_UNDEFINED,
     JMP_SHORT,
     JMP_LONG,
+
+    _JEZ_UNDEFINED,
+    JEZ_SHORT,
+    JEZ_LONG,
+
+    _JNZ_UNDEFINED,
+    JNZ_SHORT,
+    JNZ_LONG,
 };

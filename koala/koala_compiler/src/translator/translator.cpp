@@ -20,8 +20,11 @@ namespace koalac{
             //calc tentative pos
             for(const auto& node : program.GetNodes()){
                 if(auto* instr = dynamic_cast<IRInstruction*>(node.get())){
-                    if(instr->Op == OpCode::_JMP_UNDEFINED){
-                        instr->Op = OpCode::JMP_SHORT;
+                    if(instr->Op == OpCode::_JMP_UNDEFINED ||
+                       instr->Op == OpCode::_JEZ_UNDEFINED ||
+                       instr->Op == OpCode::_JNZ_UNDEFINED
+                    ){
+                        instr->Op = static_cast<OpCode>(static_cast<uint8_t>(instr->Op) + 1); //_SHORT is always + 1 after _UNDEFINED
                     }
                     bcPtr += instr->GetSize();
                 } else if(auto* label = dynamic_cast<IRLabel*>(node.get())){
@@ -36,7 +39,10 @@ namespace koalac{
                 if(auto* instr = dynamic_cast<IRInstruction*>(node.get())){
                     size_t currInstrSize = instr->GetSize();
 
-                    if(instr->Op == OpCode::JMP_SHORT){
+                    if(instr->Op == OpCode::JMP_SHORT ||
+                        instr->Op == OpCode::JEZ_SHORT ||
+                        instr->Op == OpCode::JNZ_SHORT
+                    ){
                         for(const auto& arg : instr->Args){
                             if(std::holds_alternative<std::string>(arg)){
                                 const std::string& target = std::get<std::string>(arg);
@@ -51,7 +57,7 @@ namespace koalac{
                                 int64_t relOffset = static_cast<int64_t>(targetPos) - static_cast<int64_t>(nextInstrPos);
 
                                 if(relOffset < INT16_MIN || relOffset > INT16_MAX){
-                                    instr->Op = OpCode::JMP_LONG;
+                                    instr->Op = static_cast<OpCode>(static_cast<uint8_t>(instr->Op) + 1); //_LONG is always + 1 after _SHORT
                                     sizeChanged = true;
                                 }
 
@@ -93,11 +99,17 @@ namespace koalac{
                             size_t nextInstrPos = bcPtr + instrSize;
                             int64_t relOffset = static_cast<int64_t>(targetPos) - static_cast<int64_t>(nextInstrPos);
 
-                            if(instr->Op == OpCode::JMP_SHORT){
+                            if(instr->Op == OpCode::JMP_SHORT ||
+                               instr->Op == OpCode::JEZ_SHORT ||
+                               instr->Op == OpCode::JNZ_SHORT
+                            ){
                                 int16_t offset16 = static_cast<int16_t>(relOffset);
                                 auto bytes = std::bit_cast<std::array<uint8_t, sizeof(int16_t)>>(offset16);
                                 bc.insert(bc.end(), bytes.begin(), bytes.end());
-                            } else if(instr->Op == OpCode::JMP_SHORT){
+                            } else if(instr->Op == OpCode::JMP_LONG ||
+                                      instr->Op == OpCode::JEZ_LONG ||
+                                      instr->Op == OpCode::JNZ_LONG
+                            ){
                                 int64_t offset64 = static_cast<int64_t>(relOffset);
                                 auto bytes = std::bit_cast<std::array<uint8_t, sizeof(int64_t)>>(offset64);
                                 bc.insert(bc.end(), bytes.begin(), bytes.end());

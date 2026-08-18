@@ -1,9 +1,7 @@
 _start:
-    mov r0, 0xF
-    
-    jmp .skip_mov_r1
-    
-    mov r1, 0xF
-    
-    .skip_mov_r1:
-        ret
+    ; Count to 1 billion test
+    mov r0, 1000000000
+    .loop:
+        sub r0, r0, 1
+        jnz r0, .loop
+    ret
