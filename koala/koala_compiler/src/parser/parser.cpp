@@ -1,4 +1,5 @@
 #include "parser/parser.hpp"
+#include "parser/descriptor.hpp"
 
 #include <memory>
 #include <format>
@@ -13,7 +14,9 @@ namespace koalac{
             { .Op = OpCode::MOV_IMM64, .Format = {ArgType::Register, ArgType::Imm64} },
             { .Op = OpCode::MOV_REG, .Format = {ArgType::Register, ArgType::Register} }
         }},
-
+        
+        {"inc", {{ .Op = OpCode::INC_REG, .Format = { ArgType::Register } }}},
+        {"dec", {{ .Op = OpCode::DEC_REG, .Format = { ArgType::Register } }}},
         { "add", {
             { .Op = OpCode::ADD_IMM16, .Format = { ArgType::Register, ArgType::Register, ArgType::Imm16 } },
             { .Op = OpCode::ADD_REG, .Format = { ArgType::Register, ArgType::Register, ArgType::Register } }

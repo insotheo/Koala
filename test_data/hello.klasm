@@ -1,7 +1,8 @@
 _start:
     ; Count to 1 billion test
     mov r0, 1000000000
+    ; mov r0, 1000
     .loop:
-        sub r0, r0, 1
+        dec r0
         jnz r0, .loop
     ret

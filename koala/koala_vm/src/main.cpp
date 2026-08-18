@@ -3,6 +3,7 @@
 #include <vector>
 #include <cstdint>
 #include <KoalaCore>
+#include <chrono>
 
 std::vector<uint8_t> readBytecode(char* filepath){
     std::ifstream fs(filepath, std::ios::ate | std::ios::binary);
@@ -71,7 +72,10 @@ int main(int argc, char** argv){
         return -1;
     }
     
+    auto t1 = std::chrono::high_resolution_clock::now();
     koalaVMRun(bytecode.data());
+    auto t2 = std::chrono::high_resolution_clock::now();
+    std::cout << "Time take: " << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1) << "\n";
 
     return 0;
 }

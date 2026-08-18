@@ -13,6 +13,9 @@ void koalaVMRun(uint8_t* bytecode){
         [MOV_IMM64]                     = &&vm_mov_imm64,
         [MOV_REG]                       = &&vm_mov_reg,
 
+        [INC_REG]                       = &&vm_inc_reg,
+        [DEC_REG]                       = &&vm_dec_reg,
+        
         [ADD_IMM16]                     = &&vm_add_imm16,
         [ADD_REG]                       = &&vm_add_reg,
         
@@ -62,9 +65,9 @@ void koalaVMRun(uint8_t* bytecode){
         [SHR_IMM16_R]                   = &&vm_shr_imm16_r,
         [SHR_REG]                       = &&vm_shr_reg,
 
-        [SAR_IMM16]                     = &&vm_shr_imm16,
-        [SAR_IMM16_R]                   = &&vm_shr_imm16_r,
-        [SAR_REG]                       = &&vm_shr_reg,
+        [SAR_IMM16]                     = &&vm_sar_imm16,
+        [SAR_IMM16_R]                   = &&vm_sar_imm16_r,
+        [SAR_REG]                       = &&vm_sar_reg,
 
         [JMP_SHORT]                     = &&vm_jmp_short,
         [JMP_LONG]                      = &&vm_jmp_long,
@@ -81,24 +84,18 @@ void koalaVMRun(uint8_t* bytecode){
     
     #define DISPATCH() goto *dispatch_table[*pc++]
 
-    #define READ_REG() (*pc++)
-    #define DECODE_REG(name) uint8_t name = READ_REG()
+    #define DECODE_REG(name) uint8_t name = *pc++
     #define USE_REG(name) registers[name]
 
-    #define READ_IMM_N(type) ({\
-        type val;\
-        memcpy(&val, pc, sizeof(type));\
-        pc += sizeof(type);\
-        val;\
-    })
-    #define DECODE_IMM_N(type, name) type name = READ_IMM_N(type)
+    #define DECODE_IMM_N(type, name) \
+        type name = *(type*)pc;\
+        pc += sizeof(type);
+
     #define USE_IMM_N(type, name) ((type)name)
 
-    #define READ_IMM16() READ_IMM_N(int16_t)
     #define DECODE_IMM16(name) DECODE_IMM_N(int16_t, name)
     #define USE_IMM16(name) USE_IMM_N(int16_t, name)
 
-    #define READ_IMM64() READ_IMM_N(int64_t)
     #define DECODE_IMM64(name) DECODE_IMM_N(int64_t, name)
     #define USE_IMM64(name) USE_IMM_N(int64_t, name)
 
@@ -122,6 +119,12 @@ void koalaVMRun(uint8_t* bytecode){
         vm_##instr: {\
             DECODE_REG(dst); DECODE_##type(op);\
             USE_REG(dst) = (uint64_t)(operation CAST_TO_##mod(USE_##type(op)));\
+            DISPATCH();\
+        }
+    #define VM_UNARY_RIGHT_OP(instr, operation)\
+        vm_##instr: {\
+            DECODE_REG(dst); \
+            USE_REG(dst) operation;\
             DISPATCH();\
         }
 
@@ -155,6 +158,9 @@ void koalaVMRun(uint8_t* bytecode){
         USE_REG(dst) = USE_REG(src);
         DISPATCH();
     }
+
+    VM_UNARY_RIGHT_OP(inc_reg, ++)
+    VM_UNARY_RIGHT_OP(dec_reg, --)
 
     VM_BINARY_OP(add_imm16,     +, REG, IMM16, SIGNED)
     VM_BINARY_OP(add_reg,       +, REG, REG, SIGNED)
@@ -223,25 +229,25 @@ void koalaVMRun(uint8_t* bytecode){
 
     vm_jez_short: {
         DECODE_REG(zf); DECODE_IMM16(offset);
-        pc += offset * (USE_REG(zf) == 0);
+        if(USE_REG(zf) == 0) pc += offset;
         DISPATCH();
     }
 
     vm_jez_long: {
         DECODE_REG(zf); DECODE_IMM64(offset);
-        pc += offset * (USE_REG(zf) == 0);
+        if(USE_REG(zf) == 0) pc += offset;
         DISPATCH();
     }
 
     vm_jnz_short: {
         DECODE_REG(zf); DECODE_IMM16(offset);
-        pc += offset * (USE_REG(zf) != 0);
+        if(USE_REG(zf) != 0) pc += offset;
         DISPATCH();
     }
 
     vm_jnz_long: {
         DECODE_REG(zf); DECODE_IMM64(offset);
-        pc += offset * (USE_REG(zf) != 0);
+        if(USE_REG(zf) != 0) pc += offset;
         DISPATCH();
     }
 }
