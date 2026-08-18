@@ -65,6 +65,9 @@ void koalaVMRun(uint8_t* bytecode){
         [SAR_IMM16]                     = &&vm_shr_imm16,
         [SAR_IMM16_R]                   = &&vm_shr_imm16_r,
         [SAR_REG]                       = &&vm_shr_reg,
+
+        [JMP_SHORT]                     = &&vm_jmp_short,
+        [JMP_LONG]                      = &&vm_jmp_long,
     };
 
     uint8_t* pc = &bytecode[0];
@@ -88,6 +91,10 @@ void koalaVMRun(uint8_t* bytecode){
     #define READ_IMM16() READ_IMM_N(int16_t)
     #define DECODE_IMM16(name) DECODE_IMM_N(int16_t, name)
     #define USE_IMM16(name) USE_IMM_N(int16_t, name)
+
+    #define READ_IMM64() READ_IMM_N(int64_t)
+    #define DECODE_IMM64(name) DECODE_IMM_N(int64_t, name)
+    #define USE_IMM64(name) USE_IMM_N(int64_t, name)
 
     #define CAST_TO_SIGNED(val) ((int64_t)val)
     #define CAST_TO_UNSIGNED(val) ((uint64_t)val)
@@ -132,8 +139,8 @@ void koalaVMRun(uint8_t* bytecode){
     }
     
     vm_mov_imm64: {
-        DECODE_REG(dst); DECODE_IMM_N(int64_t, imm);
-        USE_REG(dst) = USE_IMM_N(int64_t, imm);
+        DECODE_REG(dst); DECODE_IMM64(imm);
+        USE_REG(dst) = USE_IMM64(imm);
         DISPATCH();
     }
 
@@ -195,4 +202,16 @@ void koalaVMRun(uint8_t* bytecode){
     VM_BINARY_OP(sar_imm16,     >>, REG, IMM16, SIGNED)
     VM_BINARY_OP(sar_imm16_r,   >>, IMM16, REG, SIGNED)
     VM_BINARY_OP(sar_reg,       >>, REG, REG, SIGNED)
+
+    vm_jmp_short: {
+        DECODE_IMM16(offset);
+        pc += offset;
+        DISPATCH();
+    }
+
+    vm_jmp_long: {
+        DECODE_IMM64(offset);
+        pc += offset;
+        DISPATCH();
+    }
 }

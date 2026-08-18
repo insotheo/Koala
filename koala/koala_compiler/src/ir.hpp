@@ -3,6 +3,7 @@
 #include "lexer/token.hpp"
 #include <memory>
 #include <opcodes.h>
+#include <string>
 #include <variant>
 #include <cstdint>
 #include <vector>
@@ -18,7 +19,7 @@ namespace koalac{
         virtual ~IRNode() = default;
     };
 
-    using IRArg = std::variant<uint8_t, uint16_t, uint64_t>;
+    using IRArg = std::variant<uint8_t, uint16_t, uint64_t, std::string>;
 
     struct IRInstruction : public IRNode{
         OpCode Op;

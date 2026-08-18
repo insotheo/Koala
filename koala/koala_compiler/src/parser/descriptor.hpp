@@ -9,6 +9,7 @@ namespace koalac{
         Register,
         Imm16,
         Imm64,
+        Label,
     };
 
     struct InstrVariant {

@@ -6,7 +6,7 @@ namespace koalac{
         size_t size = 1; //opcode is always 1 byte
 
         for(const auto& arg : Args){
-            std::visit([&size](auto val){
+            std::visit([this, &size](auto val){
                 using T = std::decay_t<decltype(val)>;
                 
                 if(std::is_same_v<T, uint8_t>){
@@ -15,6 +15,12 @@ namespace koalac{
                     size += 2;
                 } else if(std::is_same_v<T, uint64_t>) {
                     size += 8;
+                } else if(std::is_same_v<T, std::string>) {
+                    if(Op == OpCode::JMP_SHORT){
+                        size += 2;
+                    } else {
+                        size += 8;
+                    }
                 }
 
             }, arg);

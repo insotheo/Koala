@@ -1,3 +1,9 @@
 _start:
-    mov r0, 1000000000 ; mov_imm64 r0, ...
-    ret
+    mov r0, 0xF
+    
+    jmp .skip_mov_r1
+    
+    mov r1, 0xF
+    
+    .skip_mov_r1:
+        ret

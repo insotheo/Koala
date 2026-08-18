@@ -63,4 +63,8 @@ enum OpCode : uint8_t {
     SAR_IMM16,
     SAR_IMM16_R,
     SAR_REG,
+
+    _JMP_UNDEFINED,
+    JMP_SHORT,
+    JMP_LONG,
 };

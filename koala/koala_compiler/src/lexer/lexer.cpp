@@ -162,6 +162,7 @@ namespace koalac{
                 ident == "shl" ||
                 ident == "shr" ||
                 ident == "sar" ||
+                ident == "jmp" ||
                 ident == "ret"
             ) return Token(TokenType::Keyword, startSpan, ident);
             else return Token(TokenType::Identifier, startSpan, ident);

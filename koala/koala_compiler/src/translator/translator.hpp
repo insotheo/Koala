@@ -7,5 +7,5 @@
 namespace koalac{
     using Bytecode = std::vector<uint8_t>;
 
-    Bytecode translateToBytecode(const IRProgram& program);
+    Bytecode translateToBytecode(IRProgram& program);
 }

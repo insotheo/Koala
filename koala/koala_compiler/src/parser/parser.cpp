@@ -82,6 +82,7 @@ namespace koalac{
             { .Op = OpCode::SAR_IMM16_R, .Format = { ArgType::Register, ArgType::Imm16, ArgType::Register } },
             { .Op = OpCode::SAR_REG, .Format = { ArgType::Register, ArgType::Register, ArgType::Register } }
         }},
+        {"jmp", {{ .Op = OpCode::_JMP_UNDEFINED, .Format = { ArgType::Label } }}},
     };
 
     IRProgram Parser::MakeProgram(){
@@ -146,27 +147,44 @@ namespace koalac{
 
         std::vector<ParserArg> args;
         while(m_Cur.Type != TokenType::EndOfFile &&
-            (m_Cur.Type == TokenType::Register || m_Cur.Type == TokenType::Number)){
-                uint64_t argVal = std::get<uint64_t>(m_Cur.Val);
-                
+            (m_Cur.Type == TokenType::Register || m_Cur.Type == TokenType::Number || m_Cur.Type == TokenType::Identifier)){
+
                 switch(m_Cur.Type){
-                    case TokenType::Register:
-                        args.push_back(ParserArg(ArgType::Register, static_cast<uint8_t>(argVal)));
+                    case TokenType::Register:{
+                        uint8_t regVal = static_cast<uint8_t>(std::get<uint64_t>(m_Cur.Val));
+                        args.push_back(ParserArg(ArgType::Register, regVal));
                         break;
+                    }
                     
-                    case TokenType::Number:
+                    case TokenType::Number:{
+                        uint64_t argVal = std::get<uint64_t>(m_Cur.Val);
                         if(argVal <= UINT16_MAX)
                             args.push_back(ParserArg(ArgType::Imm16, static_cast<uint16_t>(argVal)));
                         else
                             args.push_back(ParserArg(ArgType::Imm64, argVal));
                         break;
+                    }
                     
+                    case TokenType::Identifier:{
+                        std::string labelName = std::get<std::string>(m_Cur.Val);
+                        if(labelName.starts_with('.')){ //local label
+                            if(m_CurGlobalLabel.empty()){
+                                Panic(std::format("No global label found to append '{}'", labelName), m_Cur.Span);
+                                break;
+                            }
+                            labelName = m_CurGlobalLabel + labelName;
+                        }
+                        args.push_back(ParserArg(ArgType::Label, labelName));
+                        break;
+                    }
+
                     default: break;
                 }
 
                 Next();
                 if(m_Cur.Type == TokenType::Comma)
                     Next();
+                else break;
         }
 
         OpCode op = OpCode::NONE;
